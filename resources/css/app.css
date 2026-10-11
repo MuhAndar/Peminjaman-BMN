@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --color-primary: #0B63B5;
+    --color-primary-strong: #0B4F8A;
+    --color-accent: #12A8E0;
+    --color-bg: #F7F9FC;
+    --color-surface: #FFFFFF;
+    --color-border: #E2E8F0;
+    --color-text: #0F172A;
+    --color-text-muted: #475569;
+    --color-success: #15803D;
+    --color-warning: #B45309;
+    --color-danger: #B3261E;
+  }
+
+  body {
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}

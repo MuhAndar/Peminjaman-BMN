@@ -1,0 +1,24 @@
+# Pertanyaan Terbuka dan Asumsi Default
+
+Agent harus memakai kolom **Asumsi default** sampai pertanyaan dijawab, dan memberi komentar `// ASSUMPTION: Qn` di kode terkait. Setelah dijawab, ganti kolom "Jawaban" dan perbarui dokumen yang terdampak.
+
+| # | Pertanyaan | Mengapa penting | Asumsi default | Jawaban |
+|---|---|---|---|---|
+| Q1 | Aplikasi akan di-hosting di mana (server kantor/PDN, VPS, cloud, Vercel)? Apakah ada aturan data harus di dalam negeri? | Menentukan database, penyimpanan berkas, dan metode deploy | Next.js + PostgreSQL; deploy via Docker agar bisa dipindah ke server mana pun | |
+| Q2 | Bagaimana pegawai login? Email kantor + kata sandi, NIP + kata sandi, atau SSO instansi? Siapa yang membuat akun? | Menentukan autentikasi dan data yang perlu diimpor | Email kantor + kata sandi; Admin mengundang pegawai; akun dibuat dari data pegawai | |
+| Q3 | Tanda tangan: basah (cetak → tanda tangan → unggah scan) atau tanda tangan elektronik (TTE/BSrE)? | Menentukan alur serah terima dan integrasi | Tahap 1 cetak dan unggah scan; TTE masuk fase lanjutan | |
+| Q4 | Format nomor Surat Peminjaman, BAST Peminjaman, BAST Pengembalian, dan reset per tahun atau tidak? Mohon contoh nomor asli. Kapan nomor surat diberikan (saat disetujui atau saat diajukan)? | Redaksi nomor wajib benar; Excel hanya punya urutan "No" per tahun | `{urut}/BMN-PJM/BBPSDMP.73/{bulan-romawi}/{tahun}` dst., urut reset tiap tahun; nomor Surat terbit saat disetujui | |
+| Q5 | Cakupan barang: apakah hanya laptop, HP, sepeda motor, dan mobil dinas seperti di Excel? Adakah barang lain (proyektor, kamera, ruang/aula)? Apakah ada ekspor lengkap data BMN (SIMAK-BMN)? | Menentukan kategori dan data master awal | Hanya 4 kategori di Excel; data barang diimpor dari baris peminjaman | |
+| Q6 | Peminjaman tahunan (1 Jan–31 Des) dan peminjaman sementara (mobil dinas): apakah perlu fitur perpanjangan massal tiap Januari dan kalender kendaraan? Perlu data sopir/BBM/tujuan? | Prioritas fitur dan skema | Perpanjangan massal dan kalender di fase lanjutan; tanpa sopir/BBM | |
+| Q7 | Nama satker resmi pada kop dan judul: "BBPSDMP Makassar" (template), "BBLSDM Komdigi Makassar" (log Excel), atau nama lain? Singkatan di judul dokumen? | Dokumen resmi harus konsisten; ada tiga variasi nama di berkas yang ada | Pakai teks persis dari template PDF, bisa diubah Admin di pengaturan | |
+| Q8 | Jika pemohon adalah Ketua Tim Keuangan dan Aset atau Pengelola BMN (keduanya tercatat meminjam laptop di Excel), siapa yang menyetujui/menandatangani sebagai gantinya? | Mencegah konflik kepentingan (BR-08) | Admin menunjuk pengganti per kasus; sistem menolak pemrosesan sendiri | |
+| Q9 | Notifikasi lewat apa: dalam aplikasi saja, email, atau WhatsApp? Siapa yang mengirim/menghosting gateway-nya? | Menentukan data kontak yang disimpan dan biaya | Dalam aplikasi saja; email/WA fase lanjutan | |
+| Q10 | Mohon sediakan aset resmi: logo KOMDIGI (SVG/PNG resolusi tinggi), panduan warna/tipografi bila ada, dan contoh nomor/kop terbaru. | Kop dan identitas visual harus akurat | Logo placeholder dari ekstrak PDF; warna dari perkiraan logo | |
+| Q11 | Berapa lama dokumen dan riwayat harus disimpan (kearsipan)? Siapa yang boleh melihat arsip lama? | Retensi data dan UU PDP | 5 tahun; Pengelola BMN, Ketua Tim, Admin | |
+| Q12 | Jika pengajuan ditolak oleh Ketua Tim, apakah selalu "kembali ke peminjam untuk diperbaiki" (sesuai flowchart) atau ada penolakan final? | Menentukan status `REJECTED` | Ada dua aksi: Kembalikan (revisi) dan Tolak (final) | |
+| Q13 | Apakah pegawai PPNPN (tanpa NIP, hanya NIK) boleh meminjam? Apa yang dicetak di kolom NIP? | Data di Excel hanya memuat NIK untuk PPNPN; NIK tidak boleh dicetak/disimpan | Boleh meminjam; kolom NIP dicetak "-" | |
+| Q14 | Satu surat boleh memuat beberapa barang untuk satu peminjam (tabel template memang berbaris)? Atau satu barang satu surat seperti di Excel? | Menentukan model data dan penggabungan saat impor | Satu surat banyak barang; saat impor digabung per (NIP, tgl surat, periode) | |
+| Q15 | Kolom "Merk" di template: apakah berisi merk saja atau merk + tipe (di Excel dipisah Merk dan Type)? | Isi kolom pada dokumen | Merk + tipe digabung | |
+| Q16 | Draft SOP: jumlah waktu tertulis 28 menit tetapi langkah-langkahnya berjumlah 32 menit. Mana yang benar? Apakah target waktu SOP perlu ditampilkan sebagai SLA? | Konsistensi indikator kinerja | Pakai waktu per langkah; total dihitung otomatis | |
+| Q17 | Siapa saja yang boleh membuat pengajuan atas nama orang lain (mis. operator mengisi untuk pimpinan)? | Peran dan audit | Hanya pemilik akun; Pengelola dapat membuat atas nama pegawai dengan jejak audit | |
+| Q18 | Apakah peminjam dengan pengembalian yang terlambat diblokir mengajukan peminjaman baru? | Aturan bisnis tambahan | Tidak diblokir; hanya diberi peringatan | |

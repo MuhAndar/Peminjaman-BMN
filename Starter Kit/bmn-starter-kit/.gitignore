@@ -1,0 +1,26 @@
+# dependencies & build
+node_modules/
+.next/
+dist/
+coverage/
+playwright-report/
+test-results/
+
+# secrets
+.env
+.env.*
+!.env.example
+
+# DATA PRIBADI — jangan pernah di-commit
+data/*
+!data/.gitkeep
+*.xlsx
+*.xls
+*.csv
+uploads/
+storage/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
