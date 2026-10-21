@@ -5,7 +5,7 @@
 @section('content')
     <div class="doc-title">
         SURAT PEMINJAMAN<br>
-        BARANG INVENTARIS BBPSDMP-MAKASSAR
+        BARANG INVENTARIS BBLSDM-MAKASSAR
     </div>
     <div class="doc-number">
         Nomor : {{ $document->doc_number ?? 'DRAF' }}
@@ -92,7 +92,7 @@
             <td>
                 <br>
                 Ketua Tim Keuangan dan Aset<br>
-                BBPSDMP Makassar,<br>
+                BBLSDM Makassar,<br>
                 <div class="signature-space"></div>
                 <strong><u>{{ $signatoryKetua->employee->full_name ?? 'Olga Olivia Sombolayuk, SE' }}</u></strong><br>
                 NIP. {{ \App\Helpers\FormatHelper::formatNip($signatoryKetua->employee->nip ?? '198206082009012001') }}
@@ -100,7 +100,11 @@
             <td>
                 Makassar, {{ \App\Helpers\FormatHelper::formatDateIndo($document->doc_date ?? now()) }}<br>
                 Peminjam,<br>
-                <div class="signature-space"></div>
+                <div class="signature-space">
+                    @if(!empty($borrowerSignatureBase64))
+                        <img src="{{ $borrowerSignatureBase64 }}" style="max-height: 65px; max-width: 150px; display: block;">
+                    @endif
+                </div>
                 <strong><u>{{ $loan->snap_full_name }}</u></strong><br>
                 NIP. {{ \App\Helpers\FormatHelper::formatNip($loan->snap_nip) }}
             </td>

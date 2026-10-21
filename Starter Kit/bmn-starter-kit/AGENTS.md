@@ -1,4 +1,4 @@
-# AGENTS.md — Aplikasi Peminjaman & Pengembalian BMN (BBPSDMP Makassar)
+# AGENTS.md — Aplikasi Peminjaman & Pengembalian BMN (BBLSDM Makassar)
 
 File ini dibaca otomatis oleh Antigravity (dan juga Claude Code, Cursor, Codex). Isinya sengaja singkat: ringkasan proyek + peta dokumen. Detail ada di `docs/`, aturan teknis ada di `.agents/rules/`.
 

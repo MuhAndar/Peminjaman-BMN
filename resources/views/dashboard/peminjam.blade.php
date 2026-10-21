@@ -8,7 +8,7 @@
     <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#0B63B5] to-[#12A8E0] p-6 sm:p-8 text-white shadow-xl shadow-blue-500/10">
         <div class="relative z-10 max-w-2xl">
             <span class="inline-block px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-xs font-semibold text-white mb-3">
-                Selamat Datang, {{ auth()->user()->employee->rank_grade ?? 'Pegawai BBPSDMP' }}
+                Selamat Datang, {{ auth()->user()->employee->rank_grade ?? 'Pegawai BBLSDM' }}
             </span>
             <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
                 {{ auth()->user()->name }}

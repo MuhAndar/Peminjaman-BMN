@@ -13,7 +13,11 @@
             </p>
         </div>
         <div class="flex items-center gap-2">
-            <a href="{{ route('kelola.queue') }}" class="px-4 py-2 bg-[#0B63B5] hover:bg-[#0B4F8A] text-white text-xs font-bold rounded-xl shadow-sm transition flex items-center gap-2">
+            <a href="{{ route('audit.loans') }}" class="px-4 py-2 bg-blue-50/80 hover:bg-[#0B63B5] text-[#0B63B5] hover:text-white border border-blue-200/80 hover:border-[#0B63B5] text-xs font-extrabold rounded-xl shadow-2xs hover:shadow-xs transition flex items-center gap-2 active:scale-95 group">
+                <i data-lucide="clipboard-check" class="w-4 h-4 text-[#0B63B5] group-hover:text-white transition-colors"></i>
+                <span>Audit Peminjaman</span>
+            </a>
+            <a href="{{ route('kelola.queue') }}" class="px-4 py-2 bg-[#0B63B5] hover:bg-[#0B4F8A] text-white text-xs font-bold rounded-xl shadow-sm hover:shadow-md transition flex items-center gap-2 active:scale-95">
                 <i data-lucide="list-checks" class="w-4 h-4"></i>
                 <span>Buka Semua Antrean</span>
             </a>

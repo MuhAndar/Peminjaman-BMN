@@ -51,7 +51,7 @@
     <div class="text-center sm:text-left">
         <h1 class="text-2xl font-black text-slate-900 tracking-tight">Formulir Pengajuan Peminjaman BMN</h1>
         <p class="text-xs sm:text-sm text-slate-500 mt-1">
-            Isi formulir pengajuan peminjaman barang inventaris kantor BBPSDMP Makassar secara berurutan.
+            Isi formulir pengajuan peminjaman barang inventaris kantor BBLSDM Makassar secara berurutan.
         </p>
     </div>
 

@@ -16,7 +16,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         // 1. App Settings
-        AppSetting::set('satker_code', 'BBPSDMP.73');
+        AppSetting::set('satker_code', 'BBLSDM.73');
         AppSetting::set('satker_name', 'Balai Besar Pelatihan Sumber Daya Manusia Komunikasi dan Digital Makassar');
         AppSetting::set('satker_address', 'Jl. Prof. Abdurrahman Basalamah II No 25 Makassar 90231');
         AppSetting::set('sla_minutes', [
@@ -126,7 +126,7 @@ class DatabaseSeeder extends Seeder
         Signatory::create([
             'role' => 'KETUA_TIM_KEUANGAN_ASET',
             'employee_id' => $empKetua->id,
-            'title_line' => 'Ketua Tim Keuangan dan Aset BBPSDMP Makassar,',
+            'title_line' => 'Ketua Tim Keuangan dan Aset BBLSDM Makassar,',
             'valid_from' => '2025-01-01',
             'valid_to' => null,
         ]);
@@ -134,7 +134,7 @@ class DatabaseSeeder extends Seeder
         Signatory::create([
             'role' => 'PENGELOLA_ASET',
             'employee_id' => $empPengelola->id,
-            'title_line' => 'Pengelola Aset / Pihak Pertama BBPSDMP Makassar,',
+            'title_line' => 'Pengelola Aset / Pihak Pertama BBLSDM Makassar,',
             'valid_from' => '2025-01-01',
             'valid_to' => null,
         ]);

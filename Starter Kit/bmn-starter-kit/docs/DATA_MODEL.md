@@ -75,7 +75,7 @@ CREATE TABLE signatories (               -- penandatangan bisa berganti tanpa ub
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   role text NOT NULL,                     -- KETUA_TIM_KEUANGAN_ASET | PENGELOLA_ASET
   employee_id uuid NOT NULL REFERENCES employees(id),
-  title_line text,                        -- "Ketua Tim Keuangan dan Aset BBPSDMP Makassar,"
+  title_line text,                        -- "Ketua Tim Keuangan dan Aset BBLSDM Makassar,"
   valid_from date NOT NULL, valid_to date
 );
 

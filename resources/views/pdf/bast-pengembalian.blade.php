@@ -5,7 +5,7 @@
 @section('content')
     <div class="doc-title">
         BERITA ACARA SERAH TERIMA PENGEMBALIAN<br>
-        BARANG INVENTARIS BBPSDMP-MAKASSAR
+        BARANG INVENTARIS BBLSDM-MAKASSAR
     </div>
     <div class="doc-number">
         Nomor : {{ $document->doc_number ?? 'DRAF' }}
@@ -123,14 +123,22 @@
             <td>
                 <br>
                 <strong>Pihak Pertama,</strong><br>
-                <div class="signature-space"></div>
+                <div class="signature-space">
+                    @if(!empty($officerSignatureBase64))
+                        <img src="{{ $officerSignatureBase64 }}" style="max-height: 65px; max-width: 150px; display: block;">
+                    @endif
+                </div>
                 <strong><u>{{ $signatoryPengelola->employee->full_name ?? 'Muhammad Agung, S.Ds.' }}</u></strong><br>
                 NIP. {{ \App\Helpers\FormatHelper::formatNip($signatoryPengelola->employee->nip ?? '199803112025041003') }}
             </td>
             <td>
                 Makassar, {{ \App\Helpers\FormatHelper::formatDateIndo($document->doc_date ?? now()) }}<br>
                 <strong>Pihak Kedua,</strong><br>
-                <div class="signature-space"></div>
+                <div class="signature-space">
+                    @if(!empty($borrowerSignatureBase64))
+                        <img src="{{ $borrowerSignatureBase64 }}" style="max-height: 65px; max-width: 150px; display: block;">
+                    @endif
+                </div>
                 <strong><u>{{ $loan->snap_full_name }}</u></strong><br>
                 NIP. {{ \App\Helpers\FormatHelper::formatNip($loan->snap_nip) }}
             </td>

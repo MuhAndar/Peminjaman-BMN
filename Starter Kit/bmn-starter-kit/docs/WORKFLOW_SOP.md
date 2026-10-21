@@ -1,6 +1,6 @@
 # Alur SOP → State Machine
 
-Sumber: `Draft_WF_SOP_Peminjaman_dan_Pengembalian_BMN.docx` (gambar flowchart ada di `docs/reference/sop-peminjaman-flowchart.png` dan `sop-pengembalian-flowchart.png`). Nomor SOP: B-489/BBPSDMP.73/OT.02.02/09/2025, tanggal 08/09/2025, versi 1.0, disahkan Kepala BBPSDMP.
+Sumber: `Draft_WF_SOP_Peminjaman_dan_Pengembalian_BMN.docx` (gambar flowchart ada di `docs/reference/sop-peminjaman-flowchart.png` dan `sop-pengembalian-flowchart.png`). Nomor SOP: B-489/BBLSDM.73/OT.02.02/09/2025, tanggal 08/09/2025, versi 1.0, disahkan Kepala BBLSDM.
 
 ## 1. SOP Peminjaman BMN (aktor: Peminjam · Pengelola BMN · Ketua Tim Keuangan dan Aset)
 

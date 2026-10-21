@@ -45,8 +45,8 @@ class LoanWorkflowTest extends TestCase
         $num1 = DocumentNumberService::generateNextNumber('SURAT_PEMINJAMAN');
         $num2 = DocumentNumberService::generateNextNumber('SURAT_PEMINJAMAN');
 
-        $this->assertStringContainsString('001/BMN-PJM/BBPSDMP.73/', $num1);
-        $this->assertStringContainsString('002/BMN-PJM/BBPSDMP.73/', $num2);
+        $this->assertStringContainsString('001/BMN-PJM/BBLSDM.73/', $num1);
+        $this->assertStringContainsString('002/BMN-PJM/BBLSDM.73/', $num2);
     }
 
     public function test_complete_sop_workflow_transitions()

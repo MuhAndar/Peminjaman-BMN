@@ -4,11 +4,30 @@
 
 @section('content')
 <div class="space-y-6">
-    <div>
-        <h1 class="text-2xl font-black text-slate-900 tracking-tight">Panel Administrasi Sistem BMN</h1>
-        <p class="text-xs sm:text-sm text-slate-500 mt-1">
-            Pengaturan master data, akun pengguna, format penomoran dokumen, dan log audit sistem.
-        </p>
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-black text-slate-900 tracking-tight">Panel Administrasi Sistem BMN</h1>
+            <p class="text-xs sm:text-sm text-slate-500 mt-1">
+                Pengaturan master data, akun pengguna, format penomoran dokumen, dan log audit sistem.
+            </p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2.5 shrink-0">
+            <a href="{{ route('audit.loans') }}"
+               class="px-4 py-2.5 rounded-xl bg-blue-50/80 hover:bg-[#0B63B5] text-[#0B63B5] hover:text-white border border-blue-200/80 hover:border-[#0B63B5] text-xs font-extrabold flex items-center gap-2 shadow-2xs hover:shadow-xs transition-all duration-150 active:scale-95 group">
+                <i data-lucide="clipboard-check" class="w-4 h-4 text-[#0B63B5] group-hover:text-white transition-colors"></i>
+                <span>Audit Peminjaman</span>
+            </a>
+            <a href="{{ route('admin.activity-logs') }}"
+               class="px-4 py-2.5 rounded-xl border border-slate-200/80 bg-white hover:bg-slate-50 text-slate-700 text-xs font-extrabold flex items-center gap-2 shadow-2xs hover:shadow-xs transition-all duration-150 active:scale-95">
+                <i data-lucide="activity" class="w-4 h-4 text-slate-500"></i>
+                <span>Log Sistem</span>
+            </a>
+            <a href="{{ route('admin.users') }}"
+               class="px-4 py-2.5 rounded-xl bg-[#0B63B5] hover:bg-[#0B4F8A] text-white text-xs font-extrabold flex items-center gap-2 shadow-sm hover:shadow-md transition-all duration-150 active:scale-95">
+                <i data-lucide="users" class="w-4 h-4"></i>
+                <span>Kelola Pengguna</span>
+            </a>
+        </div>
     </div>
 
     <!-- Quick Stats -->

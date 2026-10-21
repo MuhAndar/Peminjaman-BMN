@@ -1,5 +1,5 @@
 # 🏛️ Sistem Layanan Peminjaman & Pengembalian BMN
-### Balai Besar Pelatihan Sumber Daya Manusia Komunikasi dan Digital (BBPSDMP Komdigi) Makassar
+### Balai Besar Pelatihan Sumber Daya Manusia Komunikasi dan Digital (BBLSDM Komdigi) Makassar
 
 [![Laravel 11](https://img.shields.io/badge/Laravel-11.x-FF2D20?style=for-the-badge&logo=laravel&logoColor=white)](https://laravel.com)
 [![PHP 8.2+](https://img.shields.io/badge/PHP-8.2+-777BB4?style=for-the-badge&logo=php&logoColor=white)](https://php.net)
@@ -8,7 +8,7 @@
 [![DomPDF](https://img.shields.io/badge/DomPDF-Official_Templates-0B63B5?style=for-the-badge)](https://github.com/barryvdh/laravel-dompdf)
 [![License MIT](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
 
-Aplikasi web terpadu untuk digitalisasi tata kelola, peminjaman, pemantauan, dan pengembalian aset **Barang Milik Negara (BMN)** di lingkungan **BBPSDMP Komdigi Makassar**. Sistem ini dirancang secara ketat mengikuti **Standar Operasional Prosedur (SOP)** resmi instansi dengan penomoran dokumen otomatis terpadu, pencetakan berkas hukum (PDF), pencegahan bentrok jadwal peminjaman, serta *audit trail* forensik.
+Aplikasi web terpadu untuk digitalisasi tata kelola, peminjaman, pemantauan, dan pengembalian aset **Barang Milik Negara (BMN)** di lingkungan **BBLSDM Komdigi Makassar**. Sistem ini dirancang secara ketat mengikuti **Standar Operasional Prosedur (SOP)** resmi instansi dengan penomoran dokumen otomatis terpadu, pencetakan berkas hukum (PDF), pencegahan bentrok jadwal peminjaman, serta *audit trail* forensik.
 
 ---
 
@@ -112,7 +112,7 @@ Aplikasi web terpadu untuk digitalisasi tata kelola, peminjaman, pemantauan, dan
 - **Pencegahan Konflik Kepentingan (`BR-08`)**:
   Sistem melarang pemohon menelaah atau menyetujui pengajuannya sendiri.
 - **Penerbitan Dokumen PDF Baku (DomPDF)**:
-  Template cetak 100% presisi mengikuti format resmi BBPSDMP Komdigi Makassar:
+  Template cetak 100% presisi mengikuti format resmi BBLSDM Komdigi Makassar:
   1. *Surat Permohonan Peminjaman BMN*
   2. *Berita Acara Serah Terima (BAST) Peminjaman BMN*
   3. *Berita Acara Serah Terima (BAST) Pengembalian BMN*
@@ -276,4 +276,4 @@ Hasil pengujian:
 ---
 
 ## 📄 Lisensi
-Didistribusikan di bawah Lisensi [MIT](LICENSE). Hak Cipta © 2026 BBPSDMP Komunikasi dan Digital Makassar.
+Didistribusikan di bawah Lisensi [MIT](LICENSE). Hak Cipta © 2026 BBLSDM Komunikasi dan Digital Makassar.

@@ -11,7 +11,108 @@
     $isOwner = ($user->employee_id === $loan->borrower_id);
 @endphp
 
-<div class="space-y-6">
+<div class="space-y-6" x-data="{
+    sigModalOpen: false,
+    sigAs: '{{ $isOwner ? "borrower" : "officer" }}',
+    sigTab: '{{ auth()->user()->signature_path ? "profile" : "pad" }}',
+    photoModalOpen: false,
+    photoStage: 'BAST_PEMINJAMAN',
+    lightboxOpen: false,
+    activePhotoUrl: '',
+    activePhotoTitle: '',
+    activePhotoMeta: '',
+    // Canvas Pad State
+    canvas: null,
+    ctx: null,
+    isDrawing: false,
+    hasDrawn: false,
+    initCanvas() {
+        this.$nextTick(() => {
+            this.canvas = document.getElementById('loan-sig-pad');
+            if (!this.canvas) return;
+            this.ctx = this.canvas.getContext('2d');
+            const rect = this.canvas.getBoundingClientRect();
+            this.canvas.width = rect.width * 2;
+            this.canvas.height = rect.height * 2;
+            this.ctx.scale(2, 2);
+            this.ctx.strokeStyle = '#0F172A';
+            this.ctx.lineWidth = 2.5;
+            this.ctx.lineCap = 'round';
+            this.ctx.lineJoin = 'round';
+        });
+    },
+    getPos(e) {
+        const rect = this.canvas.getBoundingClientRect();
+        if (e.touches && e.touches.length > 0) {
+            return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
+        }
+        return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    },
+    startDraw(e) {
+        e.preventDefault();
+        this.isDrawing = true;
+        const pos = this.getPos(e);
+        this.ctx.beginPath();
+        this.ctx.moveTo(pos.x, pos.y);
+    },
+    draw(e) {
+        if (!this.isDrawing) return;
+        e.preventDefault();
+        const pos = this.getPos(e);
+        this.ctx.lineTo(pos.x, pos.y);
+        this.ctx.stroke();
+        this.hasDrawn = true;
+    },
+    endDraw(e) {
+        if (!this.isDrawing) return;
+        this.isDrawing = false;
+    },
+    clearCanvas() {
+        if (!this.ctx || !this.canvas) return;
+        const rect = this.canvas.getBoundingClientRect();
+        this.ctx.clearRect(0, 0, rect.width, rect.height);
+        this.hasDrawn = false;
+    },
+    openSigModal(asRole) {
+        this.sigAs = asRole;
+        this.sigModalOpen = true;
+        this.$nextTick(() => {
+            this.initCanvas();
+            if (window.lucide) lucide.createIcons();
+        });
+    },
+    submitSig() {
+        if (this.sigTab === 'pad') {
+            if (!this.hasDrawn) {
+                alert('Silakan goreskan tanda tangan pada papan gambar kanvas terlebih dahulu.');
+                return;
+            }
+            document.getElementById('loan_sig_data_input').value = this.canvas.toDataURL('image/png');
+        }
+        document.getElementById('loan-sig-form').submit();
+    },
+    openPhotoModal(stage) {
+        this.photoStage = stage;
+        this.photoModalOpen = true;
+        this.previewPhotos = [];
+        this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
+    },
+    openLightbox(url, title, meta) {
+        this.activePhotoUrl = url;
+        this.activePhotoTitle = title;
+        this.activePhotoMeta = meta;
+        this.lightboxOpen = true;
+    },
+    previewPhotos: [],
+    handlePhotoSelect(e) {
+        const files = Array.from(e.target.files);
+        this.previewPhotos = [];
+        files.forEach(f => {
+            const url = URL.createObjectURL(f);
+            this.previewPhotos.push({ name: f.name, size: (f.size / 1024).toFixed(0) + ' KB', url: url });
+        });
+    }
+}">
     <!-- Breadcrumb & Top Bar -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div class="flex items-center gap-2 text-xs text-slate-500 font-semibold">
@@ -225,9 +326,172 @@
                 </div>
             </div>
 
+            <!-- 2. STATUS & BUBURKAN TANDA TANGAN DIGITAL DOKUMEN BAST -->
+            <div class="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-sm space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-8 h-8 rounded-xl bg-blue-50 text-[#0B63B5] flex items-center justify-center shrink-0">
+                            <i data-lucide="signature" class="w-4 h-4"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-extrabold text-sm text-slate-900">Spesimen Tanda Tangan Digital BAST</h3>
+                            <p class="text-[11px] text-slate-500">Tanda tangan digital yang dibubuhkan otomatis dicetak pada lembar PDF resmi.</p>
+                        </div>
+                    </div>
+
+                    <!-- Tombol Aksi Tanda Tangan -->
+                    <div class="flex items-center gap-2">
+                        @if($isOwner)
+                            <button type="button" @click="openSigModal('borrower')"
+                                    class="px-4 py-2 bg-[#0B63B5] hover:bg-[#0B4F8A] text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+                                <i data-lucide="pen-tool" class="w-3.5 h-3.5"></i>
+                                <span>{{ $loan->borrower_signature ? 'Perbarui Tanda Tangan Peminjam' : 'Tanda Tangani (Pihak Kedua)' }}</span>
+                            </button>
+                        @endif
+
+                        @if($isPengelola)
+                            <button type="button" @click="openSigModal('officer')"
+                                    class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+                                <i data-lucide="pen-tool" class="w-3.5 h-3.5"></i>
+                                <span>{{ $loan->officer_signature ? 'Perbarui Tanda Tangan Petugas' : 'Tanda Tangani (Pihak Pertama)' }}</span>
+                            </button>
+                        @endif
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <!-- Status Pihak Pertama (Pengelola BMN) -->
+                    <div class="p-4 rounded-2xl border {{ $loan->officer_signature ? 'border-emerald-200 bg-emerald-50/30' : 'border-slate-200 bg-slate-50/50' }} flex flex-col justify-between space-y-3">
+                        <div>
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Pihak Pertama (Pengelola Aset)</span>
+                            <span class="font-bold text-xs text-slate-800 block">Petugas Pengelola BMN</span>
+                        </div>
+                        <div class="p-3 bg-white rounded-xl border border-slate-200 flex items-center justify-center min-h-[75px]">
+                            @if($loan->officer_signature)
+                                <img src="{{ asset('storage/' . $loan->officer_signature) }}" class="max-h-14 max-w-full object-contain" alt="TTD Pengelola">
+                            @else
+                                <span class="text-xs text-slate-400 italic">Belum Ditandatangani Digital</span>
+                            @endif
+                        </div>
+                        <div class="flex items-center justify-between text-[11px]">
+                            <span class="font-bold {{ $loan->officer_signature ? 'text-emerald-700' : 'text-slate-400' }}">
+                                {{ $loan->officer_signature ? '✓ Ditandatangani Digital' : 'Tanda Tangan Manual Basah' }}
+                            </span>
+                            @if($isPengelola)
+                                <button type="button" @click="openSigModal('officer')" class="text-[#0B63B5] font-bold hover:underline">
+                                    {{ $loan->officer_signature ? 'Ubah' : 'Tanda Tangani' }}
+                                </button>
+                            @endif
+                        </div>
+                    </div>
+
+                    <!-- Status Pihak Kedua (Peminjam) -->
+                    <div class="p-4 rounded-2xl border {{ $loan->borrower_signature ? 'border-emerald-200 bg-emerald-50/30' : 'border-slate-200 bg-slate-50/50' }} flex flex-col justify-between space-y-3">
+                        <div>
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Pihak Kedua (Peminjam BMN)</span>
+                            <span class="font-bold text-xs text-slate-800 block">{{ $loan->snap_full_name }}</span>
+                        </div>
+                        <div class="p-3 bg-white rounded-xl border border-slate-200 flex items-center justify-center min-h-[75px]">
+                            @if($loan->borrower_signature)
+                                <img src="{{ asset('storage/' . $loan->borrower_signature) }}" class="max-h-14 max-w-full object-contain" alt="TTD Peminjam">
+                            @else
+                                <span class="text-xs text-slate-400 italic">Belum Ditandatangani Digital</span>
+                            @endif
+                        </div>
+                        <div class="flex items-center justify-between text-[11px]">
+                            <span class="font-bold {{ $loan->borrower_signature ? 'text-emerald-700' : 'text-slate-400' }}">
+                                {{ $loan->borrower_signature ? '✓ Ditandatangani Digital' : 'Tanda Tangan Manual Basah' }}
+                            </span>
+                            @if($isOwner)
+                                <button type="button" @click="openSigModal('borrower')" class="text-[#0B63B5] font-bold hover:underline">
+                                    {{ $loan->borrower_signature ? 'Ubah' : 'Tanda Tangani' }}
+                                </button>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. DOKUMENTASI FOTO BAST (SERAH TERIMA & PENGEMBALIAN) -->
+            <div class="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-sm space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-8 h-8 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center shrink-0">
+                            <i data-lucide="camera" class="w-4 h-4"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-extrabold text-sm text-slate-900">Dokumentasi Foto Fisik BAST</h3>
+                            <p class="text-[11px] text-slate-500">Foto bukti serah terima peminjaman & inspeksi fisik pengembalian barang BMN.</p>
+                        </div>
+                    </div>
+
+                    <!-- Tombol Unggah Foto Baru -->
+                    @if($isOwner || $isPengelola)
+                        <div class="flex items-center gap-2">
+                            <button type="button" @click="openPhotoModal('BAST_PEMINJAMAN')"
+                                    class="px-3.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-[#0B63B5] border border-blue-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs">
+                                <i data-lucide="camera" class="w-3.5 h-3.5"></i>
+                                <span>+ Foto BAST Peminjaman</span>
+                            </button>
+                            <button type="button" @click="openPhotoModal('BAST_PENGEMBALIAN')"
+                                    class="px-3.5 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs">
+                                <i data-lucide="camera" class="w-3.5 h-3.5"></i>
+                                <span>+ Foto BAST Pengembalian</span>
+                            </button>
+                        </div>
+                    @endif
+                </div>
+
+                @if($loan->photos->isNotEmpty())
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                        @foreach($loan->photos as $photo)
+                            <div class="group relative rounded-2xl border border-slate-200 overflow-hidden bg-slate-50 hover:shadow-md transition">
+                                <div class="aspect-4/3 w-full overflow-hidden bg-slate-100 cursor-pointer"
+                                     @click="openLightbox('{{ asset('storage/' . $photo->file_path) }}', '{{ addslashes($photo->caption ?: $photo->original_name) }}', 'Tahap: {{ str_replace('_', ' ', $photo->stage) }} • {{ $photo->created_at->format('d/m/Y H:i') }}')">
+                                    <img src="{{ asset('storage/' . $photo->file_path) }}" alt="{{ $photo->caption }}"
+                                         class="w-full h-full object-cover group-hover:scale-105 transition duration-200">
+                                </div>
+                                <div class="p-2.5 space-y-1">
+                                    <div class="flex items-center justify-between">
+                                        <span class="px-2 py-0.5 rounded-md text-[9px] font-extrabold uppercase {{ $photo->stage === 'BAST_PEMINJAMAN' ? 'bg-cyan-100 text-cyan-800' : ($photo->stage === 'BAST_PENGEMBALIAN' ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-700') }}">
+                                            {{ str_replace('BAST_', '', $photo->stage) }}
+                                        </span>
+                                        @if($photo->uploaded_by === auth()->id() || $isPengelola)
+                                            <form method="POST" action="{{ route('loans.photos.delete', $photo->id) }}" onsubmit="return confirm('Hapus foto dokumentasi ini?')">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="text-slate-400 hover:text-red-600 transition" title="Hapus Foto">
+                                                    <i data-lucide="trash-2" class="w-3 h-3"></i>
+                                                </button>
+                                            </form>
+                                        @endif
+                                    </div>
+                                    <p class="text-[11px] font-semibold text-slate-800 line-clamp-1" title="{{ $photo->caption }}">
+                                        {{ $photo->caption ?: $photo->original_name }}
+                                    </p>
+                                    <span class="text-[9px] text-slate-400 block tabular-nums">
+                                        {{ $photo->created_at->format('d/m/Y H:i') }} &bull; {{ $photo->uploader->name ?? 'User' }}
+                                    </span>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                @else
+                    <div class="p-6 rounded-2xl bg-slate-50 border border-slate-200 text-center space-y-2">
+                        <div class="w-10 h-10 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
+                            <i data-lucide="images" class="w-5 h-5"></i>
+                        </div>
+                        <h4 class="text-xs font-bold text-slate-700">Belum Ada Foto Dokumentasi BAST</h4>
+                        <p class="text-[11px] text-slate-500">
+                            Silakan unggah foto serah terima barang atau foto pemeriksaan fisik saat pengembalian (dapat dijepret langsung atau dipilih dari galeri ponsel).
+                        </p>
+                    </div>
+                @endif
+            </div>
+
             <!-- ROLE-BASED ACTION PANELS -->
-            <!-- 1. Action Peminjam: Kembalikan BMN -->
-            @if($loan->status === 'ACTIVE' && ($isOwner || $isPengelola))
+            <!-- 1. Action Peminjam: Kembalikan BMN (Khusus Role Peminjam Pemilik) -->
+            @if($loan->status === 'ACTIVE' && $isOwner && (auth()->user()->isPeminjam() || auth()->user()->isAdmin()))
                 <div class="bg-amber-50 rounded-3xl border border-amber-200 p-6 shadow-sm">
                     <h3 class="text-base font-bold text-amber-900">Pengembalian BMN (SOP Pengembalian Langkah 1)</h3>
                     <p class="text-xs text-amber-800 mt-1">
@@ -321,8 +585,26 @@
                     <p class="text-xs text-slate-600">
                         Cetak draf BAST di atas, mintakan tanda tangan basah Peminjam, serahkan fisik BMN, lalu konfirmasi pengaktifan.
                     </p>
-                    <form method="POST" action="{{ route('kelola.confirm-active', $loan->id) }}">
+                    <form method="POST" action="{{ route('kelola.confirm-active', $loan->id) }}" enctype="multipart/form-data" class="space-y-4">
                         @csrf
+                        <div class="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200 space-y-2">
+                            <label class="block text-xs font-bold text-emerald-950">Foto Dokumentasi Serah Terima BAST (Opsional):</label>
+                            <p class="text-[11px] text-emerald-800">Lampirkan foto penyerahan fisik barang atau bukti BAST yang telah ditandatangani.</p>
+                            <div class="flex flex-wrap items-center gap-2 pt-1">
+                                <label class="cursor-pointer px-3.5 py-1.5 bg-white border border-emerald-300 hover:bg-emerald-50 text-emerald-800 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs">
+                                    <i data-lucide="camera" class="w-3.5 h-3.5 text-emerald-600"></i>
+                                    <span>Jepret Kamera</span>
+                                    <input type="file" name="photos[]" accept="image/*" capture="environment" class="hidden" onchange="updateFileCount(this, 'active_photo_count')">
+                                </label>
+                                <label class="cursor-pointer px-3.5 py-1.5 bg-white border border-emerald-300 hover:bg-emerald-50 text-emerald-800 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs">
+                                    <i data-lucide="images" class="w-3.5 h-3.5 text-emerald-600"></i>
+                                    <span>Pilih dari Galeri</span>
+                                    <input type="file" name="photos[]" accept="image/*" multiple class="hidden" onchange="updateFileCount(this, 'active_photo_count')">
+                                </label>
+                                <span id="active_photo_count" class="text-xs text-slate-500 italic">Belum ada foto dipilih</span>
+                            </div>
+                        </div>
+
                         <button type="submit"
                                 data-confirm="Pastikan fisik BMN telah diserahkan dan dokumen BAST fisik telah ditandatangani peminjam. Aktifkan peminjaman sekarang?"
                                 data-confirm-title="Konfirmasi Serah Terima BMN"
@@ -344,7 +626,7 @@
                         Lakukan pengecekan kesesuaian jumlah, jenis, dan kondisi fisik BMN yang dikembalikan di kantor (Target SLA: 5 Menit).
                     </p>
 
-                    <form method="POST" action="{{ route('kelola.process-return-check', $loan->id) }}" class="space-y-4">
+                    <form method="POST" action="{{ route('kelola.process-return-check', $loan->id) }}" enctype="multipart/form-data" class="space-y-4">
                         @csrf
                         @foreach($loan->items as $item)
                             <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
@@ -366,6 +648,24 @@
                                 </div>
                             </div>
                         @endforeach
+
+                        <div class="p-4 rounded-2xl bg-amber-50/70 border border-amber-200 space-y-2">
+                            <label class="block text-xs font-bold text-amber-950">Foto Dokumentasi Kondisi Fisik Pengembalian (Opsional):</label>
+                            <p class="text-[11px] text-amber-800">Lampirkan foto fisik barang saat dikembalikan (sangat dianjurkan terutama bila terdapat lecet/rusak).</p>
+                            <div class="flex flex-wrap items-center gap-2 pt-1">
+                                <label class="cursor-pointer px-3.5 py-1.5 bg-white border border-amber-300 hover:bg-amber-50 text-amber-800 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs">
+                                    <i data-lucide="camera" class="w-3.5 h-3.5 text-amber-600"></i>
+                                    <span>Jepret Kamera</span>
+                                    <input type="file" name="photos[]" accept="image/*" capture="environment" class="hidden" onchange="updateFileCount(this, 'return_photo_count')">
+                                </label>
+                                <label class="cursor-pointer px-3.5 py-1.5 bg-white border border-amber-300 hover:bg-amber-50 text-amber-800 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs">
+                                    <i data-lucide="images" class="w-3.5 h-3.5 text-amber-600"></i>
+                                    <span>Pilih dari Galeri</span>
+                                    <input type="file" name="photos[]" accept="image/*" multiple class="hidden" onchange="updateFileCount(this, 'return_photo_count')">
+                                </label>
+                                <span id="return_photo_count" class="text-xs text-slate-500 italic">Belum ada foto dipilih</span>
+                            </div>
+                        </div>
 
                         <button type="submit"
                                 data-confirm="Simpan hasil inspeksi fisik dan terbitkan dokumen BAST Pengembalian bernomor resmi?"
@@ -410,7 +710,7 @@
                     <i data-lucide="git-commit" class="w-5 h-5 text-[#0B63B5]"></i>
                     <div>
                         <h3 class="font-black text-sm text-slate-900">Alur SOP Peminjaman BMN</h3>
-                        <span class="text-[10px] text-slate-400 font-semibold">SK SOP B-489 BBPSDMP</span>
+                        <span class="text-[10px] text-slate-400 font-semibold">SK SOP B-489 BBLSDM</span>
                     </div>
                 </div>
 
@@ -479,5 +779,289 @@
             </div>
         </div>
     </div>
+
+    <!-- 1. MODAL TANDA TANGAN DIGITAL DOKUMEN BAST -->
+    <div x-show="sigModalOpen" x-cloak
+         class="fixed inset-0 z-50 overflow-y-auto"
+         @keydown.escape.window="sigModalOpen = false">
+        <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity" @click="sigModalOpen = false"></div>
+
+        <div class="min-h-full flex items-center justify-center p-4">
+            <div class="relative bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl border border-slate-100 space-y-5"
+                 @click.stop>
+                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-9 h-9 rounded-xl bg-blue-50 text-[#0B63B5] flex items-center justify-center">
+                            <i data-lucide="signature" class="w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-base font-extrabold text-slate-900">Bubuhkan Tanda Tangan Digital</h3>
+                            <p class="text-xs text-slate-500">
+                                Menandatangani sebagai: <strong class="text-[#0B63B5]" x-text="sigAs === 'borrower' ? 'Pihak Kedua (Peminjam)' : 'Pihak Pertama (Pengelola BMN)'"></strong>
+                            </p>
+                        </div>
+                    </div>
+                    <button type="button" @click="sigModalOpen = false" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+
+                <!-- Tabs -->
+                <div class="grid grid-cols-3 gap-1 p-1 bg-slate-100 rounded-2xl text-xs font-bold text-center">
+                    <button type="button" @click="sigTab = 'profile'"
+                            :class="sigTab === 'profile' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-700'"
+                            class="py-2 rounded-xl transition">
+                        Dari Profil
+                    </button>
+                    <button type="button" @click="sigTab = 'pad'; initCanvas()"
+                            :class="sigTab === 'pad' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-700'"
+                            class="py-2 rounded-xl transition">
+                        Papan Gambar
+                    </button>
+                    <button type="button" @click="sigTab = 'file'"
+                            :class="sigTab === 'file' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-700'"
+                            class="py-2 rounded-xl transition">
+                        Unggah Berkas
+                    </button>
+                </div>
+
+                <!-- Form -->
+                <form id="loan-sig-form" method="POST" action="{{ route('loans.sign', $loan->id) }}" enctype="multipart/form-data" class="space-y-4">
+                    @csrf
+                    <input type="hidden" name="sign_as" :value="sigAs">
+                    <input type="hidden" name="source" :value="sigTab">
+                    <input type="hidden" name="signature_data" id="loan_sig_data_input">
+
+                    <!-- Tab 1: Dari Profil -->
+                    <div x-show="sigTab === 'profile'" class="space-y-3">
+                        @if(auth()->user()->signature_path)
+                            <div class="p-4 rounded-2xl border-2 border-dashed border-emerald-200 bg-emerald-50/30 text-center space-y-2">
+                                <span class="text-xs font-bold text-emerald-800 block">Tanda tangan yang tersimpan di profil Anda:</span>
+                                <div class="p-2 bg-white rounded-xl border border-slate-200 inline-block shadow-2xs">
+                                    <img src="{{ asset('storage/' . auth()->user()->signature_path) }}" alt="TTD Profil" class="max-h-24 max-w-full object-contain mx-auto">
+                                </div>
+                                <p class="text-[11px] text-slate-500">Tanda tangan ini akan otomatis dicetak pada lembar PDF BAST.</p>
+                            </div>
+                        @else
+                            <div class="p-5 rounded-2xl bg-amber-50 border border-amber-200 text-center space-y-2">
+                                <i data-lucide="alert-circle" class="w-7 h-7 text-amber-600 mx-auto"></i>
+                                <h4 class="text-xs font-bold text-amber-900">Belum Ada Tanda Tangan di Profil</h4>
+                                <p class="text-[11px] text-amber-700">
+                                    Anda belum mengatur tanda tangan di profil. Silakan pilih tab <strong>"Papan Gambar"</strong> untuk menggambar langsung, atau <strong>"Unggah Berkas"</strong>.
+                                </p>
+                            </div>
+                        @endif
+                    </div>
+
+                    <!-- Tab 2: Papan Gambar Kanvas -->
+                    <div x-show="sigTab === 'pad'" class="space-y-3">
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="font-bold text-slate-700">Goreskan Tanda Tangan di Kanvas:</span>
+                            <button type="button" @click="clearCanvas()" class="text-red-600 hover:text-red-700 font-bold flex items-center gap-1 text-[11px]">
+                                <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                                <span>Bersihkan</span>
+                            </button>
+                        </div>
+
+                        <div class="relative rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 overflow-hidden">
+                            <canvas id="loan-sig-pad"
+                                    class="w-full h-44 cursor-crosshair touch-none block"
+                                    @mousedown="startDraw($event)"
+                                    @mousemove="draw($event)"
+                                    @mouseup="endDraw($event)"
+                                    @mouseleave="endDraw($event)"
+                                    @touchstart="startDraw($event)"
+                                    @touchmove="draw($event)"
+                                    @touchend="endDraw($event)">
+                            </canvas>
+                            <div x-show="!hasDrawn" class="pointer-events-none absolute inset-0 flex items-center justify-center text-slate-400 text-xs font-medium">
+                                Sentuh layar atau klik & seret mouse di sini
+                            </div>
+                        </div>
+
+                        <label class="flex items-center gap-2 cursor-pointer pt-1">
+                            <input type="checkbox" name="save_to_profile" value="1" class="rounded border-slate-300 text-[#0B63B5] focus:ring-[#0B63B5]">
+                            <span class="text-xs text-slate-600">Simpan juga tanda tangan ini ke profil saya untuk peminjaman berikutnya</span>
+                        </label>
+                    </div>
+
+                    <!-- Tab 3: Unggah Berkas -->
+                    <div x-show="sigTab === 'file'" class="space-y-3">
+                        <label class="block text-xs font-bold text-slate-700">Pilih Berkas Gambar Tanda Tangan (PNG / JPG transparan disarankan):</label>
+                        <input type="file" name="signature_file" accept="image/png,image/jpeg,image/jpg"
+                               class="w-full p-2.5 rounded-xl border border-slate-300 text-xs bg-slate-50 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-[#0B63B5] file:text-white hover:file:bg-[#0B4F8A]">
+
+                        <label class="flex items-center gap-2 cursor-pointer pt-1">
+                            <input type="checkbox" name="save_to_profile" value="1" class="rounded border-slate-300 text-[#0B63B5] focus:ring-[#0B63B5]">
+                            <span class="text-xs text-slate-600">Simpan juga berkas ini ke profil saya</span>
+                        </label>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+                        <button type="button" @click="sigModalOpen = false"
+                                class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 text-xs font-bold transition">
+                            Batal
+                        </button>
+                        <button type="button" @click="submitSig()"
+                                class="px-5 py-2.5 bg-[#0B63B5] hover:bg-[#0B4F8A] text-white rounded-xl text-xs font-bold shadow-md transition flex items-center gap-1.5">
+                            <i data-lucide="check" class="w-4 h-4"></i>
+                            <span>Bubuhkan ke Dokumen</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. MODAL UNGGAH FOTO DOKUMENTASI BAST -->
+    <div x-show="photoModalOpen" x-cloak
+         class="fixed inset-0 z-50 overflow-y-auto"
+         @keydown.escape.window="photoModalOpen = false">
+        <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity" @click="photoModalOpen = false"></div>
+
+        <div class="min-h-full flex items-center justify-center p-4">
+            <div class="relative bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl border border-slate-100 space-y-5"
+                 @click.stop>
+                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-9 h-9 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center">
+                            <i data-lucide="camera" class="w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-base font-extrabold text-slate-900">Unggah Foto Dokumentasi BAST</h3>
+                            <p class="text-xs text-slate-500">Ambil jepretan kamera langsung atau pilih 1 atau lebih foto dari galeri</p>
+                        </div>
+                    </div>
+                    <button type="button" @click="photoModalOpen = false" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+
+                <form method="POST" action="{{ route('loans.photos.upload', $loan->id) }}" enctype="multipart/form-data" class="space-y-4">
+                    @csrf
+                    <!-- Stage Selector -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1.5">Tahap Dokumentasi BAST:</label>
+                        <div class="grid grid-cols-2 gap-2 text-xs">
+                            <label class="flex items-center gap-2 p-2.5 rounded-xl border cursor-pointer transition"
+                                   :class="photoStage === 'BAST_PEMINJAMAN' ? 'border-cyan-500 bg-cyan-50/50 text-cyan-900 font-bold' : 'border-slate-200 text-slate-600'">
+                                <input type="radio" name="stage" value="BAST_PEMINJAMAN" x-model="photoStage" class="hidden">
+                                <i data-lucide="package-check" class="w-4 h-4 text-cyan-600"></i>
+                                <span>BAST Peminjaman</span>
+                            </label>
+                            <label class="flex items-center gap-2 p-2.5 rounded-xl border cursor-pointer transition"
+                                   :class="photoStage === 'BAST_PENGEMBALIAN' ? 'border-purple-500 bg-purple-50/50 text-purple-900 font-bold' : 'border-slate-200 text-slate-600'">
+                                <input type="radio" name="stage" value="BAST_PENGEMBALIAN" x-model="photoStage" class="hidden">
+                                <i data-lucide="rotate-ccw" class="w-4 h-4 text-purple-600"></i>
+                                <span>BAST Pengembalian</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Action: Camera or Gallery Picker -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-2">Pilih Sumber Foto (Boleh 1 atau lebih foto):</label>
+                        <div class="grid grid-cols-2 gap-2.5">
+                            <!-- Button 1: Kamera HP / Webcam -->
+                            <label class="flex flex-col items-center justify-center p-4 rounded-2xl border-2 border-dashed border-[#0B63B5]/40 bg-blue-50/30 hover:bg-blue-50 cursor-pointer transition text-center group">
+                                <div class="w-10 h-10 rounded-full bg-blue-100 text-[#0B63B5] flex items-center justify-center mb-2 group-hover:scale-110 transition">
+                                    <i data-lucide="camera" class="w-5 h-5"></i>
+                                </div>
+                                <span class="text-xs font-bold text-slate-800">Jepret Kamera</span>
+                                <span class="text-[10px] text-slate-500 mt-0.5">Buka kamera ponsel/laptop</span>
+                                <input type="file" name="photos[]" accept="image/*" capture="environment" class="hidden" @change="handlePhotoSelect($event)">
+                            </label>
+
+                            <!-- Button 2: Galeri / File (Bisa Multiple) -->
+                            <label class="flex flex-col items-center justify-center p-4 rounded-2xl border-2 border-dashed border-purple-300 bg-purple-50/30 hover:bg-purple-50 cursor-pointer transition text-center group">
+                                <div class="w-10 h-10 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center mb-2 group-hover:scale-110 transition">
+                                    <i data-lucide="images" class="w-5 h-5"></i>
+                                </div>
+                                <span class="text-xs font-bold text-slate-800">Pilih dari Galeri</span>
+                                <span class="text-[10px] text-slate-500 mt-0.5">Bisa pilih banyak foto</span>
+                                <input type="file" name="photos[]" accept="image/*" multiple class="hidden" @change="handlePhotoSelect($event)">
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Preview of Selected Photos -->
+                    <template x-if="previewPhotos.length > 0">
+                        <div class="space-y-2">
+                            <div class="flex items-center justify-between text-xs">
+                                <span class="font-bold text-slate-700" x-text="previewPhotos.length + ' foto siap diunggah:'"></span>
+                                <button type="button" @click="previewPhotos = []" class="text-red-600 font-bold text-[11px] hover:underline">Hapus Semua</button>
+                            </div>
+                            <div class="grid grid-cols-3 gap-2 max-h-36 overflow-y-auto p-1 bg-slate-50 rounded-2xl border border-slate-200">
+                                <template x-for="(p, idx) in previewPhotos" :key="idx">
+                                    <div class="relative rounded-xl overflow-hidden aspect-square border border-slate-300 group">
+                                        <img :src="p.url" class="w-full h-full object-cover">
+                                        <div class="absolute bottom-0 inset-x-0 bg-slate-900/70 p-1 text-[9px] text-white truncate text-center" x-text="p.size"></div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Caption -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Keterangan Foto (Opsional):</label>
+                        <input type="text" name="caption" placeholder="Contoh: Kondisi fisik barang lengkap dan normal"
+                               class="w-full p-2.5 rounded-xl border border-slate-300 text-xs font-medium focus:border-purple-500 outline-none">
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+                        <button type="button" @click="photoModalOpen = false"
+                                class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 text-xs font-bold transition">
+                            Batal
+                        </button>
+                        <button type="submit"
+                                class="px-5 py-2.5 bg-purple-700 hover:bg-purple-800 text-white rounded-xl text-xs font-bold shadow-md transition flex items-center gap-1.5">
+                            <i data-lucide="upload" class="w-4 h-4"></i>
+                            <span>Unggah Foto Dokumentasi</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. MODAL LIGHTBOX PRATINJAU FOTO DOKUMENTASI -->
+    <div x-show="lightboxOpen" x-cloak
+         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md"
+         @keydown.escape.window="lightboxOpen = false"
+         @click="lightboxOpen = false">
+        <div class="relative max-w-4xl w-full flex flex-col items-center gap-3" @click.stop>
+            <button type="button" @click="lightboxOpen = false"
+                    class="absolute -top-10 right-0 text-white/80 hover:text-white p-1 rounded-full bg-slate-800/60 hover:bg-slate-800 transition">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+
+            <div class="rounded-2xl overflow-hidden border border-white/10 shadow-2xl bg-black/40 max-h-[80vh] flex items-center justify-center">
+                <img :src="activePhotoUrl" :alt="activePhotoTitle" class="max-h-[80vh] max-w-full object-contain">
+            </div>
+
+            <div class="text-center text-white space-y-1">
+                <h4 class="text-sm font-bold" x-text="activePhotoTitle"></h4>
+                <p class="text-xs text-white/70" x-text="activePhotoMeta"></p>
+            </div>
+        </div>
+    </div>
 </div>
+
+<script>
+    function updateFileCount(input, targetId) {
+        const el = document.getElementById(targetId);
+        if (!el) return;
+        const count = input.files ? input.files.length : 0;
+        if (count === 0) {
+            el.textContent = 'Belum ada foto dipilih';
+            el.className = 'text-xs text-slate-500 italic';
+        } else {
+            el.textContent = count + ' foto siap diunggah';
+            el.className = 'text-xs text-emerald-700 font-bold';
+        }
+    }
+</script>
 @endsection

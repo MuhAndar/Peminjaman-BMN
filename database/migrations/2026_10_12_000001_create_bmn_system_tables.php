@@ -65,7 +65,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->string('role'); // KETUA_TIM_KEUANGAN_ASET | PENGELOLA_ASET
             $table->foreignUuid('employee_id')->constrained('employees');
-            $table->string('title_line'); // e.g. "Ketua Tim Keuangan dan Aset BBPSDMP Makassar,"
+            $table->string('title_line'); // e.g. "Ketua Tim Keuangan dan Aset BBLSDM Makassar,"
             $table->date('valid_from');
             $table->date('valid_to')->nullable();
             $table->timestamps();

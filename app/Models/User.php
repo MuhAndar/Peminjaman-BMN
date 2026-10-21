@@ -23,6 +23,7 @@ class User extends Authenticatable
         'employee_id',
         'role',
         'is_active',
+        'signature_path',
     ];
 
     protected $hidden = [

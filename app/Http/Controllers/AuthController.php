@@ -32,7 +32,7 @@ class AuthController extends Controller
                 'email' => $user->email,
                 'role' => $user->role,
             ]);
-            return redirect()->intended(route('dashboard'));
+            return redirect()->route('dashboard');
         }
 
         return back()->withErrors([

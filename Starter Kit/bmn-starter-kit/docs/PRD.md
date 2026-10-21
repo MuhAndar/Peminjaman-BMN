@@ -1,10 +1,10 @@
 # PRD — Sistem Peminjaman & Pengembalian BMN
 
-Versi 0.1 (draft) · Satker: BBPSDMP Makassar · Status: siap dikerjakan dengan asumsi default (lihat `OPEN_QUESTIONS.md`).
+Versi 0.1 (draft) · Satker: BBLSDM Makassar · Status: siap dikerjakan dengan asumsi default (lihat `OPEN_QUESTIONS.md`).
 
 ## 1. Latar belakang
 
-Saat ini peminjaman BMN dijalankan manual: pegawai mengisi form, petugas mencatat di Excel "Entry Form Peminjaman", lalu tiga dokumen (Surat Peminjaman, BAST Peminjaman, BAST Pengembalian) dibuat lewat mail-merge Word dan ditandatangani basah. Alur resminya sudah ada di SOP (nomor B-489/BBPSDMP.73/OT.02.02/09/2025, versi 1.0, draft).
+Saat ini peminjaman BMN dijalankan manual: pegawai mengisi form, petugas mencatat di Excel "Entry Form Peminjaman", lalu tiga dokumen (Surat Peminjaman, BAST Peminjaman, BAST Pengembalian) dibuat lewat mail-merge Word dan ditandatangani basah. Alur resminya sudah ada di SOP (nomor B-489/BBLSDM.73/OT.02.02/09/2025, versi 1.0, draft).
 
 Masalah yang diselesaikan:
 - Pengisian data berulang (nama, NIP, pangkat, jabatan, alamat, data barang) di tiga dokumen.
@@ -31,7 +31,7 @@ Masalah yang diselesaikan:
 | `PENGELOLA_BMN` | Pengelola/Petugas BMN (Pihak Pertama di BAST) | Menelaah pengajuan, cek ketersediaan dan kondisi, membuat BAST, memproses pengembalian, kelola data barang |
 | `KETUA_TIM_ASET` | Ketua Tim Keuangan dan Aset | Menyetujui atau menolak pengajuan, tanda tangan Surat Peminjaman |
 | `ADMIN` | Admin sistem | Kelola akun/peran, penandatangan, pengaturan satker, format nomor, master data |
-| `PIMPINAN` (opsional) | Kepala BBPSDMP | Baca-saja dashboard dan laporan |
+| `PIMPINAN` (opsional) | Kepala BBLSDM | Baca-saja dashboard dan laporan |
 
 Satu orang boleh memegang beberapa peran. Satu orang tidak boleh menyetujui atau memproses pengajuannya sendiri (lihat BR-08).
 

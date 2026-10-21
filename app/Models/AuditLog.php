@@ -34,6 +34,11 @@ class AuditLog extends Model
         return $this->belongsTo(User::class, 'actor_id');
     }
 
+    public function loanRequest()
+    {
+        return $this->belongsTo(LoanRequest::class, 'entity_id');
+    }
+
     public static function record(string $action, string $entity, ?string $entityId = null, ?array $before = null, ?array $after = null): self
     {
         return static::create([

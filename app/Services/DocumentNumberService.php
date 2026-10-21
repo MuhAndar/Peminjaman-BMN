@@ -46,10 +46,10 @@ class DocumentNumberService
             ];
 
             $code = $codeMap[$docType] ?? 'BMN-DOC';
-            $satkerCode = AppSetting::get('satker_code', 'BBPSDMP.73');
+            $satkerCode = AppSetting::get('satker_code', 'BBLSDM.73');
 
             // Format: {seq}/{code}/{satkerCode}/{monthRoman}/{year}
-            // Contoh: 001/BMN-PJM/BBPSDMP.73/X/2026
+            // Contoh: 001/BMN-PJM/BBLSDM.73/X/2026
             return "{$seqFormatted}/{$code}/{$satkerCode}/{$monthRoman}/{$year}";
         });
     }

@@ -29,7 +29,7 @@ Kolom **Merk** pada tabel = `brand + " " + model` (asumsi, karena template hanya
 **Judul**
 ```
 SURAT PEMINJAMAN
-BARANG INVENTARIS BBPSDMP-MAKASSAR
+BARANG INVENTARIS BBLSDM-MAKASSAR
 Nomor : {{doc_number}}
 ```
 
@@ -64,7 +64,7 @@ Apabila terjadi kehilangan atau kerusakan atas barang inventaris tersebut yang m
 ```
                                            Makassar, {{doc_date_long}}
 Ketua Tim Keuangan dan Aset                Peminjam,
-BBPSDMP Makassar,
+BBLSDM Makassar,
 
 {{signatory_ketua_tim.full_name}}          {{borrower.full_name}}
 NIP. {{signatory_ketua_tim.nip_formatted}} NIP. {{borrower.nip_formatted}}
@@ -77,7 +77,7 @@ NIP. {{signatory_ketua_tim.nip_formatted}} NIP. {{borrower.nip_formatted}}
 **Judul**
 ```
 BERITA ACARA SERAH TERIMA PEMINJAMAN
-BARANG INVENTARIS BBPSDMP-MAKASSAR
+BARANG INVENTARIS BBLSDM-MAKASSAR
 Nomor : {{doc_number}}
 ```
 
@@ -126,7 +126,7 @@ NIP. {{signatory_pengelola.nip_formatted}} NIP. {{borrower.nip_formatted}}
 **Judul**
 ```
 BERITA ACARA SERAH TERIMA PENGEMBALIAN
-BARANG INVENTARIS BBPSDMP-MAKASSAR
+BARANG INVENTARIS BBLSDM-MAKASSAR
 Nomor : {{doc_number}}
 ```
 
@@ -159,7 +159,7 @@ Jika kosong, biarkan kotak kosong (untuk ditulis tangan).
 
 | Peran | Nama | NIP |
 |---|---|---|
-| Ketua Tim Keuangan dan Aset BBPSDMP Makassar | Olga Olivia Sombolayuk, SE | 19820608 200901 2 001 |
+| Ketua Tim Keuangan dan Aset BBLSDM Makassar | Olga Olivia Sombolayuk, SE | 19820608 200901 2 001 |
 | Pihak Pertama (Pengelola Aset) | Muhammad Agung, S.Ds. | 19980311 202504 1 003 |
 
 Keduanya disimpan di tabel `signatories` dan harus dapat diganti Admin tanpa mengubah kode.

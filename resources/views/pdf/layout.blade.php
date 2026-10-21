@@ -142,7 +142,7 @@
     </style>
 </head>
 <body>
-    <!-- KOP SURAT RESMI BBPSDMP MAKASSAR -->
+    <!-- KOP SURAT RESMI BBLSDM MAKASSAR -->
     <table class="header-table">
         <tr>
             <td class="header-logo">

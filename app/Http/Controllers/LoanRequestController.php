@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Asset;
+use App\Models\AuditLog;
 use App\Models\LoanItem;
+use App\Models\LoanPhoto;
 use App\Models\LoanRequest;
 use App\Services\LoanStateMachine;
 use Carbon\Carbon;
@@ -11,6 +13,8 @@ use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class LoanRequestController extends Controller
 {
@@ -135,7 +139,7 @@ class LoanRequestController extends Controller
      */
     public function show(string $id)
     {
-        $loan = LoanRequest::with(['borrower', 'items.asset', 'history.actor', 'documents.issuer'])
+        $loan = LoanRequest::with(['borrower', 'items.asset', 'history.actor', 'documents.issuer', 'photos.uploader'])
             ->findOrFail($id);
 
         $user = Auth::user();
@@ -154,6 +158,14 @@ class LoanRequestController extends Controller
     {
         $loan = LoanRequest::findOrFail($id);
         $user = Auth::user();
+
+        if (!$user->isPeminjam() && !$user->isAdmin()) {
+            return back()->with('error', 'Hanya pengguna dengan peran Peminjam yang dapat mengajukan pengembalian BMN.');
+        }
+
+        if ($user->role === 'PEMINJAM' && $loan->borrower_id !== $user->employee_id) {
+            return back()->with('error', 'Anda hanya dapat mengajukan pengembalian untuk BMN yang Anda pinjam.');
+        }
 
         try {
             LoanStateMachine::transition(
@@ -243,12 +255,29 @@ class LoanRequestController extends Controller
     /**
      * Pengelola BMN confirms physical handover & signed BAST (BAST_ISSUED -> ACTIVE).
      */
-    public function confirmActive(string $id)
+    public function confirmActive(Request $request, string $id)
     {
         $loan = LoanRequest::findOrFail($id);
         $user = Auth::user();
 
         try {
+            // Simpan foto dokumentasi jika dilampirkan
+            if ($request->hasFile('photos')) {
+                foreach ($request->file('photos') as $photoFile) {
+                    $fileName = 'loan_photos/' . $loan->id . '/' . time() . '_' . Str::random(6) . '.' . $photoFile->getClientOriginalExtension();
+                    $path = $photoFile->storeAs('loan_photos/' . $loan->id, basename($fileName), 'public');
+
+                    LoanPhoto::create([
+                        'loan_request_id' => $loan->id,
+                        'stage' => 'BAST_PEMINJAMAN',
+                        'file_path' => $path,
+                        'original_name' => $photoFile->getClientOriginalName(),
+                        'caption' => 'Foto dokumentasi serah terima BAST Peminjaman',
+                        'uploaded_by' => $user->id,
+                    ]);
+                }
+            }
+
             LoanStateMachine::transition(
                 $loan,
                 'ACTIVE',
@@ -272,6 +301,23 @@ class LoanRequestController extends Controller
         $itemsCondition = $request->input('items', []);
 
         try {
+            // Simpan foto dokumentasi jika dilampirkan
+            if ($request->hasFile('photos')) {
+                foreach ($request->file('photos') as $photoFile) {
+                    $fileName = 'loan_photos/' . $loan->id . '/' . time() . '_' . Str::random(6) . '.' . $photoFile->getClientOriginalExtension();
+                    $path = $photoFile->storeAs('loan_photos/' . $loan->id, basename($fileName), 'public');
+
+                    LoanPhoto::create([
+                        'loan_request_id' => $loan->id,
+                        'stage' => 'BAST_PENGEMBALIAN',
+                        'file_path' => $path,
+                        'original_name' => $photoFile->getClientOriginalName(),
+                        'caption' => 'Foto dokumentasi fisik saat pengembalian BMN',
+                        'uploaded_by' => $user->id,
+                    ]);
+                }
+            }
+
             LoanStateMachine::transition(
                 $loan,
                 'RETURN_CHECKED',
@@ -304,5 +350,176 @@ class LoanRequestController extends Controller
         } catch (Exception $e) {
             return back()->with('error', $e->getMessage());
         }
+    }
+
+    /**
+     * Unggah foto dokumentasi BAST (Peminjaman / Pengembalian) sewaktu-waktu.
+     */
+    public function uploadPhotos(Request $request, string $id)
+    {
+        $loan = LoanRequest::findOrFail($id);
+        $user = Auth::user();
+
+        $request->validate([
+            'stage' => 'required|in:BAST_PEMINJAMAN,BAST_PENGEMBALIAN,GENERAL',
+            'caption' => 'nullable|string|max:255',
+            'photos' => 'required|array|min:1',
+            'photos.*' => 'image|mimes:jpeg,png,jpg,webp|max:10240',
+        ], [
+            'photos.required' => 'Pilih minimal 1 berkas foto.',
+            'photos.*.image' => 'Berkas harus berupa gambar.',
+            'photos.*.max' => 'Ukuran maksimal berkas foto adalah 10 MB.',
+        ]);
+
+        $stage = $request->input('stage');
+        $caption = $request->input('caption');
+        $uploadedCount = 0;
+
+        foreach ($request->file('photos') as $photoFile) {
+            $fileName = 'loan_photos/' . $loan->id . '/' . time() . '_' . Str::random(6) . '.' . $photoFile->getClientOriginalExtension();
+            $path = $photoFile->storeAs('loan_photos/' . $loan->id, basename($fileName), 'public');
+
+            LoanPhoto::create([
+                'loan_request_id' => $loan->id,
+                'stage' => $stage,
+                'file_path' => $path,
+                'original_name' => $photoFile->getClientOriginalName(),
+                'caption' => $caption,
+                'uploaded_by' => $user->id,
+            ]);
+
+            $uploadedCount++;
+        }
+
+        AuditLog::record(
+            'UPLOAD_LOAN_PHOTOS',
+            'LoanRequest',
+            $loan->id,
+            null,
+            ['count' => $uploadedCount, 'stage' => $stage]
+        );
+
+        return back()->with('success', "{$uploadedCount} foto dokumentasi BAST berhasil diunggah.");
+    }
+
+    /**
+     * Hapus foto dokumentasi BAST.
+     */
+    public function deletePhoto(string $photoId)
+    {
+        $photo = LoanPhoto::findOrFail($photoId);
+        $user = Auth::user();
+
+        // Otorisasi: pemilik foto, pengelola BMN, atau admin
+        if ($photo->uploaded_by !== $user->id && !$user->isPengelola() && !$user->isAdmin()) {
+            abort(403, 'Anda tidak berhak menghapus foto ini.');
+        }
+
+        if (Storage::disk('public')->exists($photo->file_path)) {
+            Storage::disk('public')->delete($photo->file_path);
+        }
+
+        $loanId = $photo->loan_request_id;
+        $photo->delete();
+
+        AuditLog::record('DELETE_LOAN_PHOTO', 'LoanPhoto', $photoId, ['loan_id' => $loanId]);
+
+        return back()->with('success', 'Foto dokumentasi berhasil dihapus.');
+    }
+
+    /**
+     * Tanda tangani dokumen peminjaman / BAST secara digital.
+     */
+    public function signDocument(Request $request, string $id)
+    {
+        $loan = LoanRequest::findOrFail($id);
+        $user = Auth::user();
+
+        $signAs = $request->input('sign_as'); // 'borrower' atau 'officer'
+        $source = $request->input('source');   // 'profile', 'pad', 'file'
+
+        // Otorisasi peran penandatangan
+        if ($signAs === 'borrower') {
+            if ($loan->borrower_id !== $user->employee_id && !$user->isAdmin()) {
+                return back()->with('error', 'Hanya peminjam bersangkutan yang dapat menandatangani sebagai Pihak Kedua.');
+            }
+        } elseif ($signAs === 'officer') {
+            if (!$user->isPengelola() && !$user->isAdmin()) {
+                return back()->with('error', 'Hanya Pengelola BMN yang berhak menandatangani sebagai Pihak Pertama.');
+            }
+        } else {
+            return back()->with('error', 'Pilihan pihak penandatangan tidak valid.');
+        }
+
+        $signaturePath = null;
+
+        // Opsi 1: Gunakan dari profil
+        if ($source === 'profile') {
+            if (!$user->signature_path || !Storage::disk('public')->exists($user->signature_path)) {
+                return back()->with('error', 'Anda belum memiliki spesimen tanda tangan di profil. Silakan gambar di kanvas atau unggah baru.');
+            }
+            $signaturePath = $user->signature_path;
+        }
+
+        // Opsi 2: Gambar di kanvas (Base64)
+        elseif ($source === 'pad') {
+            $dataUri = $request->input('signature_data');
+            if (empty($dataUri) || !preg_match('/^data:image\/(png|jpeg);base64,/', $dataUri)) {
+                return back()->with('error', 'Goresan tanda tangan kanvas tidak valid.');
+            }
+
+            $encodedImage = substr($dataUri, strpos($dataUri, ',') + 1);
+            $decodedImage = base64_decode($encodedImage);
+            if ($decodedImage === false) {
+                return back()->with('error', 'Gagal memproses gambar tanda tangan.');
+            }
+
+            $fileName = 'signatures/loan_' . $loan->id . '_' . $signAs . '_' . time() . '.png';
+            Storage::disk('public')->put($fileName, $decodedImage);
+            $signaturePath = $fileName;
+
+            // Jika dicentang simpan ke profil
+            if ($request->boolean('save_to_profile')) {
+                $user->signature_path = $fileName;
+                $user->save();
+            }
+        }
+
+        // Opsi 3: Unggah berkas gambar
+        elseif ($source === 'file') {
+            $request->validate([
+                'signature_file' => 'required|image|mimes:png,jpg,jpeg|max:2048',
+            ]);
+
+            $file = $request->file('signature_file');
+            $fileName = 'signatures/loan_' . $loan->id . '_' . $signAs . '_' . time() . '.' . $file->getClientOriginalExtension();
+            $path = $file->storeAs('signatures', basename($fileName), 'public');
+            $signaturePath = $path;
+
+            if ($request->boolean('save_to_profile')) {
+                $user->signature_path = $path;
+                $user->save();
+            }
+        } else {
+            return back()->with('error', 'Metode tanda tangan tidak valid.');
+        }
+
+        // Simpan ke kolom loan_requests
+        if ($signAs === 'borrower') {
+            $loan->borrower_signature = $signaturePath;
+        } else {
+            $loan->officer_signature = $signaturePath;
+        }
+        $loan->save();
+
+        AuditLog::record(
+            "SIGN_LOAN_{$signAs}",
+            'LoanRequest',
+            $loan->id,
+            null,
+            ['sign_as' => $signAs, 'source' => $source, 'file' => $signaturePath]
+        );
+
+        return back()->with('success', 'Tanda tangan digital berhasil dibubuhkan pada dokumen pengajuan ini.');
     }
 }

@@ -1,11 +1,18 @@
 @extends('layouts.app')
 
-@section('title', 'Log Aktivitas & Jejak Audit — BBPSDMP Komdigi')
+@section('title', 'Log Aktivitas Sistem (Forensik IT) — BBLSDM Komdigi')
 
 @section('content')
 <div class="space-y-6" x-data="{
     detailModalOpen: false,
     selectedLog: null,
+    exportModalOpen: false,
+    exportPeriodType: 'month',
+    exportMonth: '{{ now()->month }}',
+    exportYear: '{{ now()->year }}',
+    exportStartDate: '{{ now()->startOfMonth()->toDateString() }}',
+    exportEndDate: '{{ now()->toDateString() }}',
+    exportFormat: 'xlsx',
     viewDetail(log) {
         this.selectedLog = log;
         this.detailModalOpen = true;
@@ -20,29 +27,53 @@
                 <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
                 <span class="text-slate-600">Administrasi Sistem</span>
                 <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
-                <span class="text-[#0B63B5]">Log Aktivitas & Audit</span>
+                <span class="text-[#0B63B5]">Log Aktivitas Sistem</span>
             </div>
             <h1 class="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
                 <div class="w-10 h-10 rounded-2xl bg-blue-100 text-[#0B63B5] flex items-center justify-center shrink-0">
-                    <i data-lucide="history" class="w-5 h-5"></i>
+                    <i data-lucide="activity" class="w-5 h-5"></i>
                 </div>
-                <span>Log Aktivitas & Jejak Audit Sistem</span>
+                <span>Log Aktivitas Sistem (Forensik IT)</span>
             </h1>
             <p class="text-xs sm:text-sm text-slate-500 mt-1 font-medium">
-                Rekam jejak forensik seluruh perubahan status pengajuan BMN, tindakan telaah, persetujuan, penerbitan BAST, dan aktivitas pengguna secara transparan.
+                Jejak forensik teknis komprehensif seluruh peristiwa sistem (autentikasi pengguna, perubahan tanda tangan, impor berkas, mutasi status, dan audit trail).
             </p>
         </div>
 
-        <div class="flex items-center gap-2.5 shrink-0">
-            <a href="{{ route('admin.audit-logs') }}" class="px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center gap-2 transition shadow-sm">
-                <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+        <div class="flex flex-wrap items-center gap-2.5 shrink-0">
+            <!-- Ekspor Rekapan Log Button -->
+            <button type="button" @click="exportModalOpen = true; $nextTick(() => { if (window.lucide) lucide.createIcons(); })"
+                    class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold text-xs flex items-center gap-2 transition-all duration-150 shadow-sm hover:shadow-md active:scale-95 cursor-pointer">
+                <i data-lucide="download" class="w-4 h-4"></i>
+                <span>Ekspor Log Sistem</span>
+            </button>
+
+            <a href="{{ route('admin.activity-logs') }}" class="px-4 py-2.5 rounded-xl border border-slate-200/80 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center gap-2 transition shadow-2xs hover:shadow-xs active:scale-95">
+                <i data-lucide="refresh-cw" class="w-4 h-4 text-slate-500"></i>
                 <span>Muat Ulang</span>
             </a>
-            <div class="px-3.5 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2">
+            <div class="px-3.5 py-2 rounded-xl bg-emerald-50/80 border border-emerald-200/80 text-emerald-800 text-xs font-bold flex items-center gap-2 shadow-2xs">
                 <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span>Audit Trail Aktif</span>
+                <span>Forensik Aktif</span>
             </div>
         </div>
+    </div>
+
+    <!-- NOTICE: LINK KE AUDIT PEMINJAMAN BMN -->
+    <div class="p-4 rounded-2xl bg-amber-50/70 border border-amber-200/80 flex items-start justify-between gap-4">
+        <div class="flex items-start gap-3">
+            <div class="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0 mt-0.5">
+                <i data-lucide="info" class="w-4 h-4"></i>
+            </div>
+            <div class="text-xs text-slate-700 leading-relaxed">
+                <span class="font-extrabold text-amber-900">Perbedaan Menu:</span>
+                Halaman ini memuat seluruh jejak teknis sistem termasuk IP address dan perubahan non-peminjaman. Untuk audit resmi peminjaman BMN (bersih tanpa informasi sensitif/teknis), silakan buka menu <a href="{{ route('audit.loans') }}" class="font-black text-[#0B63B5] hover:underline">Audit Aktivitas Peminjaman BMN</a>.
+            </div>
+        </div>
+        <a href="{{ route('audit.loans') }}" class="shrink-0 px-3 py-1.5 rounded-xl bg-white border border-amber-300 hover:bg-amber-100 text-amber-900 font-extrabold text-xs transition shadow-2xs flex items-center gap-1.5">
+            <i data-lucide="clipboard-check" class="w-3.5 h-3.5 text-[#0B63B5]"></i>
+            <span>Buka Audit Peminjaman</span>
+        </a>
     </div>
 
     <!-- STATS KPI CARDS -->
@@ -136,12 +167,12 @@
 
             <!-- Buttons -->
             <div class="flex items-end gap-2">
-                <button type="submit" class="flex-1 bg-[#0B63B5] hover:bg-[#0B4F8A] text-white py-2 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition shadow-sm">
+                <button type="submit" class="flex-1 bg-[#0B63B5] hover:bg-[#0B4F8A] text-white py-2 px-3.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm hover:shadow-md active:scale-95 cursor-pointer">
                     <i data-lucide="filter" class="w-3.5 h-3.5"></i>
                     <span>Terapkan</span>
                 </button>
                 @if(request()->hasAny(['search', 'action', 'actor_id', 'entity', 'date']))
-                <a href="{{ route('admin.audit-logs') }}" class="p-2 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-100 transition" title="Reset Filter">
+                <a href="{{ route('admin.audit-logs') }}" class="p-2 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-100 transition shadow-2xs active:scale-95" title="Reset Filter">
                     <i data-lucide="x" class="w-4 h-4"></i>
                 </a>
                 @endif
@@ -305,13 +336,13 @@
                             {{ $log->ip ?? '-' }}
                         </td>
 
-                        <!-- Tombol Detail -->
+                        <!-- Tombol Detail Audit -->
                         <td class="py-3.5 px-4 text-center whitespace-nowrap">
                             <button type="button"
                                     @click="viewDetail({{ json_encode($log) }})"
-                                    class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-[#0B63B5] hover:text-white text-slate-700 font-bold text-[11px] transition">
-                                <i data-lucide="eye" class="w-3 h-3"></i>
-                                <span>Lihat Diff</span>
+                                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50/80 hover:bg-[#0B63B5] text-[#0B63B5] hover:text-white border border-blue-200/70 hover:border-[#0B63B5] font-bold text-xs shadow-2xs hover:shadow-xs transition-all duration-150 active:scale-95 group cursor-pointer">
+                                <i data-lucide="file-search" class="w-3.5 h-3.5 text-[#0B63B5] group-hover:text-white transition-colors"></i>
+                                <span>Detail Audit</span>
                             </button>
                         </td>
                     </tr>
@@ -329,7 +360,7 @@
         </div>
 
         @if($logs->hasPages())
-        <div class="px-6 py-4 border-t border-slate-100 bg-slate-50/50">
+        <div class="px-6 py-4 border-t border-slate-200/80 bg-slate-50/60 rounded-b-3xl">
             {{ $logs->links() }}
         </div>
         @endif
@@ -445,12 +476,204 @@
                 </div>
 
                 <!-- Footer Modal -->
-                <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex justify-end">
+                <div class="px-6 py-4 bg-slate-50/80 border-t border-slate-200 flex justify-end">
                     <button type="button" @click="detailModalOpen = false"
-                            class="px-5 py-2.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-xs transition">
+                            class="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition border border-slate-200/80 shadow-2xs hover:shadow-xs active:scale-95 cursor-pointer">
                         Tutup
                     </button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL EKSPOR REKAPAN AUDIT -->
+    <div x-show="exportModalOpen" x-cloak
+         class="fixed inset-0 z-50 overflow-y-auto"
+         aria-labelledby="export-modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen p-4 text-center sm:p-0">
+            <!-- Backdrop -->
+            <div x-show="exportModalOpen"
+                 x-transition:enter="ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+                 x-transition:leave="ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+                 class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity"
+                 @click="exportModalOpen = false"></div>
+
+            <!-- Modal Panel -->
+            <div x-show="exportModalOpen"
+                 x-transition:enter="ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
+                 x-transition:leave="ease-in duration-150" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95"
+                 class="relative bg-white rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:max-w-lg w-full border border-slate-200">
+
+                <form method="GET" action="{{ route('admin.audit-logs.export') }}" target="_blank" @submit="setTimeout(() => exportModalOpen = false, 500)">
+                    <!-- Modal Header -->
+                    <div class="px-6 py-5 bg-gradient-to-r from-emerald-600 to-teal-700 text-white flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center">
+                                <i data-lucide="file-spreadsheet" class="w-5 h-5 text-white"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-base font-extrabold leading-6" id="export-modal-title">Ekspor Rekapan Audit & Aktivitas</h3>
+                                <p class="text-xs text-emerald-100 mt-0.5">Pilih filter waktu dan format unduhan berkas.</p>
+                            </div>
+                        </div>
+                        <button type="button" @click="exportModalOpen = false" class="text-white/80 hover:text-white transition">
+                            <i data-lucide="x" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+
+                    <!-- Modal Body Form -->
+                    <div class="p-6 space-y-5 text-xs">
+                        <!-- 1. Tipe Filter Periode -->
+                        <div>
+                            <label class="block font-bold text-slate-700 uppercase tracking-wider text-[11px] mb-2">
+                                Filter Rentang Waktu (Periode)
+                            </label>
+                            <div class="grid grid-cols-3 gap-2">
+                                <label class="flex items-center justify-center gap-2 p-2.5 rounded-xl border cursor-pointer transition text-center select-none"
+                                       :class="exportPeriodType === 'month' ? 'border-[#0B63B5] bg-blue-50 text-[#0B63B5] font-extrabold shadow-2xs' : 'border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold'">
+                                    <input type="radio" name="period_type" value="month" x-model="exportPeriodType" class="sr-only">
+                                    <i data-lucide="calendar" class="w-3.5 h-3.5"></i>
+                                    <span>Per Bulan</span>
+                                </label>
+
+                                <label class="flex items-center justify-center gap-2 p-2.5 rounded-xl border cursor-pointer transition text-center select-none"
+                                       :class="exportPeriodType === 'year' ? 'border-[#0B63B5] bg-blue-50 text-[#0B63B5] font-extrabold shadow-2xs' : 'border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold'">
+                                    <input type="radio" name="period_type" value="year" x-model="exportPeriodType" class="sr-only">
+                                    <i data-lucide="calendar-days" class="w-3.5 h-3.5"></i>
+                                    <span>Per Tahun</span>
+                                </label>
+
+                                <label class="flex items-center justify-center gap-2 p-2.5 rounded-xl border cursor-pointer transition text-center select-none"
+                                       :class="exportPeriodType === 'custom' ? 'border-[#0B63B5] bg-blue-50 text-[#0B63B5] font-extrabold shadow-2xs' : 'border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold'">
+                                    <input type="radio" name="period_type" value="custom" x-model="exportPeriodType" class="sr-only">
+                                    <i data-lucide="clock" class="w-3.5 h-3.5"></i>
+                                    <span>Spesifik Tgl</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- 2. Parameter Sesuai Tipe Periode -->
+                        <!-- Opsi A: Per Bulan -->
+                        <div x-show="exportPeriodType === 'month'" class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-[11px] font-bold text-slate-600 mb-1">Pilih Bulan</label>
+                                    <select name="month" x-model="exportMonth" class="w-full p-2 bg-white rounded-xl border border-slate-300 text-xs font-semibold">
+                                        <option value="1">Januari</option>
+                                        <option value="2">Februari</option>
+                                        <option value="3">Maret</option>
+                                        <option value="4">April</option>
+                                        <option value="5">Mei</option>
+                                        <option value="6">Juni</option>
+                                        <option value="7">Juli</option>
+                                        <option value="8">Agustus</option>
+                                        <option value="9">September</option>
+                                        <option value="10">Oktober</option>
+                                        <option value="11">November</option>
+                                        <option value="12">Desember</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-slate-600 mb-1">Tahun</label>
+                                    <input type="number" name="year" x-model="exportYear" min="2020" max="2035"
+                                           class="w-full p-2 bg-white rounded-xl border border-slate-300 text-xs font-semibold tabular-nums">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Opsi B: Per Tahun -->
+                        <div x-show="exportPeriodType === 'year'" x-cloak class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-600 mb-1">Pilih Tahun Anggaran</label>
+                                <input type="number" name="year" x-model="exportYear" min="2020" max="2035"
+                                       class="w-full p-2 bg-white rounded-xl border border-slate-300 text-xs font-semibold tabular-nums">
+                            </div>
+                        </div>
+
+                        <!-- Opsi C: Specific Date / Rentang Tanggal -->
+                        <div x-show="exportPeriodType === 'custom'" x-cloak class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-[11px] font-bold text-slate-600 mb-1">Tanggal Mulai</label>
+                                    <input type="date" name="start_date" x-model="exportStartDate"
+                                           class="w-full p-2 bg-white rounded-xl border border-slate-300 text-xs font-semibold">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-slate-600 mb-1">Tanggal Selesai</label>
+                                    <input type="date" name="end_date" x-model="exportEndDate"
+                                           class="w-full p-2 bg-white rounded-xl border border-slate-300 text-xs font-semibold">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 3. Filter Tambahan (Opsional) -->
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Tipe Aksi (Opsional)</label>
+                                <select name="action" class="w-full p-2 bg-white rounded-xl border border-slate-300 text-xs font-medium">
+                                    <option value="">Semua Tipe Aksi</option>
+                                    @foreach($actions as $act)
+                                        <option value="{{ $act }}">{{ $act }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Aktor (Opsional)</label>
+                                <select name="actor_id" class="w-full p-2 bg-white rounded-xl border border-slate-300 text-xs font-medium">
+                                    <option value="">Semua Pengguna</option>
+                                    @foreach($users as $u)
+                                        <option value="{{ $u->id }}">{{ $u->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- 4. Pilihan Format Berkas -->
+                        <div>
+                            <label class="block font-bold text-slate-700 uppercase tracking-wider text-[11px] mb-2">
+                                Format Berkas Unduhan
+                            </label>
+                            <div class="grid grid-cols-2 gap-3">
+                                <label class="flex items-center gap-3 p-3 rounded-2xl border cursor-pointer transition select-none"
+                                       :class="exportFormat === 'xlsx' ? 'border-emerald-500 bg-emerald-50/60 ring-2 ring-emerald-500/20' : 'border-slate-200 hover:bg-slate-50'">
+                                    <input type="radio" name="format" value="xlsx" x-model="exportFormat" class="sr-only">
+                                    <div class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                                        <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+                                    </div>
+                                    <div>
+                                        <span class="font-extrabold text-slate-900 block">Excel (.xlsx)</span>
+                                        <span class="text-[10px] text-slate-500">Direkomendasikan</span>
+                                    </div>
+                                </label>
+
+                                <label class="flex items-center gap-3 p-3 rounded-2xl border cursor-pointer transition select-none"
+                                       :class="exportFormat === 'csv' ? 'border-blue-500 bg-blue-50/60 ring-2 ring-blue-500/20' : 'border-slate-200 hover:bg-slate-50'">
+                                    <input type="radio" name="format" value="csv" x-model="exportFormat" class="sr-only">
+                                    <div class="w-8 h-8 rounded-xl bg-blue-100 text-[#0B63B5] flex items-center justify-center shrink-0">
+                                        <i data-lucide="file-text" class="w-4 h-4"></i>
+                                    </div>
+                                    <div>
+                                        <span class="font-extrabold text-slate-900 block">CSV (.csv)</span>
+                                        <span class="text-[10px] text-slate-500">Universal UTF-8</span>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Modal Footer -->
+                    <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+                        <button type="button" @click="exportModalOpen = false"
+                                class="px-4 py-2.5 rounded-xl border border-slate-200/80 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold transition shadow-2xs hover:shadow-xs active:scale-95 cursor-pointer">
+                            Batal
+                        </button>
+                        <button type="submit"
+                                class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs font-extrabold shadow-sm hover:shadow-md transition-all active:scale-95 flex items-center gap-2 cursor-pointer">
+                            <i data-lucide="download" class="w-4 h-4"></i>
+                            <span>Unduh Berkas Rekapan</span>
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>

@@ -24,6 +24,8 @@ class LoanRequest extends Model
         'snap_home_address',
         'review_note',
         'decision_note',
+        'borrower_signature',
+        'officer_signature',
         'is_legacy',
         'legacy_seq',
         'submitted_at',
@@ -55,6 +57,21 @@ class LoanRequest extends Model
     public function documents()
     {
         return $this->hasMany(Document::class);
+    }
+
+    public function photos()
+    {
+        return $this->hasMany(LoanPhoto::class)->orderBy('created_at', 'desc');
+    }
+
+    public function bastPeminjamanPhotos()
+    {
+        return $this->photos()->where('stage', 'BAST_PEMINJAMAN');
+    }
+
+    public function bastPengembalianPhotos()
+    {
+        return $this->photos()->where('stage', 'BAST_PENGEMBALIAN');
     }
 
     public function isOverdue(): bool

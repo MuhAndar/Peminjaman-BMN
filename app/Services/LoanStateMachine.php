@@ -257,6 +257,15 @@ class LoanStateMachine
                 }
                 break;
 
+            case 'RETURN_REQUESTED':
+                if (!$actor->isPeminjam() && !$actor->isAdmin()) {
+                    throw new Exception('Hanya peminjam yang dapat mengajukan pengembalian BMN.');
+                }
+                if ($actor->role === 'PEMINJAM' && $loan->borrower_id !== $actor->employee_id) {
+                    throw new Exception('Anda hanya dapat mengajukan pengembalian untuk BMN yang Anda pinjam.');
+                }
+                break;
+
             case 'BAST_ISSUED':
             case 'ACTIVE':
             case 'RETURN_CHECKED':

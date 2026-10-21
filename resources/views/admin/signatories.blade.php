@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Pejabat Penandatangan — BBPSDMP Komdigi')
+@section('title', 'Pejabat Penandatangan — BBLSDM Komdigi')
 
 @section('content')
 <div class="space-y-6">

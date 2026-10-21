@@ -1,6 +1,6 @@
 ---
 name: bmn-document-generator
-description: Membuat dan menguji tiga dokumen resmi BMN (Surat Peminjaman, BAST Peminjaman, BAST Pengembalian) sebagai PDF yang persis mengikuti template BBPSDMP Makassar, lengkap dengan penomoran otomatis. Gunakan skill ini setiap kali pengguna menyebut surat peminjaman, BAST, berita acara serah terima, cetak dokumen, PDF, kop surat, nomor surat/dokumen, atau tanda tangan penandatangan, meskipun tidak menyebut kata "skill".
+description: Membuat dan menguji tiga dokumen resmi BMN (Surat Peminjaman, BAST Peminjaman, BAST Pengembalian) sebagai PDF yang persis mengikuti template BBLSDM Makassar, lengkap dengan penomoran otomatis. Gunakan skill ini setiap kali pengguna menyebut surat peminjaman, BAST, berita acara serah terima, cetak dokumen, PDF, kop surat, nomor surat/dokumen, atau tanda tangan penandatangan, meskipun tidak menyebut kata "skill".
 ---
 
 # Pembuat Dokumen BMN
