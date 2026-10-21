@@ -21,11 +21,15 @@
     activePhotoUrl: '',
     activePhotoTitle: '',
     activePhotoMeta: '',
-    // Canvas Pad State
+    // Canvas Pad State with Automatic Stroke Smoothing
     canvas: null,
     ctx: null,
     isDrawing: false,
     hasDrawn: false,
+    smoothingEnabled: true,
+    justCorrected: false,
+    currentStroke: [],
+    strokes: [],
     initCanvas() {
         this.$nextTick(() => {
             this.canvas = document.getElementById('loan-sig-pad');
@@ -36,9 +40,11 @@
             this.canvas.height = rect.height * 2;
             this.ctx.scale(2, 2);
             this.ctx.strokeStyle = '#0F172A';
+            this.ctx.fillStyle = '#0F172A';
             this.ctx.lineWidth = 2.5;
             this.ctx.lineCap = 'round';
             this.ctx.lineJoin = 'round';
+            this.redrawCanvas();
         });
     },
     getPos(e) {
@@ -48,10 +54,86 @@
         }
         return { x: e.clientX - rect.left, y: e.clientY - rect.top };
     },
+    filterPoints(points, minDist = 2) {
+        if (!points || points.length <= 2) return points;
+        const filtered = [points[0]];
+        let last = points[0];
+        for (let i = 1; i < points.length; i++) {
+            const p = points[i];
+            const dist = Math.hypot(p.x - last.x, p.y - last.y);
+            if (dist >= minDist) {
+                filtered.push(p);
+                last = p;
+            }
+        }
+        if (filtered[filtered.length - 1] !== points[points.length - 1]) {
+            filtered.push(points[points.length - 1]);
+        }
+        return filtered;
+    },
+    chaikinSmooth(points, iterations = 2) {
+        if (!points || points.length <= 2) return points;
+        let smoothed = points;
+        for (let it = 0; it < iterations; it++) {
+            const next = [smoothed[0]];
+            for (let i = 0; i < smoothed.length - 1; i++) {
+                const p0 = smoothed[i];
+                const p1 = smoothed[i + 1];
+                next.push({
+                    x: 0.75 * p0.x + 0.25 * p1.x,
+                    y: 0.75 * p0.y + 0.25 * p1.y
+                });
+                next.push({
+                    x: 0.25 * p0.x + 0.75 * p1.x,
+                    y: 0.25 * p0.y + 0.75 * p1.y
+                });
+            }
+            next.push(smoothed[smoothed.length - 1]);
+            smoothed = next;
+        }
+        return smoothed;
+    },
+    redrawCanvas() {
+        if (!this.ctx || !this.canvas) return;
+        const rect = this.canvas.getBoundingClientRect();
+        this.ctx.clearRect(0, 0, rect.width, rect.height);
+        this.ctx.strokeStyle = '#0F172A';
+        this.ctx.fillStyle = '#0F172A';
+        this.ctx.lineWidth = 2.5;
+        this.ctx.lineCap = 'round';
+        this.ctx.lineJoin = 'round';
+
+        for (const stroke of this.strokes) {
+            if (!stroke || stroke.length === 0) continue;
+            if (stroke.length === 1) {
+                this.ctx.beginPath();
+                this.ctx.arc(stroke[0].x, stroke[0].y, 1.25, 0, Math.PI * 2);
+                this.ctx.fill();
+                continue;
+            }
+            if (stroke.length === 2) {
+                this.ctx.beginPath();
+                this.ctx.moveTo(stroke[0].x, stroke[0].y);
+                this.ctx.lineTo(stroke[1].x, stroke[1].y);
+                this.ctx.stroke();
+                continue;
+            }
+            this.ctx.beginPath();
+            this.ctx.moveTo(stroke[0].x, stroke[0].y);
+            for (let i = 1; i < stroke.length - 1; i++) {
+                const xc = (stroke[i].x + stroke[i + 1].x) / 2;
+                const yc = (stroke[i].y + stroke[i + 1].y) / 2;
+                this.ctx.quadraticCurveTo(stroke[i].x, stroke[i].y, xc, yc);
+            }
+            this.ctx.lineTo(stroke[stroke.length - 1].x, stroke[stroke.length - 1].y);
+            this.ctx.stroke();
+        }
+    },
     startDraw(e) {
         e.preventDefault();
         this.isDrawing = true;
         const pos = this.getPos(e);
+        this.currentStroke = [pos];
         this.ctx.beginPath();
         this.ctx.moveTo(pos.x, pos.y);
     },
@@ -59,19 +141,56 @@
         if (!this.isDrawing) return;
         e.preventDefault();
         const pos = this.getPos(e);
-        this.ctx.lineTo(pos.x, pos.y);
-        this.ctx.stroke();
+        this.currentStroke.push(pos);
+
+        if (this.currentStroke.length >= 3) {
+            const p1 = this.currentStroke[this.currentStroke.length - 2];
+            const p2 = this.currentStroke[this.currentStroke.length - 1];
+            const xc = (p1.x + p2.x) / 2;
+            const yc = (p1.y + p2.y) / 2;
+            this.ctx.quadraticCurveTo(p1.x, p1.y, xc, yc);
+            this.ctx.stroke();
+        } else {
+            this.ctx.lineTo(pos.x, pos.y);
+            this.ctx.stroke();
+        }
         this.hasDrawn = true;
     },
     endDraw(e) {
         if (!this.isDrawing) return;
         this.isDrawing = false;
+        if (this.currentStroke && this.currentStroke.length > 0) {
+            let finalStroke = this.currentStroke;
+            if (this.smoothingEnabled && this.currentStroke.length > 2) {
+                const filtered = this.filterPoints(this.currentStroke, 2);
+                finalStroke = this.chaikinSmooth(filtered, 2);
+                this.justCorrected = true;
+                setTimeout(() => { this.justCorrected = false; }, 900);
+            }
+            this.strokes.push(finalStroke);
+            this.hasDrawn = true;
+            this.redrawCanvas();
+            this.currentStroke = [];
+        }
     },
     clearCanvas() {
         if (!this.ctx || !this.canvas) return;
         const rect = this.canvas.getBoundingClientRect();
         this.ctx.clearRect(0, 0, rect.width, rect.height);
         this.hasDrawn = false;
+        this.strokes = [];
+        this.currentStroke = [];
+    },
+    undo() {
+        if (!this.strokes || this.strokes.length === 0) {
+            this.clearCanvas();
+            return;
+        }
+        this.strokes.pop();
+        if (this.strokes.length === 0) {
+            this.hasDrawn = false;
+        }
+        this.redrawCanvas();
     },
     openSigModal(asRole) {
         this.sigAs = asRole;
@@ -856,11 +975,24 @@
                     <!-- Tab 2: Papan Gambar Kanvas -->
                     <div x-show="sigTab === 'pad'" class="space-y-3">
                         <div class="flex items-center justify-between text-xs">
-                            <span class="font-bold text-slate-700">Goreskan Tanda Tangan di Kanvas:</span>
-                            <button type="button" @click="clearCanvas()" class="text-red-600 hover:text-red-700 font-bold flex items-center gap-1 text-[11px]">
-                                <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
-                                <span>Bersihkan</span>
-                            </button>
+                            <span class="font-bold text-slate-700 flex items-center gap-1.5">
+                                <i data-lucide="edit-3" class="w-3.5 h-3.5 text-[#0B63B5]"></i>
+                                <span>Goreskan Tanda Tangan:</span>
+                            </span>
+                            <div class="flex items-center gap-2">
+                                <span x-show="justCorrected" x-transition.opacity class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                                    <i data-lucide="sparkles" class="w-3 h-3 text-emerald-500"></i>
+                                    <span>Stroke Dihaluskan</span>
+                                </span>
+                                <button type="button" @click="undo()" class="text-slate-600 hover:text-slate-800 font-bold flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-lg border border-slate-200 bg-white cursor-pointer">
+                                    <i data-lucide="undo" class="w-3 h-3"></i>
+                                    <span>Undo</span>
+                                </button>
+                                <button type="button" @click="clearCanvas()" class="text-red-600 hover:text-red-700 font-bold flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-lg border border-red-200 bg-red-50/50 cursor-pointer">
+                                    <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
+                                    <span>Bersihkan</span>
+                                </button>
+                            </div>
                         </div>
 
                         <div class="relative rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 overflow-hidden">
@@ -875,14 +1007,20 @@
                                     @touchend="endDraw($event)">
                             </canvas>
                             <div x-show="!hasDrawn" class="pointer-events-none absolute inset-0 flex items-center justify-center text-slate-400 text-xs font-medium">
-                                Sentuh layar atau klik & seret mouse di sini
+                                Sentuh layar atau klik & seret mouse di sini (stroke otomatis dihaluskan saat dilepas)
                             </div>
                         </div>
 
-                        <label class="flex items-center gap-2 cursor-pointer pt-1">
-                            <input type="checkbox" name="save_to_profile" value="1" class="rounded border-slate-300 text-[#0B63B5] focus:ring-[#0B63B5]">
-                            <span class="text-xs text-slate-600">Simpan juga tanda tangan ini ke profil saya untuk peminjaman berikutnya</span>
-                        </label>
+                        <div class="flex items-center justify-between gap-2 pt-1 text-xs text-slate-500">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" name="save_to_profile" value="1" class="rounded border-slate-300 text-[#0B63B5] focus:ring-[#0B63B5]">
+                                <span>Simpan juga tanda tangan ini ke profil saya</span>
+                            </label>
+                            <label class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 cursor-pointer select-none">
+                                <input type="checkbox" x-model="smoothingEnabled" class="rounded border-slate-300 text-[#0B63B5] focus:ring-[#0B63B5] w-3 h-3">
+                                <span>Koreksi Halus</span>
+                            </label>
+                        </div>
                     </div>
 
                     <!-- Tab 3: Unggah Berkas -->

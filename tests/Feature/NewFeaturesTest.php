@@ -329,4 +329,70 @@ class NewFeaturesTest extends TestCase
         $resPdfSurat->assertStatus(200);
         $this->assertEquals('application/pdf', $resPdfSurat->headers->get('content-type'));
     }
+
+    /**
+     * Menu ubah data diri untuk peminjaman di profil peminjam.
+     */
+    public function test_borrower_can_update_personal_data_for_bmn_documents(): void
+    {
+        $user = User::where('role', 'PEMINJAM')->first();
+        $this->actingAs($user);
+
+        // 1. Kunjungi halaman profil peminjam
+        $response = $this->get(route('profile.show'));
+        $response->assertStatus(200);
+        $response->assertSee('Ubah Data Diri Peminjaman BMN');
+
+        // 2. Kirim update data diri peminjaman
+        $updateResponse = $this->put(route('profile.biodata.update'), [
+            'full_name' => 'Dr. H. Andi Pratama, S.Kom., M.T.',
+            'nip' => '19871112 201201 1 002',
+            'rank_grade' => 'Penata Tk. I (III/d)',
+            'position' => 'Pranata Komputer Ahli Muda',
+            'employment_status' => 'PNS',
+            'home_address' => 'Jl. Pengayoman No. 45 Blok B, Panakkukang, Makassar',
+            'phone' => '081298765432',
+        ]);
+
+        $updateResponse->assertRedirect(route('profile.show', ['tab' => 'biodata']));
+        $updateResponse->assertSessionHas('success');
+
+        // 3. Verifikasi data terupdate di database
+        $user->refresh();
+        $this->assertEquals('Dr. H. Andi Pratama, S.Kom., M.T.', $user->name);
+        $employee = $user->employee;
+        $this->assertNotNull($employee);
+        $this->assertEquals('Dr. H. Andi Pratama, S.Kom., M.T.', $employee->full_name);
+        $this->assertEquals('198711122012011002', $employee->nip);
+        $this->assertEquals('Penata Tk. I (III/d)', $employee->rank_grade);
+        $this->assertEquals('Pranata Komputer Ahli Muda', $employee->position);
+        $this->assertEquals('Jl. Pengayoman No. 45 Blok B, Panakkukang, Makassar', $employee->home_address);
+        $this->assertEquals('081298765432', $employee->phone);
+
+        // 4. Verifikasi audit log tercatat
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'UPDATE_PROFILE_BIODATA',
+            'entity' => 'Employee',
+            'entity_id' => (string)$employee->id,
+        ]);
+
+        // 5. Verifikasi pengajuan baru menggunakan snapshot data diri yang baru diperbarui
+        $asset = Asset::where('status', 'AVAILABLE')->first();
+        $loanRes = $this->post(route('loans.store'), [
+            'loan_type' => 'SHORT_TERM',
+            'start_date' => Carbon::now()->addDays(1)->toDateString(),
+            'end_date' => Carbon::now()->addDays(3)->toDateString(),
+            'home_address' => $employee->home_address,
+            'asset_ids' => [$asset->id],
+            'purposes' => [$asset->id => 'Operasional workshop TIK'],
+        ]);
+        $loanRes->assertSessionHasNoErrors();
+
+        $loan = LoanRequest::where('borrower_id', $employee->id)->latest('created_at')->first();
+        $this->assertEquals('Dr. H. Andi Pratama, S.Kom., M.T.', $loan->snap_full_name);
+        $this->assertEquals('198711122012011002', $loan->snap_nip);
+        $this->assertEquals('Penata Tk. I (III/d)', $loan->snap_rank_grade);
+        $this->assertEquals('Pranata Komputer Ahli Muda', $loan->snap_position);
+        $this->assertEquals('Jl. Pengayoman No. 45 Blok B, Panakkukang, Makassar', $loan->snap_home_address);
+    }
 }

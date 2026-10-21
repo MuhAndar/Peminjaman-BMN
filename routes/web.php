@@ -26,8 +26,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/barang', [AssetController::class, 'index'])->name('assets.index');
     Route::get('/barang/{asset}', [AssetController::class, 'show'])->name('assets.show');
 
-    // Profil & Pengaturan Tanda Tangan Digital Pengguna
+    // Profil & Pengaturan Data Diri Peminjaman & Tanda Tangan Digital Pengguna
     Route::get('/profile', [\App\Http\Controllers\ProfileController::class, 'show'])->name('profile.show');
+    Route::put('/profile/biodata', [\App\Http\Controllers\ProfileController::class, 'updateBiodata'])->name('profile.biodata.update');
     Route::post('/profile/signature', [\App\Http\Controllers\ProfileController::class, 'updateSignature'])->name('profile.signature.update');
     Route::delete('/profile/signature', [\App\Http\Controllers\ProfileController::class, 'deleteSignature'])->name('profile.signature.delete');
 

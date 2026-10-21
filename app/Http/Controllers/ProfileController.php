@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
+use App\Models\Employee;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -17,6 +18,89 @@ class ProfileController extends Controller
     {
         $user = Auth::user()->load('employee');
         return view('profile.show', compact('user'));
+    }
+
+    /**
+     * Update borrower personal data for BMN loan documents.
+     */
+    public function updateBiodata(Request $request)
+    {
+        $user = Auth::user();
+
+        $validated = $request->validate([
+            'full_name' => 'required|string|max:255',
+            'nip' => 'nullable|string|max:30',
+            'rank_grade' => 'nullable|string|max:100',
+            'position' => 'nullable|string|max:150',
+            'employment_status' => 'required|string|max:50',
+            'home_address' => 'required|string|max:500',
+            'phone' => 'nullable|string|max:30',
+        ], [
+            'full_name.required' => 'Nama lengkap pegawai wajib diisi.',
+            'employment_status.required' => 'Status kepegawaian wajib dipilih.',
+            'home_address.required' => 'Alamat rumah wajib diisi untuk kelengkapan Surat Peminjaman dan Berita Acara BMN.',
+        ]);
+
+        $employee = $user->employee;
+        $isNew = false;
+        if (!$employee) {
+            $employee = new Employee();
+            $employee->id = (string) Str::uuid();
+            $employee->email = $user->email;
+            $isNew = true;
+        }
+
+        $oldData = [
+            'full_name' => $employee->full_name,
+            'nip' => $employee->nip,
+            'rank_grade' => $employee->rank_grade,
+            'position' => $employee->position,
+            'employment_status' => $employee->employment_status,
+            'home_address' => $employee->home_address,
+            'phone' => $employee->phone,
+        ];
+
+        // Format NIP: jika ada input berformat dengan spasi, ambil hanya digit
+        $cleanNip = null;
+        if (!empty($validated['nip'])) {
+            $digits = preg_replace('/\D/', '', $validated['nip']);
+            $cleanNip = !empty($digits) ? $digits : trim($validated['nip']);
+        }
+
+        $employee->full_name = trim($validated['full_name']);
+        $employee->nip = $cleanNip;
+        $employee->rank_grade = !empty($validated['rank_grade']) ? trim($validated['rank_grade']) : null;
+        $employee->position = !empty($validated['position']) ? trim($validated['position']) : null;
+        $employee->employment_status = trim($validated['employment_status']);
+        $employee->home_address = trim($validated['home_address']);
+        $employee->phone = !empty($validated['phone']) ? trim($validated['phone']) : null;
+        $employee->save();
+
+        // Sinkronkan nama dan relasi user
+        $user->name = $employee->full_name;
+        if ($user->employee_id !== $employee->id) {
+            $user->employee_id = $employee->id;
+        }
+        $user->save();
+
+        AuditLog::record(
+            $isNew ? 'CREATE_PROFILE_BIODATA' : 'UPDATE_PROFILE_BIODATA',
+            'Employee',
+            (string)$employee->id,
+            $isNew ? null : $oldData,
+            [
+                'full_name' => $employee->full_name,
+                'nip' => $employee->nip,
+                'rank_grade' => $employee->rank_grade,
+                'position' => $employee->position,
+                'employment_status' => $employee->employment_status,
+                'home_address' => $employee->home_address,
+                'phone' => $employee->phone,
+            ]
+        );
+
+        return redirect()->route('profile.show', ['tab' => 'biodata'])
+            ->with('success', 'Data diri peminjaman BMN berhasil diperbarui! Data ini akan otomatis digunakan pada setiap pengajuan peminjaman dan dokumen resmi.');
     }
 
     /**

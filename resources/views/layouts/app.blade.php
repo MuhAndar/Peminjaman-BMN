@@ -243,6 +243,33 @@
                         <span class="relative z-10">Pengajuan Saya</span>
                     </div>
                 </a>
+
+                <!-- Data Diri Peminjaman & Profil -->
+                <a href="{{ route('profile.show') }}"
+                   class="flex items-center rounded-xl h-10 transition-colors group relative select-none {{ request()->routeIs('profile.*') ? 'bg-blue-50 text-[#0B63B5] font-extrabold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-bold' }}"
+                   :class="sidebarCollapsed && !sidebarMobileOpen ? 'justify-center px-0' : 'px-3 gap-3'">
+                    <div class="w-6 h-6 flex items-center justify-center shrink-0">
+                        <i data-lucide="user-pen" class="w-5 h-5 {{ request()->routeIs('profile.*') ? 'text-[#0B63B5]' : 'text-slate-500 group-hover:text-slate-800' }}"></i>
+                    </div>
+                    <span x-show="!sidebarCollapsed || sidebarMobileOpen"
+                          x-transition:enter="transition-opacity duration-150 delay-100"
+                          x-transition:enter-start="opacity-0"
+                          x-transition:enter-end="opacity-100"
+                          x-transition:leave="transition-opacity duration-75"
+                          x-transition:leave-start="opacity-100"
+                          x-transition:leave-end="opacity-0"
+                          class="truncate whitespace-nowrap text-xs">
+                        Data Diri Peminjaman
+                    </span>
+
+                    <!-- Floating Tooltip -->
+                    <div x-show="sidebarCollapsed && !sidebarMobileOpen"
+                         x-cloak
+                         class="absolute left-full top-1/2 -translate-y-1/2 ml-3.5 px-3 py-1.5 bg-slate-900/95 text-white text-xs font-bold rounded-xl shadow-xl whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0 transition-all duration-150 z-50 flex items-center gap-1.5">
+                        <span class="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 bg-slate-900/95 rotate-45"></span>
+                        <span class="relative z-10">Data Diri Peminjaman</span>
+                    </div>
+                </a>
             </div>
             @endif
 
