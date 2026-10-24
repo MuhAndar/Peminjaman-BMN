@@ -47,14 +47,32 @@ class LoanRequestController extends Controller
                 ->with('warning', 'Silakan lengkapi data diri peminjam terlebih dahulu sebelum mengajukan peminjaman BMN.');
         }
 
-        // Ambil barang yang tersedia dan berkondisi baik (BR-03)
-        $availableAssets = Asset::where('status', 'AVAILABLE')
+        // Ambil barang inventaris yang dapat dipinjam (tersedia maupun sedang dipinjam)
+        $availableAssets = Asset::whereIn('status', ['AVAILABLE', 'ON_LOAN'])
             ->where('condition', 'BAIK')
-            ->with('category')
+            ->with(['category', 'loanItems' => function ($q) {
+                $q->whereHas('loanRequest', function ($sub) {
+                    $sub->whereIn('status', [
+                        'SUBMITTED',
+                        'VERIFIED',
+                        'APPROVED',
+                        'BAST_ISSUED',
+                        'ACTIVE',
+                        'RETURN_REQUESTED',
+                        'RETURN_CHECKED',
+                    ]);
+                })->with('loanRequest');
+            }])
             ->orderBy('item_name')
             ->get();
 
         $selectedAssetId = $request->query('asset_id');
+        if ($selectedAssetId) {
+            $preAsset = $availableAssets->firstWhere('id', $selectedAssetId);
+            if ($preAsset && $preAsset->is_currently_loaned) {
+                $selectedAssetId = null;
+            }
+        }
 
         // Ambil semua kategori untuk filter dropdown
         $categories = AssetCategory::orderBy('label')->get();

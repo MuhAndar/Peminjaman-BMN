@@ -141,9 +141,15 @@
                     <h2 class="text-base font-bold text-slate-900">Langkah 1: Pilih Barang BMN yang Tersedia</h2>
                     <p class="text-xs text-slate-500">Cari dan centang satu atau beberapa barang inventaris yang ingin dipinjam.</p>
                 </div>
-                <div class="text-xs font-semibold text-slate-500 flex items-center gap-1.5">
-                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                    <span>Hanya kondisi Baik & Tersedia</span>
+                <div class="flex items-center gap-3 text-xs font-semibold text-slate-500">
+                    <span class="flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                        <span>Tersedia</span>
+                    </span>
+                    <span class="flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-slate-400"></span>
+                        <span>Sedang Dipinjam</span>
+                    </span>
                 </div>
             </div>
 
@@ -220,22 +226,66 @@
             <!-- ASSET CARDS GRID -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 max-h-[500px] overflow-y-auto pr-1">
                 @foreach($availableAssets as $asset)
+                    @php
+                        $isLoaned = $asset->is_currently_loaned;
+                        $activeLoan = $asset->active_loan;
+                        $isOverdue = false;
+                        $loanStartDateStr = '';
+                        $loanEndDateStr = '';
+
+                        if ($activeLoan && $activeLoan->start_date && $activeLoan->end_date) {
+                            $todayMakassar = \Carbon\Carbon::now('Asia/Makassar')->startOfDay();
+                            $startDate = \Carbon\Carbon::parse($activeLoan->start_date)->setTimezone('Asia/Makassar');
+                            $endDate = \Carbon\Carbon::parse($activeLoan->end_date)->setTimezone('Asia/Makassar');
+                            $isOverdue = $todayMakassar->gt($endDate->copy()->startOfDay());
+                            $loanStartDateStr = $startDate->translatedFormat('d M Y');
+                            $loanEndDateStr = $endDate->translatedFormat('d M Y');
+                        }
+                    @endphp
+
                     <div x-show="filterAsset('{{ addslashes($asset->item_name) }}', '{{ addslashes($asset->brand_model_combined) }}', '{{ $asset->nup }}', '{{ $asset->category_code }}', '{{ addslashes($asset->category->label ?? '') }}', '{{ addslashes($asset->plate_number ?? '') }}')"
-                         @click="toggleAsset('{{ $asset->id }}')"
-                         :class="isSelected('{{ $asset->id }}') ? 'border-[#0B63B5] bg-blue-50/50 shadow-sm ring-1 ring-[#0B63B5]/30' : 'border-slate-200 hover:border-slate-300'"
-                         class="p-4 rounded-2xl border cursor-pointer transition flex items-start gap-3 select-none">
+                         @if(!$isLoaned)
+                             @click="toggleAsset('{{ $asset->id }}')"
+                             :class="isSelected('{{ $asset->id }}') ? 'border-[#0B63B5] bg-blue-50/50 shadow-sm ring-1 ring-[#0B63B5]/30' : 'border-slate-200 hover:border-slate-300 bg-white'"
+                             class="p-4 rounded-2xl border cursor-pointer transition flex items-start gap-3 select-none"
+                         @else
+                             class="p-4 rounded-2xl border border-slate-200 bg-slate-100/90 text-slate-500 cursor-not-allowed select-none flex items-start gap-3 shadow-2xs"
+                         @endif>
+
+                        <!-- Checkbox (disabled jika barang sedang dipinjam) -->
                         <input type="checkbox" name="asset_ids[]" value="{{ $asset->id }}"
-                               :checked="isSelected('{{ $asset->id }}')"
-                               class="mt-1 w-4 h-4 text-[#0B63B5] rounded border-slate-300 focus:ring-blue-500 pointer-events-none">
-                        <div class="flex-1">
-                            <div class="flex items-center justify-between gap-2">
-                                <span class="font-bold text-sm text-slate-900">{{ $asset->item_name }}</span>
-                                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
-                                    {{ $asset->category->label ?? '-' }}
-                                </span>
+                               @if(!$isLoaned)
+                                   :checked="isSelected('{{ $asset->id }}')"
+                                   class="mt-1 w-4 h-4 text-[#0B63B5] rounded border-slate-300 focus:ring-blue-500 pointer-events-none"
+                               @else
+                                   disabled
+                                   class="mt-1 w-4 h-4 text-slate-400 rounded border-slate-300 bg-slate-200 cursor-not-allowed pointer-events-none opacity-60"
+                               @endif>
+
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between gap-1.5 flex-wrap">
+                                <span class="font-bold text-sm {{ $isLoaned ? 'text-slate-700' : 'text-slate-900' }} truncate">{{ $asset->item_name }}</span>
+
+                                @if($isLoaned)
+                                    @if($isOverdue)
+                                        <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 border border-rose-200 shrink-0">
+                                            Belum Dikembalikan
+                                        </span>
+                                    @else
+                                        <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200 shrink-0">
+                                            Sedang Dipinjam
+                                        </span>
+                                    @endif
+                                @else
+                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 shrink-0">
+                                        {{ $asset->category->label ?? '-' }}
+                                    </span>
+                                @endif
                             </div>
-                            <p class="text-xs font-medium text-slate-700 mt-0.5">{{ $asset->brand_model_combined }}</p>
-                            <div class="mt-2 text-[11px] text-slate-500 space-y-0.5">
+
+                            <p class="text-xs font-medium {{ $isLoaned ? 'text-slate-500' : 'text-slate-700' }} mt-0.5 truncate">{{ $asset->brand_model_combined }}</p>
+
+                            <div class="mt-2 text-[11px] {{ $isLoaned ? 'text-slate-400' : 'text-slate-500' }} space-y-0.5">
                                 @if($asset->plate_number)
                                     <div>Plat: <strong>{{ $asset->plate_number }}</strong></div>
                                 @endif
@@ -244,6 +294,28 @@
                                 @endif
                                 <div>Nilai: <span class="tabular-nums font-semibold">{{ $asset->formatted_value }}</span></div>
                             </div>
+
+                            @if($isLoaned)
+                                <div class="mt-2.5 pt-2 border-t border-slate-200/90 text-[11px] space-y-1">
+                                    @if($isOverdue)
+                                        <div class="flex items-center gap-1.5 text-rose-600 font-bold">
+                                            <i data-lucide="alert-circle" class="w-3.5 h-3.5 shrink-0 text-rose-600"></i>
+                                            <span>Barang belum dikembalikan</span>
+                                        </div>
+                                    @else
+                                        <div class="flex items-center gap-1.5 text-amber-700 font-bold">
+                                            <i data-lucide="clock" class="w-3.5 h-3.5 shrink-0 text-amber-600"></i>
+                                            <span>Sedang dalam masa peminjaman</span>
+                                        </div>
+                                    @endif
+
+                                    @if($loanStartDateStr && $loanEndDateStr)
+                                        <div class="text-[10.5px] text-slate-600">
+                                            Dipinjam: <span class="font-bold text-slate-700">{{ $loanStartDateStr }} s.d. {{ $loanEndDateStr }}</span>
+                                        </div>
+                                    @endif
+                                </div>
+                            @endif
                         </div>
                     </div>
                 @endforeach

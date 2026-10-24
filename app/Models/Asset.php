@@ -51,8 +51,60 @@ class Asset extends Model
         return trim(($this->brand ?? '') . ' ' . ($this->model ?? ''));
     }
 
+    public function activeLoanItem()
+    {
+        return $this->hasOne(LoanItem::class)
+            ->whereHas('loanRequest', function ($q) {
+                $q->whereIn('status', [
+                    'SUBMITTED',
+                    'VERIFIED',
+                    'APPROVED',
+                    'BAST_ISSUED',
+                    'ACTIVE',
+                    'RETURN_REQUESTED',
+                    'RETURN_CHECKED',
+                ]);
+            })
+            ->latest('created_at');
+    }
+
+    public function getActiveLoanAttribute(): ?LoanRequest
+    {
+        if ($this->relationLoaded('loanItems')) {
+            $item = $this->loanItems->first(function ($li) {
+                return $li->loanRequest && in_array($li->loanRequest->status, [
+                    'SUBMITTED',
+                    'VERIFIED',
+                    'APPROVED',
+                    'BAST_ISSUED',
+                    'ACTIVE',
+                    'RETURN_REQUESTED',
+                    'RETURN_CHECKED',
+                ]);
+            });
+            return $item?->loanRequest;
+        }
+
+        return LoanRequest::whereHas('items', function ($q) {
+            $q->where('asset_id', $this->id);
+        })->whereIn('status', [
+            'SUBMITTED',
+            'VERIFIED',
+            'APPROVED',
+            'BAST_ISSUED',
+            'ACTIVE',
+            'RETURN_REQUESTED',
+            'RETURN_CHECKED',
+        ])->latest('created_at')->first();
+    }
+
+    public function getIsCurrentlyLoanedAttribute(): bool
+    {
+        return $this->status === 'ON_LOAN' || $this->active_loan !== null;
+    }
+
     public function isAvailable(): bool
     {
-        return $this->status === 'AVAILABLE' && $this->condition === 'BAIK';
+        return $this->status === 'AVAILABLE' && $this->condition === 'BAIK' && !$this->is_currently_loaned;
     }
 }
