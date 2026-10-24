@@ -84,9 +84,9 @@
                                     <div class="text-xs text-slate-500">{{ $loan->snap_position ?? 'Pegawai' }}</div>
                                 </td>
                                 <td class="py-4 px-4 font-semibold text-slate-800 text-xs">
-                                    {{ $loan->items->pluck('snap_item_name')->implode(', ') }}
+                                    {{ $loan->items_summary }}
                                     <div class="text-slate-400 text-[11px] font-normal">
-                                        {{ $loan->items->pluck('snap_brand_model')->filter()->implode(', ') }}
+                                        {{ $loan->items->pluck('snap_brand_model')->filter()->unique()->implode(', ') }}
                                     </div>
                                 </td>
                                 <td class="py-4 px-4 text-xs font-medium text-slate-600 tabular-nums">

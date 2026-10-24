@@ -47,7 +47,7 @@
                         </div>
 
                         <div class="mt-3 p-3 rounded-xl bg-slate-50 text-xs text-slate-600 space-y-1">
-                            <div><strong>Barang:</strong> {{ $loan->items->pluck('snap_item_name')->implode(', ') }}</div>
+                            <div><strong>Barang:</strong> {{ $loan->items_summary }}</div>
                             <div><strong>Periode:</strong> {{ \App\Helpers\FormatHelper::formatDateIndo($loan->start_date) }} s.d. {{ \App\Helpers\FormatHelper::formatDateIndo($loan->end_date) }}</div>
                             <div><strong>Keperluan:</strong> <em>{{ $loan->items->first()->purpose }}</em></div>
                         </div>

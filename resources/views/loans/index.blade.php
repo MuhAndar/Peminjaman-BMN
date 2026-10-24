@@ -56,9 +56,9 @@
                                     {{ $loan->created_at->format('d/m/Y') }}
                                 </td>
                                 <td class="py-4 px-4 font-bold text-slate-900">
-                                    {{ $loan->items->pluck('snap_item_name')->implode(', ') }}
+                                    {{ $loan->items_summary }}
                                     <div class="text-xs text-slate-500 font-normal">
-                                        {{ $loan->items->pluck('snap_brand_model')->filter()->implode(', ') }}
+                                        {{ $loan->items->pluck('snap_brand_model')->filter()->unique()->implode(', ') }}
                                     </div>
                                 </td>
                                 <td class="py-4 px-4 text-xs font-medium text-slate-600 tabular-nums">
@@ -107,7 +107,7 @@
                             <div>
                                 <span class="text-xs text-slate-400 font-medium tabular-nums">{{ $loan->created_at->format('d/m/Y') }}</span>
                                 <h3 class="font-bold text-slate-900 text-sm mt-0.5">
-                                    {{ $loan->items->pluck('snap_item_name')->implode(', ') }}
+                                    {{ $loan->items_summary }}
                                 </h3>
                             </div>
                             <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold border {{ $meta['bg'] }}">

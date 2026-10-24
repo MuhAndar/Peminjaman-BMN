@@ -56,7 +56,7 @@
                                 <span class="text-xs text-slate-500">({{ $loan->snap_position ?? 'Pegawai' }})</span>
                             </div>
                             <div class="text-xs text-slate-600 flex flex-wrap gap-x-4 gap-y-1">
-                                <div><strong>Barang:</strong> {{ $loan->items->pluck('snap_item_name')->implode(', ') }} ({{ $loan->items->pluck('snap_brand_model')->filter()->implode(', ') }})</div>
+                                <div><strong>Barang:</strong> {{ $loan->items_summary }}</div>
                                 <div><strong>Periode:</strong> {{ \App\Helpers\FormatHelper::formatDateIndo($loan->start_date) }} s.d. {{ \App\Helpers\FormatHelper::formatDateIndo($loan->end_date) }}</div>
                             </div>
                             <div class="text-xs text-slate-500">

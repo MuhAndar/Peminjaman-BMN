@@ -110,10 +110,10 @@
                                 </td>
                                 <td class="py-3.5 pr-4">
                                     <div class="font-semibold text-slate-800">
-                                        {{ $loan->items->pluck('snap_item_name')->implode(', ') }}
+                                        {{ $loan->items_summary }}
                                     </div>
                                     <div class="text-xs text-slate-500">
-                                        {{ $loan->items->pluck('snap_brand_model')->filter()->implode(', ') }}
+                                        {{ $loan->items->pluck('snap_brand_model')->filter()->unique()->implode(', ') }}
                                     </div>
                                 </td>
                                 <td class="py-3.5 pr-4 text-xs font-medium text-slate-600 tabular-nums">

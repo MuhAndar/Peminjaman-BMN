@@ -242,7 +242,7 @@
                         <td class="py-3.5 px-4">
                             @if($loan && $loan->items->isNotEmpty())
                                 <div class="font-bold text-slate-800 truncate max-w-xs">
-                                    {{ $loan->items->pluck('snap_item_name')->implode(', ') }}
+                                    {{ $loan->items_summary }}
                                 </div>
                                 <div class="text-[10px] text-slate-400 font-mono mt-0.5">
                                     {{ $loan->items->count() }} unit barang BMN

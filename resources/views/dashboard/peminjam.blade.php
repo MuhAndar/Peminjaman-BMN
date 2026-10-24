@@ -117,7 +117,7 @@
                             <div>
                                 <div class="flex items-center gap-2 flex-wrap">
                                     <span class="text-sm font-bold text-slate-900">
-                                        {{ $loan->items->pluck('snap_item_name')->implode(', ') }}
+                                        {{ $loan->items_summary }}
                                     </span>
                                     <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold border {{ $meta['bg'] }}">
                                         {{ $meta['label'] }}

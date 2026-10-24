@@ -83,6 +83,30 @@ class LoanRequest extends Model
         return false;
     }
 
+    public function getItemsSummaryAttribute(): string
+    {
+        if (!$this->relationLoaded('items') && !$this->items()->exists()) {
+            return '-';
+        }
+
+        if ($this->items->isEmpty()) {
+            return '-';
+        }
+
+        $grouped = $this->items->groupBy('snap_item_name');
+        $parts = [];
+        foreach ($grouped as $name => $group) {
+            $nups = $group->pluck('snap_nup')->filter()->values();
+            if ($nups->isNotEmpty()) {
+                $parts[] = $name . ' (NUP ' . $nups->implode(', ') . ')';
+            } else {
+                $count = $group->count();
+                $parts[] = $count > 1 ? "{$name} ({$count} unit)" : $name;
+            }
+        }
+        return implode(', ', $parts);
+    }
+
     public function getStatusMetaAttribute(): array
     {
         $status = $this->status;

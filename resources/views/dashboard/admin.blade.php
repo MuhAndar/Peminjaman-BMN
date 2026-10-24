@@ -69,7 +69,7 @@
                     <tr class="hover:bg-slate-50 transition">
                         <td class="py-3 text-xs text-slate-500 tabular-nums">{{ $loan->created_at->format('d/m/Y H:i') }}</td>
                         <td class="py-3 font-bold text-slate-900">{{ $loan->snap_full_name }}</td>
-                        <td class="py-3 text-slate-700">{{ $loan->items->pluck('snap_item_name')->implode(', ') }}</td>
+                        <td class="py-3 text-slate-700 font-semibold">{{ $loan->items_summary }}</td>
                         <td class="py-3">
                             <span class="px-2.5 py-1 text-xs font-bold rounded-full border {{ $loan->status_meta['bg'] }}">
                                 {{ $loan->status_meta['label'] }}
