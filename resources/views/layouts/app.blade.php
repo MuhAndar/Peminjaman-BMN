@@ -232,7 +232,7 @@
                           x-transition:leave-start="opacity-100"
                           x-transition:leave-end="opacity-0"
                           class="truncate whitespace-nowrap text-xs">
-                        Pengajuan Saya
+                        Pengajuan
                     </span>
 
                     <!-- Floating Tooltip -->
@@ -240,7 +240,7 @@
                          x-cloak
                          class="absolute left-full top-1/2 -translate-y-1/2 ml-3.5 px-3 py-1.5 bg-slate-900/95 text-white text-xs font-bold rounded-xl shadow-xl whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0 transition-all duration-150 z-50 flex items-center gap-1.5">
                         <span class="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 bg-slate-900/95 rotate-45"></span>
-                        <span class="relative z-10">Pengajuan Saya</span>
+                        <span class="relative z-10">Pengajuan</span>
                     </div>
                 </a>
 
@@ -259,7 +259,7 @@
                           x-transition:leave-start="opacity-100"
                           x-transition:leave-end="opacity-0"
                           class="truncate whitespace-nowrap text-xs">
-                        Data Diri Peminjaman
+                        Data Diri
                     </span>
 
                     <!-- Floating Tooltip -->
@@ -267,7 +267,7 @@
                          x-cloak
                          class="absolute left-full top-1/2 -translate-y-1/2 ml-3.5 px-3 py-1.5 bg-slate-900/95 text-white text-xs font-bold rounded-xl shadow-xl whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0 transition-all duration-150 z-50 flex items-center gap-1.5">
                         <span class="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 bg-slate-900/95 rotate-45"></span>
-                        <span class="relative z-10">Data Diri Peminjaman</span>
+                        <span class="relative z-10">Data Diri</span>
                     </div>
                 </a>
             </div>
@@ -663,10 +663,48 @@
                         <span class="text-xs font-bold text-slate-700">Menu</span>
                     </button>
 
-                    <!-- Satker Context Title (Sesuai Permintaan: Hanya "Sistem Layanan Tata Kelola & Peminjaman BMN") -->
-                    <div class="hidden sm:flex items-center min-w-0 py-1">
+                    <!-- Dynamic Page Title (Deskripsi Halaman Aktif) -->
+                    <div class="flex items-center min-w-0 py-1">
                         <span class="text-xs sm:text-sm lg:text-base font-extrabold text-slate-900 tracking-tight truncate">
-                            Sistem Layanan Tata Kelola & Peminjaman BMN
+                            @hasSection('header_title')
+                                @yield('header_title')
+                            @else
+                                @if(request()->routeIs('dashboard'))
+                                    Beranda
+                                @elseif(request()->routeIs('loans.index'))
+                                    Pengajuan Saya
+                                @elseif(request()->routeIs('loans.create'))
+                                    Formulir Pengajuan BMN
+                                @elseif(request()->routeIs('loans.show'))
+                                    Detail Pengajuan BMN
+                                @elseif(request()->routeIs('assets.index'))
+                                    Katalog Barang Milik Negara
+                                @elseif(request()->routeIs('assets.show'))
+                                    Detail Barang Milik Negara
+                                @elseif(request()->routeIs('profile.*'))
+                                    Data Diri Peminjaman
+                                @elseif(request()->routeIs('kelola.queue'))
+                                    Antrean Pengelola BMN
+                                @elseif(request()->routeIs('kelola.import.*'))
+                                    Unggah Data Excel BMN
+                                @elseif(request()->routeIs('approval.index'))
+                                    Persetujuan Ketua Tim
+                                @elseif(request()->routeIs('approval.show'))
+                                    Telaah & Persetujuan BMN
+                                @elseif(request()->routeIs('audit.loans'))
+                                    Audit Peminjaman BMN
+                                @elseif(request()->routeIs('admin.users'))
+                                    Manajemen Pengguna
+                                @elseif(request()->routeIs('admin.signatories'))
+                                    Pejabat Penandatangan
+                                @elseif(request()->routeIs('admin.settings'))
+                                    Pengaturan Satker
+                                @elseif(request()->routeIs('admin.activity-logs') || request()->routeIs('admin.audit-logs'))
+                                    Log Aktivitas Sistem
+                                @else
+                                    {{ trim(explode('—', View::getSection('title', 'Layanan Peminjaman BMN'))[0]) }}
+                                @endif
+                            @endif
                         </span>
                     </div>
                 </div>
@@ -816,7 +854,7 @@
             <span class="text-[10px]">Antrean</span>
         </a>
         @elseif(auth()->user()->isKetuaTim())
-        <a href="{{ route('persetujuan.index') }}" class="flex flex-col items-center gap-1 py-1 px-3 rounded-lg text-xs font-semibold relative {{ request()->routeIs('persetujuan.*') ? 'text-[#0B63B5]' : 'text-slate-500' }}">
+        <a href="{{ route('approval.index') }}" class="flex flex-col items-center gap-1 py-1 px-3 rounded-lg text-xs font-semibold relative {{ request()->routeIs('approval.*') ? 'text-[#0B63B5]' : 'text-slate-500' }}">
             <i data-lucide="check-square" class="w-5 h-5"></i>
             <span class="text-[10px]">Persetujuan</span>
         </a>

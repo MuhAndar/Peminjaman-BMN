@@ -5,9 +5,11 @@
 <div class="space-y-6">
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div class="flex items-center gap-2">
-            <a href="{{ route('persetujuan.index') }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:text-slate-900 hover:bg-slate-50 transition shadow-2xs">
+            <a href="{{ url()->previous() !== url()->current() ? url()->previous() : route('approval.index') }}"
+               onclick="if (document.referrer && document.referrer.indexOf(window.location.host) !== -1) { history.back(); return false; }"
+               class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:text-slate-900 hover:bg-slate-50 transition shadow-2xs">
                 <i data-lucide="arrow-left" class="w-4 h-4 text-slate-500"></i>
-                <span>Kembali ke Antrean Persetujuan</span>
+                <span>Kembali</span>
             </a>
         </div>
         <span class="px-3 py-1 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
