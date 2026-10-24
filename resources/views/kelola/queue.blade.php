@@ -6,6 +6,10 @@
 <div class="space-y-6">
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
+            <a href="{{ route('dashboard') }}" class="inline-flex items-center gap-1 text-xs font-bold text-slate-500 hover:text-slate-800 mb-1 transition">
+                <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
+                <span>Kembali ke Beranda</span>
+            </a>
             <h1 class="text-2xl font-black text-slate-900 tracking-tight">Antrean Pengelolaan BMN</h1>
             <p class="text-xs sm:text-sm text-slate-500 mt-1">
                 Daftar pengajuan peminjaman dan pengembalian yang memerlukan proses kerja Pengelola BMN.

@@ -103,6 +103,18 @@ Aplikasi web terpadu untuk digitalisasi tata kelola, peminjaman, pemantauan, dan
 
 - **Single Source of Truth State Machine (`LoanStateMachine`)**:
   Seluruh aturan bisnis, validasi guard, penulisan riwayat status, dan log audit dieksekusi secara ketat dalam satu transaksi basis data atomik.
+- **Tanda Tangan Digital & Penghalusan Kurva Otomatis (*Chaikin Smoothing Algorithm*)**:
+  Pengguna dapat membubuhkan tanda tangan langsung melalui papan kanvas interaktif dengan algoritme *Chaikin curve smoothing* yang otomatis menghaluskan goresan saat sentuhan dilepas, atau mengunggah spesimen tanda tangan transparan di profil untuk digunakan berulang kali pada Surat Peminjaman dan Berita Acara (BAST).
+- **Upload & Dokumentasi Foto Fisik BAST (Kamera & Galeri)**:
+  Petugas dan peminjam dapat melampirkan foto serah terima dan kondisi fisik aset saat peminjaman maupun saat pengembalian (dukungan jepret kamera langsung ponsel `capture="environment"` dan galeri banyak foto) lengkap dengan *lightbox viewer* resolusi penuh.
+- **Pemisahan Audit Log Forensik Sistem & Audit Aktivitas Peminjaman BMN**:
+  - **Audit Peminjaman BMN (`/audit/peminjaman`)**: Khusus transaksi operasional peminjaman barang, tanpa memuat IP address, hash, atau data teknis sistem (aman untuk audit satker/pimpinan).
+  - **Log Aktivitas Sistem Forensik IT (`/admin/log-aktivitas`)**: Jejak teknis lengkap untuk audit TI internal (perubahan profil, unggah file, alamat IP, mutasi data *before/after*).
+  - Keduanya dilengkapi filter fleksibel (per bulan, tahun anggaran, atau rentang tanggal) serta fasilitas ekspor instan ke **Excel (`.xlsx`)** dan **CSV UTF-8**.
+- **Pembaruan Data Diri Peminjam & Live Preview**:
+  Menu pengelolaan data diri pegawai (NIP 18-digit, pangkat/golongan, jabatan, unit kerja, alamat rumah) di profil dengan *live preview* dokumen BMN interaktif.
+- **Modul Staging Impor Data Excel (`/kelola/import-data`)**:
+  Fasilitas unggah dan pembacaan berkas spreadsheet inventaris Microsoft Excel (`.xlsx`/`.xls`) berbasis **PhpSpreadsheet** lengkap dengan pratinjau tabel 10 baris pertama dan tombol unduh format acuan BMN resmi.
 - **Pencegahan Bentrok Jadwal Aset (*Anti Double-Booking Guard*)**:
   Sistem secara otomatis mencegah peminjaman barang yang sama pada rentang tanggal yang saling tumpang tindih (`BR-02`).
 - **Penomoran Dokumen Atomik Terpadu (`DocumentNumberService`)**:
@@ -116,8 +128,6 @@ Aplikasi web terpadu untuk digitalisasi tata kelola, peminjaman, pemantauan, dan
   1. *Surat Permohonan Peminjaman BMN*
   2. *Berita Acara Serah Terima (BAST) Peminjaman BMN*
   3. *Berita Acara Serah Terima (BAST) Pengembalian BMN*
-- **Audit Trail & Jejak Aktivitas Forensik (`/admin/audit-logs`)**:
-  Pencatatan komprehensif atas setiap aksi pengguna, transisi status, identitas aktor, IP address, waktu WITA, serta perbandingan data **Sebelum vs Sesudah (*Before vs After JSON Diff Viewer*)**.
 - **Desain Antarmuka Modern & Ergonomis**:
   - Sidebar kiri yang dapat diciutkan (*minimized*) atau dilebarkan (*expanded*).
   - Tombol lingkaran panah (*floating arrow toggle*) di antara logo dan menu Beranda.
@@ -133,7 +143,8 @@ Aplikasi web terpadu untuk digitalisasi tata kelola, peminjaman, pemantauan, dan
 |---|---|---|
 | **Framework** | [Laravel 11](https://laravel.com) | Arsitektur backend modern, Eloquent ORM, Service Layer |
 | **Styling** | [Tailwind CSS v4](https://tailwindcss.com) | Desain utility-first dengan sistem token warna kustom |
-| **Reaktivitas UI** | [Alpine.js 3.x](https://alpinejs.dev) | State management reaktif ringan untuk modal, drawer, dan toast |
+| **Reaktivitas UI** | [Alpine.js 3.x](https://alpinejs.dev) | State management reaktif ringan untuk modal, kanvas TTE, drawer, dan toast |
+| **Spreadsheet Engine** | [PhpSpreadsheet 5.x](https://github.com/PHPOffice/PhpSpreadsheet) | Parsing berkas Excel .xlsx, pembacaan sheet, dan ekspor rekapan audit berformat resmi |
 | **Ikonografi** | [Lucide Icons](https://lucide.dev) | Ikon SVG berstandar visual konsisten |
 | **Tipografi** | Plus Jakarta Sans | Font modern Google Fonts |
 | **PDF Engine** | [DomPDF](https://github.com/barryvdh/laravel-dompdf) | Rendering dokumen resmi pemerintah ke format PDF vektor |
@@ -210,10 +221,11 @@ BMN/
    php artisan key:generate
    ```
 
-4. **Migrasi Basis Data & Data Awal (Seeding)**:
+4. **Migrasi Basis Data, Seeding & Storage Link**:
    ```bash
    touch database/database.sqlite
    php artisan migrate --seed
+   php artisan storage:link
    ```
 
 5. **Kompilasi Aset Frontend**:
@@ -247,7 +259,7 @@ Semua akun demo menggunakan kata sandi default: **`password`**
 
 ## 🧪 Pengujian Otomatis (Testing)
 
-Proyek ini dilengkapi rangkaian pengujian otomatis mencakup integritas state machine, penomoran dokumen atomik, pencegahan self-approval, pencegahan bentrok jadwal, dan proteksi otorisasi menu audit:
+Proyek ini dilengkapi rangkaian pengujian otomatis komprehensif mencakup integritas state machine, penomoran dokumen atomik, pembatasan hak akses pengembalian aset hanya pada peminjam pemilik, penanganan tanda tangan digital, unggah foto dokumentasi BAST, ekspor audit Excel/CSV, dan validasi data diri:
 
 ```bash
 php artisan test
@@ -262,6 +274,12 @@ Hasil pengujian:
   ✓ peminjam cannot access admin audit logs
   ✓ admin can access audit logs page
   ✓ audit logs can be filtered
+  ✓ loan audit accessible by pengelola and admin forbidden for peminjam
+  ✓ loan audit only shows loan activities without sensitive data
+  ✓ loan audit export works for xlsx and csv
+
+   PASS  Tests\Feature\ExampleTest
+  ✓ guest is redirected to login
 
    PASS  Tests\Feature\LoanWorkflowTest
   ✓ format helpers
@@ -270,7 +288,16 @@ Hasil pengujian:
   ✓ br 08 prevents borrower from approving own loan
   ✓ br 02 prevents overlapping asset loans
 
-  Tests:    10 passed (38 assertions)
+   PASS  Tests\Feature\NewFeaturesTest
+  ✓ only borrower who owns loan can request return
+  ✓ bast photo upload and delete
+  ✓ signature management in profile and loan signing
+  ✓ audit logs export with filters
+  ✓ excel upload and template download
+  ✓ pdf generation with digital signatures
+  ✓ borrower can update personal data for bmn documents
+
+  Tests:    20 passed (113 assertions)
 ```
 
 ---

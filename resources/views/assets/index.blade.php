@@ -6,6 +6,10 @@
 <div class="space-y-6">
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
+            <a href="{{ route('dashboard') }}" class="inline-flex items-center gap-1 text-xs font-bold text-slate-500 hover:text-slate-800 mb-1 transition">
+                <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
+                <span>Kembali ke Beranda</span>
+            </a>
             <h1 class="text-2xl font-black text-slate-900 tracking-tight">Katalog Barang Milik Negara</h1>
             <p class="text-xs sm:text-sm text-slate-500 mt-1">
                 Daftar aset BMN aktif yang tersedia untuk dipinjam dalam rangka pelaksanaan tugas kedinasan.

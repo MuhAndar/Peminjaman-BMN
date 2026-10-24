@@ -204,12 +204,77 @@
         }
         this.redrawCanvas();
     },
+    trimCanvas(canvas, padding = 12) {
+        if (!canvas) return '';
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+        if (width === 0 || height === 0) return '';
+        const imgData = ctx.getImageData(0, 0, width, height);
+        const data = imgData.data;
+
+        let minX = width, minY = height, maxX = 0, maxY = 0;
+        let found = false;
+
+        for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+                const alpha = data[(y * width + x) * 4 + 3];
+                if (alpha > 15) {
+                    found = true;
+                    if (x < minX) minX = x;
+                    if (x > maxX) maxX = x;
+                    if (y < minY) minY = y;
+                    if (y > maxY) maxY = y;
+                }
+            }
+        }
+
+        if (!found) return canvas.toDataURL('image/png');
+
+        const pad = Math.round(padding * 2);
+        minX = Math.max(0, minX - pad);
+        minY = Math.max(0, minY - pad);
+        maxX = Math.min(width, maxX + pad);
+        maxY = Math.min(height, maxY + pad);
+
+        let cropWidth = maxX - minX;
+        let cropHeight = maxY - minY;
+
+        // Maintain document aspect ratio (2.5 : 1)
+        const targetRatio = 2.5;
+        const currentRatio = cropWidth / cropHeight;
+
+        if (currentRatio < targetRatio) {
+            const desiredWidth = Math.min(width, Math.round(cropHeight * targetRatio));
+            const diff = desiredWidth - cropWidth;
+            minX = Math.max(0, Math.round(minX - diff / 2));
+            cropWidth = desiredWidth;
+        } else if (currentRatio > targetRatio) {
+            const desiredHeight = Math.min(height, Math.round(cropWidth / targetRatio));
+            const diff = desiredHeight - cropHeight;
+            minY = Math.max(0, Math.round(minY - diff / 2));
+            cropHeight = desiredHeight;
+        }
+
+        const trimmed = document.createElement('canvas');
+        trimmed.width = cropWidth;
+        trimmed.height = cropHeight;
+        const trimmedCtx = trimmed.getContext('2d');
+
+        trimmedCtx.drawImage(
+            canvas,
+            minX, minY, cropWidth, cropHeight,
+            0, 0, cropWidth, cropHeight
+        );
+
+        return trimmed.toDataURL('image/png');
+    },
     submitPadForm() {
         if (!this.hasDrawn || this.strokes.length === 0) {
             alert('Silakan goreskan tanda tangan Anda pada papan gambar terlebih dahulu.');
             return;
         }
-        const dataUrl = this.canvas.toDataURL('image/png');
+        const dataUrl = this.trimCanvas(this.canvas);
         document.getElementById('signature_data_input').value = dataUrl;
         document.getElementById('pad-form').submit();
     }
@@ -218,10 +283,16 @@
     <!-- HEADER & TOP NAVIGATION -->
     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-200/80 shadow-sm">
         <div>
-            <div class="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
-                <a href="{{ route('dashboard') }}" class="hover:text-blue-600 transition">Beranda</a>
-                <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
-                <span class="text-[#0B63B5]">Profil & Data Diri Peminjaman</span>
+            <div class="flex items-center gap-3 mb-2">
+                <a href="{{ route('dashboard') }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-xs font-bold text-slate-700 transition shadow-2xs">
+                    <i data-lucide="arrow-left" class="w-4 h-4 text-slate-500"></i>
+                    <span>Kembali ke Beranda</span>
+                </a>
+                <div class="flex items-center gap-1.5 text-xs font-bold text-slate-400 uppercase tracking-wider">
+                    <a href="{{ route('dashboard') }}" class="hover:text-blue-600 transition">Beranda</a>
+                    <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                    <span class="text-[#0B63B5]">Profil & Data Diri</span>
+                </div>
             </div>
             <h1 class="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
                 <div class="w-10 h-10 rounded-2xl bg-blue-100 text-[#0B63B5] flex items-center justify-center shrink-0">
@@ -380,8 +451,9 @@
 
                 @if($user->signature_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($user->signature_path))
                     <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 flex flex-col items-center justify-center space-y-3">
-                        <div class="p-4 bg-white rounded-xl border border-slate-200 w-full flex items-center justify-center min-h-[110px] shadow-2xs">
-                            <img src="{{ asset('storage/' . $user->signature_path) }}" alt="Tanda Tangan {{ $user->name }}" class="max-h-24 max-w-full object-contain">
+                        <div class="p-3 bg-white rounded-xl border border-dashed border-slate-300 w-full max-w-[260px] flex flex-col items-center justify-center min-h-[85px] shadow-2xs relative">
+                            <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Ukuran Dokumen (± 2,5 cm)</span>
+                            <img src="{{ asset('storage/' . $user->signature_path) }}" alt="Tanda Tangan {{ $user->name }}" class="max-h-[66px] max-w-[165px] object-contain">
                         </div>
                         <div class="w-full flex items-center justify-between text-[11px] text-slate-500 font-medium">
                             <span class="flex items-center gap-1 text-emerald-600 font-bold">
@@ -679,7 +751,9 @@
                 </div>
 
                 <!-- OPTION 1: CANVAS SIGNATURE PAD -->
-                <div x-show="activeTab === 'pad'" class="space-y-4">
+                <div x-show="activeTab === 'pad'"
+                     @keydown.window="if (($event.ctrlKey || $event.metaKey) && $event.key.toLowerCase() === 'z' && activeTab === 'pad') { $event.preventDefault(); undo(); }"
+                     class="space-y-4">
                     <div class="flex items-center justify-between text-xs pb-1">
                         <span class="font-bold text-slate-700 flex items-center gap-1.5">
                             <i data-lucide="edit-3" class="w-3.5 h-3.5 text-[#0B63B5]"></i>
@@ -697,21 +771,52 @@
                         </div>
                     </div>
 
-                    <div class="relative bg-slate-50 border-2 border-dashed border-slate-300 rounded-2xl p-2 overflow-hidden">
-                        <canvas id="signature-pad"
-                                @mousedown="startDraw($event)"
-                                @mousemove="draw($event)"
-                                @mouseup="endDraw($event)"
-                                @mouseleave="endDraw($event)"
-                                @touchstart="startDraw($event)"
-                                @touchmove="draw($event)"
-                                @touchend="endDraw($event)"
-                                class="w-full h-56 bg-white rounded-xl shadow-inner cursor-crosshair touch-none block"></canvas>
+                    <!-- KOTAK TANDA TANGAN PROPORSIONAL DENGAN UKURAN DOKUMEN BMN (± 2,5 CM / RASIO 2.5 : 1) -->
+                    <div class="bg-slate-50/80 border border-slate-200/90 rounded-3xl p-5 space-y-3">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                            <span class="inline-flex items-center gap-1.5 font-bold text-slate-800">
+                                <i data-lucide="file-check-2" class="w-4 h-4 text-[#0B63B5]"></i>
+                                <span>Pratinjau Ruang Tanda Tangan Dokumen BMN</span>
+                            </span>
+                            <span class="inline-flex items-center gap-1.5 text-[11px] font-bold text-[#0B63B5] bg-blue-50 px-2.5 py-1 rounded-full border border-blue-200/80 w-fit">
+                                <i data-lucide="scale" class="w-3 h-3"></i>
+                                <span>Rasio Dokumen 2.5 : 1 (Standar Cetak ± 2,5 cm)</span>
+                            </span>
+                        </div>
 
-                        <!-- Guide Baseline -->
-                        <div class="absolute left-6 right-6 bottom-14 border-b border-slate-200 pointer-events-none flex justify-between text-[10px] text-slate-300 select-none">
-                            <span>Area tanda tangan</span>
-                            <span>Garis acuan</span>
+                        <!-- Canvas Box with Strict Document Aspect Ratio (2.5 : 1) -->
+                        <div class="w-full max-w-[420px] mx-auto bg-white rounded-2xl border-2 border-dashed border-slate-300 p-3 shadow-xs">
+                            <div class="relative w-full aspect-[5/2] rounded-xl overflow-hidden bg-slate-50/30">
+                                <canvas id="signature-pad"
+                                        @mousedown="startDraw($event)"
+                                        @mousemove="draw($event)"
+                                        @mouseup="endDraw($event)"
+                                        @mouseleave="endDraw($event)"
+                                        @touchstart="startDraw($event)"
+                                        @touchmove="draw($event)"
+                                        @touchend="endDraw($event)"
+                                        class="w-full h-full cursor-crosshair touch-none block bg-transparent"></canvas>
+
+                                <!-- Baseline Guide -->
+                                <div class="absolute left-4 right-4 bottom-5 border-b border-dashed border-slate-300 pointer-events-none flex justify-between text-[10px] text-slate-400 select-none">
+                                    <span>Ruang TTD (± 2,5 cm)</span>
+                                    <span>Garis Acuan</span>
+                                </div>
+
+                                <div x-show="!hasDrawn && strokes.length === 0" class="pointer-events-none absolute inset-0 flex items-center justify-center text-slate-400 text-xs font-medium">
+                                    <span>Goreskan tanda tangan di sini</span>
+                                </div>
+                            </div>
+
+                            <!-- Under-Signature Official Signatory Simulation -->
+                            <div class="pt-2.5 pb-1 text-center border-t border-slate-100 mt-2.5 select-none">
+                                <div class="text-xs font-bold text-slate-800 underline decoration-slate-400 underline-offset-2">
+                                    {{ $user->employee->full_name ?? $user->name }}
+                                </div>
+                                <div class="text-[10px] text-slate-500 font-medium mt-0.5">
+                                    NIP. {{ \App\Helpers\FormatHelper::formatNip($user->employee->nip ?? '') }}
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -724,9 +829,10 @@
                                 <span>Bersihkan</span>
                             </button>
                             <button type="button" @click="undo()"
-                                    class="px-3.5 py-2 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-100 text-xs font-bold transition flex items-center gap-1.5 shadow-2xs cursor-pointer">
+                                    class="px-3.5 py-2 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-100 text-xs font-bold transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                                    title="Batalkan goresan terakhir (Ctrl + Z)">
                                 <i data-lucide="undo" class="w-3.5 h-3.5"></i>
-                                <span>Batalkan Goresan (Undo)</span>
+                                <span>Undo <kbd class="text-[10px] text-slate-400 border border-slate-200 px-1 rounded bg-slate-50 font-normal">Ctrl+Z</kbd></span>
                             </button>
                         </div>
 

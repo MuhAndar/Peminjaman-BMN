@@ -1,12 +1,14 @@
 @extends('layouts.app')
 
 @section('title', 'Keputusan Persetujuan Peminjaman BMN')
-
 @section('content')
-<div class="max-w-4xl mx-auto space-y-6">
+<div class="space-y-6">
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div class="flex items-center gap-2 text-xs text-slate-500 font-semibold">
-            <a href="{{ route('persetujuan.index') }}" class="hover:text-slate-900">&larr; Kembali ke Daftar Persetujuan</a>
+        <div class="flex items-center gap-2">
+            <a href="{{ route('persetujuan.index') }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:text-slate-900 hover:bg-slate-50 transition shadow-2xs">
+                <i data-lucide="arrow-left" class="w-4 h-4 text-slate-500"></i>
+                <span>Kembali ke Antrean Persetujuan</span>
+            </a>
         </div>
         <span class="px-3 py-1 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
             Status: Menunggu Persetujuan Ketua Tim (SOP-4)
@@ -92,6 +94,19 @@
                     <i data-lucide="check-circle" class="w-5 h-5 text-emerald-600"></i>
                     <span>Opsi 1: Setujui Pengajuan Peminjaman</span>
                 </div>
+
+                @if(auth()->user()->signature_path)
+                    <div class="text-[11px] text-emerald-700 bg-white/80 p-2 rounded-xl border border-emerald-200 flex items-center gap-2">
+                        <i data-lucide="signature" class="w-4 h-4 text-emerald-600 shrink-0"></i>
+                        <span>Tanda tangan digital Anda tersimpan di sistem dan akan otomatis dibubuhkan pada dokumen Surat Peminjaman.</span>
+                    </div>
+                @else
+                    <div class="text-[11px] text-amber-800 bg-amber-50 p-2 rounded-xl border border-amber-300 flex items-center gap-2">
+                        <i data-lucide="alert-circle" class="w-4 h-4 text-amber-600 shrink-0"></i>
+                        <span>Perhatian: Anda belum menyimpan tanda tangan di <a href="{{ route('profile.show', ['tab' => 'signature']) }}" target="_blank" class="underline font-bold text-amber-900 hover:text-black">Menu Profil</a>. Disarankan menyimpannya agar otomatis tercetak pada dokumen resmi.</span>
+                    </div>
+                @endif
+
                 <input type="text" name="note" placeholder="Catatan persetujuan (opsional, contoh: Disetujui untuk penugasan luar kota)"
                        class="w-full p-2.5 rounded-xl bg-white border border-emerald-300 text-xs outline-none focus:ring-2 focus:ring-emerald-200">
                 <button type="submit"

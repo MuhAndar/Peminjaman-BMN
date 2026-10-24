@@ -44,10 +44,13 @@ class ProfileController extends Controller
         $employee = $user->employee;
         $isNew = false;
         if (!$employee) {
-            $employee = new Employee();
-            $employee->id = (string) Str::uuid();
-            $employee->email = $user->email;
-            $isNew = true;
+            $employee = Employee::where('email', $user->email)->first();
+            if (!$employee) {
+                $employee = new Employee();
+                $employee->id = (string) Str::uuid();
+                $employee->email = $user->email;
+                $isNew = true;
+            }
         }
 
         $oldData = [

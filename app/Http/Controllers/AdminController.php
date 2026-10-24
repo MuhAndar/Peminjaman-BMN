@@ -69,7 +69,7 @@ class AdminController extends Controller
 
         // Statistics
         $totalLogs = AuditLog::count();
-        $todayLogs = AuditLog::whereDate('created_at', today())->count();
+        $todayLogs = AuditLog::whereDate('created_at', Carbon::today('Asia/Makassar'))->count();
         $activeUsers = AuditLog::distinct('actor_id')->count('actor_id');
         $statusTransitions = AuditLog::where('action', 'like', 'TRANSITION_%')->count();
 

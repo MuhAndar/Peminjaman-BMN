@@ -200,13 +200,78 @@
             if (window.lucide) lucide.createIcons();
         });
     },
+    trimCanvas(canvas, padding = 12) {
+        if (!canvas) return '';
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+        if (width === 0 || height === 0) return '';
+        const imgData = ctx.getImageData(0, 0, width, height);
+        const data = imgData.data;
+
+        let minX = width, minY = height, maxX = 0, maxY = 0;
+        let found = false;
+
+        for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+                const alpha = data[(y * width + x) * 4 + 3];
+                if (alpha > 15) {
+                    found = true;
+                    if (x < minX) minX = x;
+                    if (x > maxX) maxX = x;
+                    if (y < minY) minY = y;
+                    if (y > maxY) maxY = y;
+                }
+            }
+        }
+
+        if (!found) return canvas.toDataURL('image/png');
+
+        const pad = Math.round(padding * 2);
+        minX = Math.max(0, minX - pad);
+        minY = Math.max(0, minY - pad);
+        maxX = Math.min(width, maxX + pad);
+        maxY = Math.min(height, maxY + pad);
+
+        let cropWidth = maxX - minX;
+        let cropHeight = maxY - minY;
+
+        // Maintain document aspect ratio (2.5 : 1)
+        const targetRatio = 2.5;
+        const currentRatio = cropWidth / cropHeight;
+
+        if (currentRatio < targetRatio) {
+            const desiredWidth = Math.min(width, Math.round(cropHeight * targetRatio));
+            const diff = desiredWidth - cropWidth;
+            minX = Math.max(0, Math.round(minX - diff / 2));
+            cropWidth = desiredWidth;
+        } else if (currentRatio > targetRatio) {
+            const desiredHeight = Math.min(height, Math.round(cropWidth / targetRatio));
+            const diff = desiredHeight - cropHeight;
+            minY = Math.max(0, Math.round(minY - diff / 2));
+            cropHeight = desiredHeight;
+        }
+
+        const trimmed = document.createElement('canvas');
+        trimmed.width = cropWidth;
+        trimmed.height = cropHeight;
+        const trimmedCtx = trimmed.getContext('2d');
+
+        trimmedCtx.drawImage(
+            canvas,
+            minX, minY, cropWidth, cropHeight,
+            0, 0, cropWidth, cropHeight
+        );
+
+        return trimmed.toDataURL('image/png');
+    },
     submitSig() {
         if (this.sigTab === 'pad') {
-            if (!this.hasDrawn) {
+            if (!this.hasDrawn || this.strokes.length === 0) {
                 alert('Silakan goreskan tanda tangan pada papan gambar kanvas terlebih dahulu.');
                 return;
             }
-            document.getElementById('loan_sig_data_input').value = this.canvas.toDataURL('image/png');
+            document.getElementById('loan_sig_data_input').value = this.trimCanvas(this.canvas);
         }
         document.getElementById('loan-sig-form').submit();
     },
@@ -234,12 +299,18 @@
 }">
     <!-- Breadcrumb & Top Bar -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div class="flex items-center gap-2 text-xs text-slate-500 font-semibold">
-            <a href="{{ route('dashboard') }}" class="hover:text-slate-900">Beranda</a>
-            <span>/</span>
-            <a href="{{ route('loans.index') }}" class="hover:text-slate-900">Pengajuan</a>
-            <span>/</span>
-            <span class="text-slate-800 font-bold">Detail #{{ substr($loan->id, 0, 8) }}</span>
+        <div class="flex items-center gap-3">
+            <a href="{{ route('loans.index') }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:text-slate-900 hover:bg-slate-50 transition shadow-2xs">
+                <i data-lucide="arrow-left" class="w-4 h-4 text-slate-500"></i>
+                <span>Kembali</span>
+            </a>
+            <div class="flex items-center gap-2 text-xs text-slate-500 font-semibold">
+                <a href="{{ route('dashboard') }}" class="hover:text-slate-900">Beranda</a>
+                <span>/</span>
+                <a href="{{ route('loans.index') }}" class="hover:text-slate-900">Pengajuan Saya</a>
+                <span>/</span>
+                <span class="text-slate-800 font-bold">Detail #{{ substr($loan->id, 0, 8) }}</span>
+            </div>
         </div>
 
         <div class="flex items-center gap-2">
@@ -478,21 +549,42 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <!-- Status Pihak Pertama (Pengelola BMN) -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- 1. Status Pihak Pertama (Pengelola BMN) -->
                     <div class="p-4 rounded-2xl border {{ $loan->officer_signature ? 'border-emerald-200 bg-emerald-50/30' : 'border-slate-200 bg-slate-50/50' }} flex flex-col justify-between space-y-3">
                         <div>
                             <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Pihak Pertama (Pengelola Aset)</span>
                             <span class="font-bold text-xs text-slate-800 block">Petugas Pengelola BMN</span>
                         </div>
-                        <div class="p-3 bg-white rounded-xl border border-slate-200 flex items-center justify-center min-h-[75px]">
-                            @if($loan->officer_signature)
-                                <img src="{{ asset('storage/' . $loan->officer_signature) }}" class="max-h-14 max-w-full object-contain" alt="TTD Pengelola">
-                            @else
-                                <span class="text-xs text-slate-400 italic">Belum Ditandatangani Digital</span>
-                            @endif
-                        </div>
-                        <div class="flex items-center justify-between text-[11px]">
+
+                        @if($isPengelola)
+                            <!-- Tampilan Penuh Khusus Pemilik TTD (Pengelola) -->
+                            <div class="p-2.5 bg-white rounded-xl border border-dashed border-slate-300 flex flex-col items-center justify-center min-h-[85px] w-full max-w-[240px] mx-auto shadow-2xs relative">
+                                <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Ruang Dokumen (± 2,5 cm)</span>
+                                @if($loan->officer_signature)
+                                    <img src="{{ asset('storage/' . $loan->officer_signature) }}" class="max-h-[60px] max-w-[155px] object-contain" alt="TTD Pengelola">
+                                @else
+                                    <span class="text-xs text-slate-400 italic">Belum Ditandatangani</span>
+                                @endif
+                            </div>
+                        @else
+                            <!-- Tampilan Simpel untuk Role Lain -->
+                            <div class="py-4 flex items-center justify-center">
+                                @if($loan->officer_signature)
+                                    <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold shadow-2xs">
+                                        <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-600"></i>
+                                        <span>Sudah Ditandatangani</span>
+                                    </div>
+                                @else
+                                    <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-500 text-xs font-medium">
+                                        <i data-lucide="clock" class="w-4 h-4 text-slate-400"></i>
+                                        <span>Belum Ditandatangani</span>
+                                    </div>
+                                @endif
+                            </div>
+                        @endif
+
+                        <div class="flex items-center justify-between text-[11px] pt-1 border-t border-slate-100/60">
                             <span class="font-bold {{ $loan->officer_signature ? 'text-emerald-700' : 'text-slate-400' }}">
                                 {{ $loan->officer_signature ? '✓ Ditandatangani Digital' : 'Tanda Tangan Manual Basah' }}
                             </span>
@@ -504,20 +596,41 @@
                         </div>
                     </div>
 
-                    <!-- Status Pihak Kedua (Peminjam) -->
+                    <!-- 2. Status Pihak Kedua (Peminjam) -->
                     <div class="p-4 rounded-2xl border {{ $loan->borrower_signature ? 'border-emerald-200 bg-emerald-50/30' : 'border-slate-200 bg-slate-50/50' }} flex flex-col justify-between space-y-3">
                         <div>
                             <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Pihak Kedua (Peminjam BMN)</span>
-                            <span class="font-bold text-xs text-slate-800 block">{{ $loan->snap_full_name }}</span>
+                            <span class="font-bold text-xs text-slate-800 block truncate">{{ $loan->snap_full_name }}</span>
                         </div>
-                        <div class="p-3 bg-white rounded-xl border border-slate-200 flex items-center justify-center min-h-[75px]">
-                            @if($loan->borrower_signature)
-                                <img src="{{ asset('storage/' . $loan->borrower_signature) }}" class="max-h-14 max-w-full object-contain" alt="TTD Peminjam">
-                            @else
-                                <span class="text-xs text-slate-400 italic">Belum Ditandatangani Digital</span>
-                            @endif
-                        </div>
-                        <div class="flex items-center justify-between text-[11px]">
+
+                        @if($isOwner)
+                            <!-- Tampilan Penuh Khusus Pemilik TTD (Peminjam) -->
+                            <div class="p-2.5 bg-white rounded-xl border border-dashed border-slate-300 flex flex-col items-center justify-center min-h-[85px] w-full max-w-[240px] mx-auto shadow-2xs relative">
+                                <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Ruang Dokumen (± 2,5 cm)</span>
+                                @if($loan->borrower_signature)
+                                    <img src="{{ asset('storage/' . $loan->borrower_signature) }}" class="max-h-[60px] max-w-[155px] object-contain" alt="TTD Peminjam">
+                                @else
+                                    <span class="text-xs text-slate-400 italic">Belum Ditandatangani</span>
+                                @endif
+                            </div>
+                        @else
+                            <!-- Tampilan Simpel untuk Role Lain -->
+                            <div class="py-4 flex items-center justify-center">
+                                @if($loan->borrower_signature)
+                                    <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold shadow-2xs">
+                                        <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-600"></i>
+                                        <span>Sudah Ditandatangani</span>
+                                    </div>
+                                @else
+                                    <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-500 text-xs font-medium">
+                                        <i data-lucide="clock" class="w-4 h-4 text-slate-400"></i>
+                                        <span>Belum Ditandatangani</span>
+                                    </div>
+                                @endif
+                            </div>
+                        @endif
+
+                        <div class="flex items-center justify-between text-[11px] pt-1 border-t border-slate-100/60">
                             <span class="font-bold {{ $loan->borrower_signature ? 'text-emerald-700' : 'text-slate-400' }}">
                                 {{ $loan->borrower_signature ? '✓ Ditandatangani Digital' : 'Tanda Tangan Manual Basah' }}
                             </span>
@@ -525,6 +638,51 @@
                                 <button type="button" @click="openSigModal('borrower')" class="text-[#0B63B5] font-bold hover:underline">
                                     {{ $loan->borrower_signature ? 'Ubah' : 'Tanda Tangani' }}
                                 </button>
+                            @endif
+                        </div>
+                    </div>
+
+                    <!-- 3. Status Mengetahui (Ketua Tim Keuangan & Aset) -->
+                    @php
+                        $ketuaApproved = in_array($loan->status, ['APPROVED', 'BAST_ISSUED', 'ACTIVE', 'RETURN_REQUESTED', 'RETURN_CHECKED', 'RETURNED']);
+                    @endphp
+                    <div class="p-4 rounded-2xl border {{ $ketuaApproved ? 'border-emerald-200 bg-emerald-50/30' : 'border-slate-200 bg-slate-50/50' }} flex flex-col justify-between space-y-3">
+                        <div>
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Mengetahui (Persetujuan Aset)</span>
+                            <span class="font-bold text-xs text-slate-800 block">Ketua Tim Keuangan & Aset</span>
+                        </div>
+
+                        @if($isKetuaTim && auth()->user()->signature_path)
+                            <!-- Tampilan Penuh Khusus Pemilik TTD (Ketua Tim) -->
+                            <div class="p-2.5 bg-white rounded-xl border border-dashed border-slate-300 flex flex-col items-center justify-center min-h-[85px] w-full max-w-[240px] mx-auto shadow-2xs relative">
+                                <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Ruang Dokumen (± 2,5 cm)</span>
+                                <img src="{{ asset('storage/' . auth()->user()->signature_path) }}" class="max-h-[60px] max-w-[155px] object-contain" alt="TTD Ketua Tim">
+                            </div>
+                        @else
+                            <!-- Tampilan Simpel untuk Role Lain -->
+                            <div class="py-4 flex items-center justify-center">
+                                @if($ketuaApproved)
+                                    <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold shadow-2xs">
+                                        <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-600"></i>
+                                        <span>Sudah Disahkan</span>
+                                    </div>
+                                @else
+                                    <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-500 text-xs font-medium">
+                                        <i data-lucide="clock" class="w-4 h-4 text-slate-400"></i>
+                                        <span>Menunggu Disposisi</span>
+                                    </div>
+                                @endif
+                            </div>
+                        @endif
+
+                        <div class="flex items-center justify-between text-[11px] pt-1 border-t border-slate-100/60">
+                            <span class="font-bold {{ $ketuaApproved ? 'text-emerald-700' : 'text-slate-400' }}">
+                                {{ $ketuaApproved ? '✓ Disetujui & Disahkan' : 'Menunggu Disposisi' }}
+                            </span>
+                            @if($isKetuaTim)
+                                <a href="{{ route('profile.show', ['tab' => 'signature']) }}" class="text-[#0B63B5] font-bold hover:underline">
+                                    Kelola TTD
+                                </a>
                             @endif
                         </div>
                     </div>
@@ -536,29 +694,28 @@
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
                     <div class="flex items-center gap-2.5">
                         <div class="w-8 h-8 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center shrink-0">
-                            <i data-lucide="camera" class="w-4 h-4"></i>
+                            <i data-lucide="images" class="w-4 h-4"></i>
                         </div>
                         <div>
-                            <h3 class="font-extrabold text-sm text-slate-900">Dokumentasi Foto Fisik BAST</h3>
-                            <p class="text-[11px] text-slate-500">Foto bukti serah terima peminjaman & inspeksi fisik pengembalian barang BMN.</p>
+                            <h3 class="font-extrabold text-sm text-slate-900">Lampiran Foto Fisik Dokumen BAST</h3>
+                            <p class="text-[11px] text-slate-500">Pratinjau foto serah terima & inspeksi pengembalian yang dicetak pada lembar lampiran PDF resmi BAST.</p>
                         </div>
                     </div>
 
-                    <!-- Tombol Unggah Foto Baru -->
-                    @if($isOwner || $isPengelola)
-                        <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-2">
+                        @if($loan->photos->isNotEmpty())
+                            <span class="text-xs font-bold px-3 py-1 bg-purple-50 text-purple-700 border border-purple-200 rounded-xl">
+                                {{ $loan->photos->count() }} Foto Terlampir
+                            </span>
+                        @endif
+                        @if($isPengelola && in_array($loan->status, ['APPROVED', 'BAST_ISSUED', 'ACTIVE', 'RETURN_REQUESTED', 'RETURN_CHECKED', 'RETURNED']))
                             <button type="button" @click="openPhotoModal('BAST_PEMINJAMAN')"
-                                    class="px-3.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-[#0B63B5] border border-blue-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs">
-                                <i data-lucide="camera" class="w-3.5 h-3.5"></i>
-                                <span>+ Foto BAST Peminjaman</span>
+                                    class="text-[11px] text-slate-500 hover:text-[#0B63B5] font-semibold flex items-center gap-1 px-2.5 py-1 rounded-lg hover:bg-slate-50 transition" title="Tambah foto dokumentasi susulan">
+                                <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                                <span>Foto Susulan</span>
                             </button>
-                            <button type="button" @click="openPhotoModal('BAST_PENGEMBALIAN')"
-                                    class="px-3.5 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs">
-                                <i data-lucide="camera" class="w-3.5 h-3.5"></i>
-                                <span>+ Foto BAST Pengembalian</span>
-                            </button>
-                        </div>
-                    @endif
+                        @endif
+                    </div>
                 </div>
 
                 @if($loan->photos->isNotEmpty())
@@ -596,13 +753,13 @@
                         @endforeach
                     </div>
                 @else
-                    <div class="p-6 rounded-2xl bg-slate-50 border border-slate-200 text-center space-y-2">
+                    <div class="p-6 rounded-2xl bg-slate-50/80 border border-slate-200 text-center space-y-2">
                         <div class="w-10 h-10 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
                             <i data-lucide="images" class="w-5 h-5"></i>
                         </div>
-                        <h4 class="text-xs font-bold text-slate-700">Belum Ada Foto Dokumentasi BAST</h4>
-                        <p class="text-[11px] text-slate-500">
-                            Silakan unggah foto serah terima barang atau foto pemeriksaan fisik saat pengembalian (dapat dijepret langsung atau dipilih dari galeri ponsel).
+                        <h4 class="text-xs font-bold text-slate-700">Belum Ada Foto Terlampir di Dokumen BAST</h4>
+                        <p class="text-[11px] text-slate-500 max-w-md mx-auto leading-relaxed">
+                            Foto fisik barang akan otomatis tampil di sini dan dicetak pada lembar lampiran PDF BAST setelah diunggah oleh Pengelola BMN saat penerbitan dokumen BAST Peminjaman atau saat pemeriksaan fisik pengembalian.
                         </p>
                     </div>
                 @endif
@@ -677,13 +834,39 @@
 
             <!-- 3. Action Pengelola BMN: Terbitkan BAST (APPROVED) -->
             @if($loan->status === 'APPROVED' && $isPengelola)
-                <div class="bg-white rounded-3xl border-2 border-cyan-300 p-6 shadow-sm space-y-3">
-                    <h3 class="text-base font-black text-slate-900">Penerbitan BAST Peminjaman (SOP Langkah 5)</h3>
-                    <p class="text-xs text-slate-600">
-                        Disposisi persetujuan telah diberikan oleh Ketua Tim. Silakan buatkan dokumen BAST Peminjaman resmi bernomor.
-                    </p>
-                    <form method="POST" action="{{ route('kelola.issue-bast', $loan->id) }}">
+                <div class="bg-white rounded-3xl border-2 border-cyan-300 p-6 shadow-sm space-y-4">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-8 h-8 rounded-xl bg-cyan-100 text-cyan-700 flex items-center justify-center shrink-0">
+                            <i data-lucide="file-plus" class="w-4 h-4"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-base font-black text-slate-900">Penerbitan BAST Peminjaman (SOP Langkah 5)</h3>
+                            <p class="text-xs text-slate-600">
+                                Disposisi persetujuan telah diberikan oleh Ketua Tim. Silakan buatkan dokumen BAST Peminjaman resmi bernomor.
+                            </p>
+                        </div>
+                    </div>
+
+                    <form method="POST" action="{{ route('kelola.issue-bast', $loan->id) }}" enctype="multipart/form-data" class="space-y-4">
                         @csrf
+                        <div class="p-4 rounded-2xl bg-cyan-50/70 border border-cyan-200 space-y-2">
+                            <label class="block text-xs font-bold text-cyan-950">Foto Fisik BMN untuk Lembar Lampiran Dokumen BAST (Opsional):</label>
+                            <p class="text-[11px] text-cyan-800">Foto barang yang dilampirkan di sini otomatis dicetak pada halaman terakhir dokumen PDF BAST Peminjaman.</p>
+                            <div class="flex flex-wrap items-center gap-2 pt-1">
+                                <label class="cursor-pointer px-3.5 py-1.5 bg-white border border-cyan-300 hover:bg-cyan-50 text-cyan-800 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs">
+                                    <i data-lucide="camera" class="w-3.5 h-3.5 text-cyan-600"></i>
+                                    <span>Jepret Kamera</span>
+                                    <input type="file" name="photos[]" accept="image/*" capture="environment" class="hidden" onchange="updateFileCount(this, 'issue_bast_photo_count')">
+                                </label>
+                                <label class="cursor-pointer px-3.5 py-1.5 bg-white border border-cyan-300 hover:bg-cyan-50 text-cyan-800 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs">
+                                    <i data-lucide="images" class="w-3.5 h-3.5 text-cyan-600"></i>
+                                    <span>Pilih dari Galeri</span>
+                                    <input type="file" name="photos[]" accept="image/*" multiple class="hidden" onchange="updateFileCount(this, 'issue_bast_photo_count')">
+                                </label>
+                                <span id="issue_bast_photo_count" class="text-xs text-slate-500 italic">Belum ada foto dipilih</span>
+                            </div>
+                        </div>
+
                         <button type="submit"
                                 data-confirm="Terbitkan dokumen Berita Acara Serah Terima (BAST) Peminjaman bernomor otomatis sekarang?"
                                 data-confirm-title="Terbitkan BAST Peminjaman"
@@ -822,14 +1005,15 @@
             @endif
         </div>
 
-        <!-- RIGHT COLUMN: 7-STEP SOP TIMELINE -->
+        <!-- RIGHT COLUMN: SOP TIMELINES -->
         <div class="lg:col-span-4 space-y-6">
+            <!-- 1. ALUR SOP PEMINJAMAN (7 LANGKAH) -->
             <div class="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-sm">
                 <div class="flex items-center gap-2 border-b border-slate-100 pb-3 mb-4">
                     <i data-lucide="git-commit" class="w-5 h-5 text-[#0B63B5]"></i>
                     <div>
                         <h3 class="font-black text-sm text-slate-900">Alur SOP Peminjaman BMN</h3>
-                        <span class="text-[10px] text-slate-400 font-semibold">SK SOP B-489 BBLSDM</span>
+                        <span class="text-[10px] text-slate-400 font-semibold">SK SOP B-489 BBLSDM • 7 Tahap</span>
                     </div>
                 </div>
 
@@ -846,12 +1030,12 @@
                     ];
                 @endphp
 
-                <!-- Vertical Timeline -->
-                <div class="relative pl-6 space-y-6 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
+                <!-- Vertical Timeline Peminjaman -->
+                <div class="relative pl-6 space-y-5 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
                     @foreach($sopSteps as $sNum => $sInfo)
                         @php
-                            $isDone = ($stepIndex > $sNum) || ($stepIndex === 7 && $sNum === 7);
-                            $isCurrent = ($stepIndex === $sNum);
+                            $isDone = ($stepIndex > $sNum) || ($stepIndex === 7 && $sNum === 7 && in_array($loan->status, ['ACTIVE', 'RETURN_REQUESTED', 'RETURN_CHECKED', 'RETURNED']));
+                            $isCurrent = ($stepIndex === $sNum && !(in_array($loan->status, ['RETURN_REQUESTED', 'RETURN_CHECKED', 'RETURNED'])));
                         @endphp
                         <div class="relative">
                             <!-- Bullet Icon -->
@@ -875,21 +1059,87 @@
                     @endforeach
                 </div>
 
-                <!-- Status History Trail -->
+                <!-- 2. ALUR SOP PENGEMBALIAN BMN (4 TAHAP) -->
+                <div class="mt-8 pt-6 border-t border-slate-100">
+                    <div class="flex items-center gap-2 pb-3 mb-4">
+                        <i data-lucide="corner-down-left" class="w-4 h-4 text-purple-600"></i>
+                        <div>
+                            <h3 class="font-black text-sm text-slate-900">Alur SOP Pengembalian BMN</h3>
+                            <span class="text-[10px] text-slate-400 font-semibold">SK SOP B-489 BBLSDM • Tahap Pengembalian</span>
+                        </div>
+                    </div>
+
+                    @php
+                        $returnStepIndex = $meta['return_step'] ?? 0;
+                        $sopReturnSteps = [
+                            1 => ['title' => 'Mengajukan Pengembalian', 'actor' => 'Peminjam', 'sla' => '1 Menit'],
+                            2 => ['title' => 'Pemeriksaan Fisik & Draf BAST', 'actor' => 'Petugas BMN', 'sla' => '5 Menit'],
+                            3 => ['title' => 'Tanda Tangan BAST Kembali', 'actor' => 'Peminjam & Petugas', 'sla' => '1 Menit'],
+                            4 => ['title' => 'Simpan BMN ke Inventaris', 'actor' => 'Petugas BMN', 'sla' => '1 Menit'],
+                        ];
+                    @endphp
+
+                    <div class="relative pl-6 space-y-5 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
+                        @foreach($sopReturnSteps as $rNum => $rInfo)
+                            @php
+                                $rDone = ($returnStepIndex > $rNum) || ($returnStepIndex === 4 && $rNum === 4);
+                                $rCurrent = ($returnStepIndex === $rNum);
+                            @endphp
+                            <div class="relative">
+                                <div class="absolute -left-6 top-0.5 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold
+                                            {{ $rDone ? 'bg-emerald-500 text-white ring-4 ring-emerald-50' : ($rCurrent ? 'bg-purple-600 text-white ring-4 ring-purple-100 animate-pulse' : 'bg-slate-200 text-slate-500') }}">
+                                    @if($rDone) &check; @else {{ $rNum }} @endif
+                                </div>
+
+                                <div>
+                                    <div class="flex items-center justify-between gap-1">
+                                        <h4 class="text-xs font-bold {{ $rCurrent ? 'text-purple-700' : ($rDone ? 'text-slate-800' : 'text-slate-400') }}">
+                                            {{ $rInfo['title'] }}
+                                        </h4>
+                                        <span class="text-[9px] font-semibold text-slate-400 tabular-nums">{{ $rInfo['sla'] }}</span>
+                                    </div>
+                                    <span class="text-[11px] block mt-0.5 {{ $rCurrent ? 'text-slate-700 font-semibold' : 'text-slate-400' }}">
+                                        Pelaksana: {{ $rInfo['actor'] }}
+                                    </span>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+
+                <!-- 3. STATUS PEMINJAMAN (RIWAYAT PROGRES) -->
                 <div class="mt-8 pt-5 border-t border-slate-100">
-                    <h4 class="text-xs font-bold text-slate-900 mb-3">Jejak Audit Status</h4>
+                    <div class="flex items-center justify-between mb-3">
+                        <h4 class="text-xs font-bold text-slate-900">Status Peminjaman</h4>
+                        <span class="text-[10px] text-slate-400 font-semibold">Riwayat Progres</span>
+                    </div>
                     <div class="space-y-3 text-xs">
                         @foreach($loan->history as $h)
-                            <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
-                                <div class="flex items-center justify-between text-[11px] text-slate-400 mb-1">
-                                    <span class="font-semibold text-slate-700">{{ $h->actor->name ?? 'Sistem' }}</span>
-                                    <span class="tabular-nums">{{ $h->created_at->format('d/m/Y H:i') }}</span>
+                            <div class="p-3 rounded-2xl bg-slate-50/80 border border-slate-200/70 hover:bg-white hover:shadow-2xs transition space-y-1.5">
+                                <div class="flex items-center justify-between text-[11px] text-slate-400">
+                                    <div class="flex items-center gap-1.5 truncate">
+                                        <div class="w-4 h-4 rounded-full bg-blue-100 text-[#0B63B5] flex items-center justify-center text-[9px] font-black shrink-0">
+                                            {{ substr($h->actor->name ?? 'S', 0, 1) }}
+                                        </div>
+                                        <span class="font-bold text-slate-700 truncate">{{ $h->actor->name ?? 'Sistem BMN' }}</span>
+                                    </div>
+                                    <span class="tabular-nums text-slate-400 text-[10px] shrink-0 font-medium">{{ $h->created_at->format('d/m/Y H:i') }}</span>
                                 </div>
-                                <div class="font-bold text-slate-800 text-[11px]">
-                                    {{ $h->from_status ?? 'Mulai' }} &rarr; <span class="text-[#0B63B5]">{{ $h->to_status }}</span>
+                                <div class="flex flex-wrap items-center gap-1.5 text-xs leading-normal">
+                                    <span class="font-medium text-slate-500 text-[11px]">{{ $h->from_status_label }}</span>
+                                    <span class="text-slate-400 font-normal text-xs">&rarr;</span>
+                                    <span class="font-extrabold text-[#0B63B5] bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100 text-[11px]">{{ $h->to_status_label }}</span>
                                 </div>
                                 @if($h->note)
-                                    <p class="text-[11px] text-slate-500 mt-1 italic">"{{ $h->note }}"</p>
+                                    <div class="mt-1.5 bg-white p-2.5 rounded-xl border border-slate-200/80 shadow-2xs space-y-1">
+                                        <div class="flex items-center gap-1.5 text-[10px] font-bold text-slate-600 uppercase tracking-wider">
+                                            <i data-lucide="message-square-text" class="w-3.5 h-3.5 text-[#0B63B5]"></i>
+                                            <span>{{ $h->note_context_label }}:</span>
+                                        </div>
+                                        <p class="text-[11px] text-slate-700 italic leading-relaxed pl-5">
+                                            "{{ $h->note }}"
+                                        </p>
+                                    </div>
                                 @endif
                             </div>
                         @endforeach
@@ -902,7 +1152,8 @@
     <!-- 1. MODAL TANDA TANGAN DIGITAL DOKUMEN BAST -->
     <div x-show="sigModalOpen" x-cloak
          class="fixed inset-0 z-50 overflow-y-auto"
-         @keydown.escape.window="sigModalOpen = false">
+         @keydown.escape.window="sigModalOpen = false"
+         @keydown.window="if ((($event.ctrlKey || $event.metaKey) && $event.key.toLowerCase() === 'z') && sigModalOpen && sigTab === 'pad') { $event.preventDefault(); undo(); }">
         <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity" @click="sigModalOpen = false"></div>
 
         <div class="min-h-full flex items-center justify-center p-4">
@@ -956,8 +1207,9 @@
                         @if(auth()->user()->signature_path)
                             <div class="p-4 rounded-2xl border-2 border-dashed border-emerald-200 bg-emerald-50/30 text-center space-y-2">
                                 <span class="text-xs font-bold text-emerald-800 block">Tanda tangan yang tersimpan di profil Anda:</span>
-                                <div class="p-2 bg-white rounded-xl border border-slate-200 inline-block shadow-2xs">
-                                    <img src="{{ asset('storage/' . auth()->user()->signature_path) }}" alt="TTD Profil" class="max-h-24 max-w-full object-contain mx-auto">
+                                <div class="p-2.5 bg-white rounded-xl border border-dashed border-slate-300 inline-flex flex-col items-center justify-center min-h-[85px] max-w-[240px] shadow-2xs relative">
+                                    <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Ruang Dokumen (± 2,5 cm)</span>
+                                    <img src="{{ asset('storage/' . auth()->user()->signature_path) }}" alt="TTD Profil" class="max-h-[60px] max-w-[155px] object-contain mx-auto">
                                 </div>
                                 <p class="text-[11px] text-slate-500">Tanda tangan ini akan otomatis dicetak pada lembar PDF BAST.</p>
                             </div>
@@ -984,9 +1236,9 @@
                                     <i data-lucide="sparkles" class="w-3 h-3 text-emerald-500"></i>
                                     <span>Stroke Dihaluskan</span>
                                 </span>
-                                <button type="button" @click="undo()" class="text-slate-600 hover:text-slate-800 font-bold flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-lg border border-slate-200 bg-white cursor-pointer">
+                                <button type="button" @click="undo()" class="text-slate-600 hover:text-slate-800 font-bold flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-lg border border-slate-200 bg-white cursor-pointer" title="Batalkan goresan (Ctrl + Z)">
                                     <i data-lucide="undo" class="w-3 h-3"></i>
-                                    <span>Undo</span>
+                                    <span>Undo <kbd class="text-[9px] text-slate-400 font-normal border border-slate-200 px-1 rounded">Ctrl+Z</kbd></span>
                                 </button>
                                 <button type="button" @click="clearCanvas()" class="text-red-600 hover:text-red-700 font-bold flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-lg border border-red-200 bg-red-50/50 cursor-pointer">
                                     <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
@@ -995,19 +1247,51 @@
                             </div>
                         </div>
 
-                        <div class="relative rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 overflow-hidden">
-                            <canvas id="loan-sig-pad"
-                                    class="w-full h-44 cursor-crosshair touch-none block"
-                                    @mousedown="startDraw($event)"
-                                    @mousemove="draw($event)"
-                                    @mouseup="endDraw($event)"
-                                    @mouseleave="endDraw($event)"
-                                    @touchstart="startDraw($event)"
-                                    @touchmove="draw($event)"
-                                    @touchend="endDraw($event)">
-                            </canvas>
-                            <div x-show="!hasDrawn" class="pointer-events-none absolute inset-0 flex items-center justify-center text-slate-400 text-xs font-medium">
-                                Sentuh layar atau klik & seret mouse di sini (stroke otomatis dihaluskan saat dilepas)
+                        <!-- KOTAK TTD DISESUAIKAN DENGAN UKURAN GENERATE DOKUMEN BMN (± 2.5 CM / RASIO 2.5 : 1) -->
+                        <div class="bg-slate-50 border border-slate-200/90 rounded-2xl p-4 space-y-2.5">
+                            <div class="flex items-center justify-between text-[11px] text-slate-500">
+                                <span class="font-bold text-slate-700 flex items-center gap-1.5">
+                                    <i data-lucide="file-check-2" class="w-3.5 h-3.5 text-[#0B63B5]"></i>
+                                    <span>Pratinjau Ruang TTD Dokumen BMN</span>
+                                </span>
+                                <span class="text-[10px] font-bold text-[#0B63B5] bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
+                                    Proporsi 2.5 : 1 (Tinggi ± 2,5 cm)
+                                </span>
+                            </div>
+
+                            <div class="w-full max-w-[390px] mx-auto bg-white rounded-xl border-2 border-dashed border-slate-300 p-2.5 shadow-xs">
+                                <div class="relative w-full aspect-[5/2] rounded-lg overflow-hidden bg-slate-50/30">
+                                    <canvas id="loan-sig-pad"
+                                            class="w-full h-full cursor-crosshair touch-none block bg-transparent"
+                                            @mousedown="startDraw($event)"
+                                            @mousemove="draw($event)"
+                                            @mouseup="endDraw($event)"
+                                            @mouseleave="endDraw($event)"
+                                            @touchstart="startDraw($event)"
+                                            @touchmove="draw($event)"
+                                            @touchend="endDraw($event)">
+                                    </canvas>
+
+                                    <!-- Document Simulation Baseline -->
+                                    <div class="absolute left-3 right-3 bottom-4 border-b border-dashed border-slate-300 pointer-events-none flex justify-between text-[9px] text-slate-400 select-none">
+                                        <span>Ruang TTD (± 2,5 cm)</span>
+                                        <span>Garis Acuan</span>
+                                    </div>
+
+                                    <div x-show="!hasDrawn && strokes.length === 0" class="pointer-events-none absolute inset-0 flex items-center justify-center text-slate-400 text-xs font-medium">
+                                        Goreskan tanda tangan di sini
+                                    </div>
+                                </div>
+
+                                <!-- Under-Signature Official Signatory Simulation -->
+                                <div class="pt-2 text-center border-t border-slate-100 mt-2 select-none">
+                                    <div class="text-xs font-bold text-slate-800 underline decoration-slate-400 underline-offset-2">
+                                        <span x-text="sigAs === 'borrower' ? '{{ $loan->snap_full_name }}' : '{{ auth()->user()->employee->full_name ?? auth()->user()->name }}'"></span>
+                                    </div>
+                                    <div class="text-[10px] text-slate-500 font-medium mt-0.5">
+                                        <span x-text="sigAs === 'borrower' ? 'NIP. {{ \App\Helpers\FormatHelper::formatNip($loan->snap_nip) }}' : 'NIP. {{ \App\Helpers\FormatHelper::formatNip(auth()->user()->employee->nip ?? '') }}'"></span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 

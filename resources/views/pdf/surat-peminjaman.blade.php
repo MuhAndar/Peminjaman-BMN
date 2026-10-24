@@ -3,15 +3,17 @@
 @section('title', 'Surat Peminjaman Barang Inventaris')
 
 @section('content')
-    <div class="doc-title">
-        SURAT PEMINJAMAN<br>
-        BARANG INVENTARIS BBLSDM-MAKASSAR
-    </div>
-    <div class="doc-number">
-        Nomor : {{ $document->doc_number ?? 'DRAF' }}
+    <div class="judul-wrapper">
+        <div class="doc-title">
+            <span class="doc-title-line">SURAT PEMINJAMAN</span>
+            <span class="doc-title-line">BARANG INVENTARIS BBPSDMP-MAKASSAR</span>
+        </div>
+        <div class="doc-number">
+            Nomor : {{ $document->doc_number ?? '...............................................................' }}
+        </div>
     </div>
 
-    <div style="margin-bottom: 8px;">Saya yang bertanda tangan di bawah ini :</div>
+    <div style="margin-bottom: 6pt;">Saya yang bertanda tangan di bawah ini :</div>
     <table class="info-table">
         <tr>
             <td class="label">N a m a</td>
@@ -40,20 +42,20 @@
         </tr>
     </table>
 
-    <div style="margin-bottom: 6px;">
+    <div style="margin-bottom: 6pt;">
         Menyatakan bahwa benar telah <strong>MEMINJAM BARANG INVENTARIS KANTOR</strong> berupa :
     </div>
 
     <table class="data-table">
         <thead>
             <tr>
-                <th style="width: 28px;">NO</th>
-                <th>Nama Barang</th>
-                <th>Merk</th>
-                <th style="width: 45px;">NUP</th>
-                <th style="width: 45px;">Tahun</th>
-                <th>Nilai</th>
-                <th>Keperluan</th>
+                <th style="width: 5%;">NO</th>
+                <th style="width: 23%;">Nama Barang</th>
+                <th style="width: 19%;">Merk</th>
+                <th style="width: 7%;">NUP</th>
+                <th style="width: 8%;">Tahun</th>
+                <th style="width: 15%;">Nilai</th>
+                <th style="width: 23%;">Keperluan</th>
             </tr>
         </thead>
         <tbody>
@@ -71,12 +73,20 @@
         </tbody>
     </table>
 
-    <div style="margin-bottom: 8px;">
-        Dengan waktu peminjaman :
-        <div style="padding-left: 15px; margin-top: 3px;">
-            - Tanggal Peminjaman &nbsp;&nbsp;: {{ \App\Helpers\FormatHelper::formatDateIndo($loan->start_date) }}<br>
-            - Tanggal Pengembalian : {{ \App\Helpers\FormatHelper::formatDateIndo($loan->end_date) }}
-        </div>
+    <div style="margin: 6pt 0;">
+        Dengan waktu peminjaman
+        <table class="info-table" style="margin-top: 2pt; margin-bottom: 0;">
+            <tr>
+                <td style="width: 170px;">Tanggal Peminjaman</td>
+                <td class="colon">:</td>
+                <td>{{ \App\Helpers\FormatHelper::formatDateIndo($loan->start_date) }}</td>
+            </tr>
+            <tr>
+                <td style="width: 170px;">Tanggal Pengembalian</td>
+                <td class="colon">:</td>
+                <td>{{ \App\Helpers\FormatHelper::formatDateIndo($loan->end_date) }}</td>
+            </tr>
+        </table>
     </div>
 
     <div class="paragraph">
@@ -90,19 +100,24 @@
     <table class="signature-table">
         <tr>
             <td>
-                <br>
+                <div style="height: 14pt;"></div>
                 Ketua Tim Keuangan dan Aset<br>
-                BBLSDM Makassar,<br>
-                <div class="signature-space"></div>
+                BBPSDMP Makassar,
+                <div class="signature-space">
+                    @if(!empty($ketuaSignatureBase64))
+                        <img src="{{ $ketuaSignatureBase64 }}" alt="TTD Ketua">
+                    @endif
+                </div>
                 <strong><u>{{ $signatoryKetua->employee->full_name ?? 'Olga Olivia Sombolayuk, SE' }}</u></strong><br>
                 NIP. {{ \App\Helpers\FormatHelper::formatNip($signatoryKetua->employee->nip ?? '198206082009012001') }}
             </td>
             <td>
                 Makassar, {{ \App\Helpers\FormatHelper::formatDateIndo($document->doc_date ?? now()) }}<br>
                 Peminjam,<br>
+                <div style="height: 14pt;"></div>
                 <div class="signature-space">
                     @if(!empty($borrowerSignatureBase64))
-                        <img src="{{ $borrowerSignatureBase64 }}" style="max-height: 65px; max-width: 150px; display: block;">
+                        <img src="{{ $borrowerSignatureBase64 }}" alt="TTD Peminjam">
                     @endif
                 </div>
                 <strong><u>{{ $loan->snap_full_name }}</u></strong><br>

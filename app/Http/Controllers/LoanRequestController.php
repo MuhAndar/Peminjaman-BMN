@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Asset;
+use App\Models\AssetCategory;
 use App\Models\AuditLog;
 use App\Models\LoanItem;
 use App\Models\LoanPhoto;
@@ -12,6 +13,7 @@ use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -41,7 +43,8 @@ class LoanRequestController extends Controller
         $employee = $user->employee;
 
         if (!$employee) {
-            return redirect()->route('dashboard')->with('error', 'Akun Anda belum terhubung dengan data pegawai.');
+            return redirect()->route('profile.show', ['tab' => 'biodata'])
+                ->with('warning', 'Silakan lengkapi data diri peminjam terlebih dahulu sebelum mengajukan peminjaman BMN.');
         }
 
         // Ambil barang yang tersedia dan berkondisi baik (BR-03)
@@ -53,7 +56,47 @@ class LoanRequestController extends Controller
 
         $selectedAssetId = $request->query('asset_id');
 
-        return view('loans.create', compact('employee', 'availableAssets', 'selectedAssetId'));
+        // Ambil semua kategori untuk filter dropdown
+        $categories = AssetCategory::orderBy('label')->get();
+
+        // 5 jenis/kategori barang yang paling sering diajukan secara riil (Rolling Window 60 hari + Cache harian reset 00:00)
+        $frequentCategoryCodes = Cache::remember('bmn_popular_category_codes', now()->endOfDay(), function () {
+            // 1. Ambil dari pengajuan riil (loan_items) 60 hari terakhir
+            $codes = DB::table('loan_items')
+                ->join('assets', 'loan_items.asset_id', '=', 'assets.id')
+                ->where('loan_items.created_at', '>=', now()->subDays(60))
+                ->select('assets.category_code', DB::raw('count(*) as loan_count'))
+                ->groupBy('assets.category_code')
+                ->orderByDesc('loan_count')
+                ->limit(5)
+                ->pluck('category_code')
+                ->toArray();
+
+            // 2. Jika pengajuan riil dalam 60 hari terakhir belum mencukupi 5 kategori, lengkapi dari riwayat pengajuan riil keseluruhan
+            if (count($codes) < 5) {
+                $allTimeCodes = DB::table('loan_items')
+                    ->join('assets', 'loan_items.asset_id', '=', 'assets.id')
+                    ->whereNotIn('assets.category_code', $codes)
+                    ->select('assets.category_code', DB::raw('count(*) as loan_count'))
+                    ->groupBy('assets.category_code')
+                    ->orderByDesc('loan_count')
+                    ->limit(5 - count($codes))
+                    ->pluck('category_code')
+                    ->toArray();
+
+                $codes = array_merge($codes, $allTimeCodes);
+            }
+
+            return $codes;
+        });
+
+        // Susun 5 kategori quick filter terpopuler (fallback jumlah unit barang tersedia jika data pengajuan masih belum ada)
+        $popularCategories = $categories->sortByDesc(function ($cat) use ($frequentCategoryCodes) {
+            $idx = array_search($cat->code, $frequentCategoryCodes);
+            return $idx !== false ? (100 - $idx) : $cat->assets()->count();
+        })->take(5)->values();
+
+        return view('loans.create', compact('employee', 'availableAssets', 'selectedAssetId', 'categories', 'popularCategories'));
     }
 
     /**
@@ -63,6 +106,11 @@ class LoanRequestController extends Controller
     {
         $user = Auth::user();
         $employee = $user->employee;
+
+        if (!$employee) {
+            return redirect()->route('profile.show', ['tab' => 'biodata'])
+                ->with('error', 'Silakan lengkapi data diri peminjam terlebih dahulu sebelum mengajukan peminjaman BMN.');
+        }
 
         $validated = $request->validate([
             'asset_ids' => 'required|array|min:1',
@@ -82,11 +130,35 @@ class LoanRequestController extends Controller
         try {
             DB::beginTransaction();
 
-            // Simpan pembaruan alamat rumah pegawai jika diubah
+            // Simpan pembaruan data diri pegawai & user jika diubah lewat form
+            if ($request->filled('full_name') && $employee->full_name !== $request->input('full_name')) {
+                $employee->full_name = trim($request->input('full_name'));
+                if ($user->name !== $employee->full_name) {
+                    $user->name = $employee->full_name;
+                    $user->save();
+                }
+            }
+            if ($request->filled('nip')) {
+                $cleanNip = preg_replace('/\D/', '', $request->input('nip'));
+                if (!empty($cleanNip) && $employee->nip !== $cleanNip) {
+                    $employee->nip = $cleanNip;
+                }
+            }
+            if ($request->has('rank_grade') && $employee->rank_grade !== $request->input('rank_grade')) {
+                $employee->rank_grade = $request->input('rank_grade');
+            }
+            if ($request->has('position') && $employee->position !== $request->input('position')) {
+                $employee->position = $request->input('position');
+            }
+            if ($request->filled('phone_number') && $employee->phone !== $request->input('phone_number')) {
+                $employee->phone = $request->input('phone_number');
+            } elseif ($request->filled('phone') && $employee->phone !== $request->input('phone')) {
+                $employee->phone = $request->input('phone');
+            }
             if ($employee->home_address !== $validated['home_address']) {
                 $employee->home_address = $validated['home_address'];
-                $employee->save();
             }
+            $employee->save();
 
             // Buat loan_request dengan snapshot data diri peminjam (BR-07)
             $loan = LoanRequest::create([
@@ -234,12 +306,32 @@ class LoanRequestController extends Controller
     /**
      * Pengelola BMN issues BAST Peminjaman (APPROVED -> BAST_ISSUED).
      */
-    public function issueBast(string $id)
+    public function issueBast(Request $request, string $id)
     {
         $loan = LoanRequest::findOrFail($id);
         $user = Auth::user();
 
         try {
+            // Simpan foto dokumentasi fisik BMN jika dilampirkan langsung saat pembuatan draf BAST
+            if ($request->hasFile('photos')) {
+                foreach ($request->file('photos') as $photoFile) {
+                    if (!$photoFile || !$photoFile->isValid()) {
+                        continue;
+                    }
+                    $fileName = 'loan_photos/' . $loan->id . '/' . time() . '_' . Str::random(6) . '.' . $photoFile->getClientOriginalExtension();
+                    $path = $photoFile->storeAs('loan_photos/' . $loan->id, basename($fileName), 'public');
+
+                    LoanPhoto::create([
+                        'loan_request_id' => $loan->id,
+                        'stage' => 'BAST_PEMINJAMAN',
+                        'file_path' => $path,
+                        'original_name' => $photoFile->getClientOriginalName(),
+                        'caption' => 'Foto fisik BMN saat penerbitan BAST Peminjaman',
+                        'uploaded_by' => $user->id,
+                    ]);
+                }
+            }
+
             LoanStateMachine::transition(
                 $loan,
                 'BAST_ISSUED',
@@ -264,6 +356,9 @@ class LoanRequestController extends Controller
             // Simpan foto dokumentasi jika dilampirkan
             if ($request->hasFile('photos')) {
                 foreach ($request->file('photos') as $photoFile) {
+                    if (!$photoFile || !$photoFile->isValid()) {
+                        continue;
+                    }
                     $fileName = 'loan_photos/' . $loan->id . '/' . time() . '_' . Str::random(6) . '.' . $photoFile->getClientOriginalExtension();
                     $path = $photoFile->storeAs('loan_photos/' . $loan->id, basename($fileName), 'public');
 
@@ -304,6 +399,9 @@ class LoanRequestController extends Controller
             // Simpan foto dokumentasi jika dilampirkan
             if ($request->hasFile('photos')) {
                 foreach ($request->file('photos') as $photoFile) {
+                    if (!$photoFile || !$photoFile->isValid()) {
+                        continue;
+                    }
                     $fileName = 'loan_photos/' . $loan->id . '/' . time() . '_' . Str::random(6) . '.' . $photoFile->getClientOriginalExtension();
                     $path = $photoFile->storeAs('loan_photos/' . $loan->id, basename($fileName), 'public');
 
@@ -360,7 +458,16 @@ class LoanRequestController extends Controller
         $loan = LoanRequest::findOrFail($id);
         $user = Auth::user();
 
-        $request->validate([
+        $rawFiles = (array) $request->file('photos');
+        $cleanFiles = array_values(array_filter($rawFiles, function ($f) {
+            return $f instanceof \Illuminate\Http\UploadedFile && $f->isValid();
+        }));
+
+        $validator = \Illuminate\Support\Facades\Validator::make([
+            'stage' => $request->input('stage'),
+            'caption' => $request->input('caption'),
+            'photos' => $cleanFiles,
+        ], [
             'stage' => 'required|in:BAST_PEMINJAMAN,BAST_PENGEMBALIAN,GENERAL',
             'caption' => 'nullable|string|max:255',
             'photos' => 'required|array|min:1',
@@ -371,11 +478,15 @@ class LoanRequestController extends Controller
             'photos.*.max' => 'Ukuran maksimal berkas foto adalah 10 MB.',
         ]);
 
+        if ($validator->fails()) {
+            return back()->withErrors($validator)->withInput();
+        }
+
         $stage = $request->input('stage');
         $caption = $request->input('caption');
         $uploadedCount = 0;
 
-        foreach ($request->file('photos') as $photoFile) {
+        foreach ($cleanFiles as $photoFile) {
             $fileName = 'loan_photos/' . $loan->id . '/' . time() . '_' . Str::random(6) . '.' . $photoFile->getClientOriginalExtension();
             $path = $photoFile->storeAs('loan_photos/' . $loan->id, basename($fileName), 'public');
 

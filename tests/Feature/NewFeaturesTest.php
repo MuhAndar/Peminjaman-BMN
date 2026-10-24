@@ -13,6 +13,7 @@ use App\Services\LoanStateMachine;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -122,14 +123,15 @@ class NewFeaturesTest extends TestCase
 
         $this->actingAs($peminjamUser);
 
-        // Unggah foto BAST Peminjaman
+        // Unggah foto BAST Peminjaman (uji ketahanan array berkas bila ada input kosong)
         $photo1 = UploadedFile::fake()->image('bast_serah_terima_1.jpg', 800, 600);
         $photo2 = UploadedFile::fake()->image('bast_serah_terima_2.png', 800, 600);
+        $emptyFile = new UploadedFile('', '', null, UPLOAD_ERR_NO_FILE, true);
 
         $response = $this->post(route('loans.photos.upload', $loan->id), [
             'stage' => 'BAST_PEMINJAMAN',
             'caption' => 'Kondisi fisik laptop saat serah terima',
-            'photos' => [$photo1, $photo2],
+            'photos' => [$photo1, $photo2, $emptyFile],
         ]);
 
         $response->assertSessionHas('success');
@@ -328,6 +330,11 @@ class NewFeaturesTest extends TestCase
         $resPdfSurat = $this->get(route('document.pdf', [$loan->id, 'SURAT_PEMINJAMAN']));
         $resPdfSurat->assertStatus(200);
         $this->assertEquals('application/pdf', $resPdfSurat->headers->get('content-type'));
+
+        // Akses cetak PDF BAST Pengembalian
+        $resPdfKembali = $this->get(route('document.pdf', [$loan->id, 'BAST_PENGEMBALIAN']));
+        $resPdfKembali->assertStatus(200);
+        $this->assertEquals('application/pdf', $resPdfKembali->headers->get('content-type'));
     }
 
     /**
@@ -394,5 +401,156 @@ class NewFeaturesTest extends TestCase
         $this->assertEquals('Penata Tk. I (III/d)', $loan->snap_rank_grade);
         $this->assertEquals('Pranata Komputer Ahli Muda', $loan->snap_position);
         $this->assertEquals('Jl. Pengayoman No. 45 Blok B, Panakkukang, Makassar', $loan->snap_home_address);
+    }
+
+    /**
+     * Uji pembaruan data diri peminjam langsung lewat Langkah 3 Formulir Pengajuan (Tombol Buka Kunci).
+     */
+    public function test_borrower_can_unlock_and_update_personal_data_during_loan_creation(): void
+    {
+        $user = User::where('role', 'PEMINJAM')->first();
+        $this->actingAs($user);
+
+        $asset = Asset::where('status', 'AVAILABLE')->first();
+
+        $response = $this->post(route('loans.store'), [
+            'loan_type' => 'SHORT_TERM',
+            'start_date' => Carbon::now()->addDays(2)->toDateString(),
+            'end_date' => Carbon::now()->addDays(5)->toDateString(),
+            'asset_ids' => [$asset->id],
+            'purposes' => [$asset->id => 'Tugas dinas lapangan pengawasan BMN'],
+            // Data diri baru yang diedit saat tombol buka gembok di Langkah 3 diklik
+            'full_name' => 'Ir. Andi Pratama Utama, S.T., M.Kom.',
+            'nip' => '199201012015031005',
+            'rank_grade' => 'Penata Muda Tk. I, III/b',
+            'position' => 'Analis Tata Kelola BMN',
+            'phone_number' => '082112345678',
+            'home_address' => 'Kompleks Pemda BBLSDM No. 12 Makassar',
+        ]);
+
+        $response->assertSessionHasNoErrors();
+        $response->assertRedirect();
+
+        // Verifikasi data employee dan user terupdate
+        $user->refresh();
+        $this->assertEquals('Ir. Andi Pratama Utama, S.T., M.Kom.', $user->name);
+        $this->assertEquals('Ir. Andi Pratama Utama, S.T., M.Kom.', $user->employee->full_name);
+        $this->assertEquals('199201012015031005', $user->employee->nip);
+        $this->assertEquals('Penata Muda Tk. I, III/b', $user->employee->rank_grade);
+        $this->assertEquals('Analis Tata Kelola BMN', $user->employee->position);
+        $this->assertEquals('082112345678', $user->employee->phone);
+        $this->assertEquals('Kompleks Pemda BBLSDM No. 12 Makassar', $user->employee->home_address);
+
+        // Verifikasi snapshot loan request juga memakai data baru
+        $loan = LoanRequest::where('borrower_id', $user->employee->id)->latest('created_at')->first();
+        $this->assertEquals('Ir. Andi Pratama Utama, S.T., M.Kom.', $loan->snap_full_name);
+        $this->assertEquals('199201012015031005', $loan->snap_nip);
+        $this->assertEquals('Penata Muda Tk. I, III/b', $loan->snap_rank_grade);
+        $this->assertEquals('Analis Tata Kelola BMN', $loan->snap_position);
+        $this->assertEquals('Kompleks Pemda BBLSDM No. 12 Makassar', $loan->snap_home_address);
+    }
+
+    /**
+     * Uji halaman formulir peminjaman memuat fungsi search dan 5 kategori populer dinamis.
+     */
+    public function test_loan_create_page_renders_with_search_and_popular_categories(): void
+    {
+        $user = User::where('role', 'PEMINJAM')->first();
+        $this->actingAs($user);
+
+        Cache::forget('bmn_popular_category_codes');
+        $response = $this->get(route('loans.create'));
+        $response->assertOk();
+        $this->assertTrue(Cache::has('bmn_popular_category_codes'));
+        $response->assertViewHas('popularCategories');
+        $response->assertViewHas('categories');
+        $response->assertSee('Filter Cepat Terpopuler:');
+        $response->assertSee('Cari nama barang, merk/tipe, NUP, plat nomor...');
+        $response->assertSee('Kembali ke Daftar Pengajuan');
+        $response->assertSee('toggleCategory');
+        $response->assertSee('selectedCategory');
+    }
+
+    /**
+     * Uji privasi spesimen tanda tangan: tiap role hanya melihat ttd miliknya dan status role lainnya.
+     */
+    public function test_signature_privacy_rules_between_roles(): void
+    {
+        $borrowerUser = User::where('role', 'PEMINJAM')->first();
+        $pengelolaUser = User::where('role', 'PENGELOLA_BMN')->first();
+        $ketuaUser = User::where('role', 'KETUA_TIM_ASET')->first();
+
+        $loan = $this->createActiveLoan($borrowerUser->employee, $pengelolaUser, $ketuaUser);
+        
+        // Simpan path tanda tangan pada loan
+        $loan->borrower_signature = 'signatures/borrower_secret_sig.png';
+        $loan->officer_signature = 'signatures/officer_secret_sig.png';
+        $loan->save();
+
+        // 1. Peminjam: hanya melihat ttd grafis miliknya, bukan milik pengelola
+        $this->actingAs($borrowerUser);
+        $resBorrower = $this->get(route('loans.show', $loan->id));
+        $resBorrower->assertOk();
+        $resBorrower->assertSee('signatures/borrower_secret_sig.png');
+        $resBorrower->assertDontSee('signatures/officer_secret_sig.png');
+        $resBorrower->assertSee('Sudah Ditandatangani');
+
+        // 2. Pengelola: hanya melihat ttd grafis miliknya, bukan milik peminjam
+        $this->actingAs($pengelolaUser);
+        $resPengelola = $this->get(route('loans.show', $loan->id));
+        $resPengelola->assertOk();
+        $resPengelola->assertSee('signatures/officer_secret_sig.png');
+        $resPengelola->assertDontSee('signatures/borrower_secret_sig.png');
+    }
+
+    /**
+     * Uji timeline status memuat label dokumen spesifik dan kotak deskripsi untuk catatan/komentar.
+     */
+    public function test_status_history_displays_document_clarified_labels_and_note_context_descriptions(): void
+    {
+        $borrowerUser = User::where('role', 'PEMINJAM')->first();
+        $pengelolaUser = User::where('role', 'PENGELOLA_BMN')->first();
+        $ketuaUser = User::where('role', 'KETUA_TIM_ASET')->first();
+        $asset = Asset::where('status', 'AVAILABLE')->first();
+
+        $loan = LoanRequest::create([
+            'borrower_id' => $borrowerUser->employee->id,
+            'loan_type' => 'SHORT_TERM',
+            'start_date' => Carbon::now()->toDateString(),
+            'end_date' => Carbon::now()->addDays(3)->toDateString(),
+            'status' => 'DRAFT',
+            'snap_full_name' => $borrowerUser->employee->full_name,
+            'snap_nip' => $borrowerUser->employee->nip,
+            'snap_rank_grade' => $borrowerUser->employee->rank_grade,
+            'snap_position' => $borrowerUser->employee->position,
+            'snap_home_address' => $borrowerUser->employee->home_address,
+        ]);
+
+        LoanItem::create([
+            'loan_request_id' => $loan->id,
+            'asset_id' => $asset->id,
+            'purpose' => 'Dinas luar',
+            'snap_item_name' => $asset->item_name,
+            'snap_brand_model' => $asset->brand_model_combined,
+            'snap_value' => 5000000,
+        ]);
+
+        LoanStateMachine::transition($loan, 'SUBMITTED', $borrowerUser, 'Pengajuan baru diajukan oleh peminjam.');
+        LoanStateMachine::transition($loan, 'UNDER_APPROVAL', $pengelolaUser, 'Dokumen telah lengkap dan barang tersedia.');
+        LoanStateMachine::transition($loan, 'APPROVED', $ketuaUser, 'Disposisi disetujui oleh Ketua Tim.');
+
+        $this->actingAs($borrowerUser);
+        $response = $this->get(route('loans.show', $loan->id));
+        $response->assertOk();
+
+        // 1. Verifikasi alur transisi memperjelas dokumen spesifik
+        $response->assertSee('Menunggu Telaah Surat Peminjaman');
+        $response->assertSee('Menunggu Persetujuan Surat Peminjaman');
+        $response->assertSee('Surat Peminjaman Disetujui');
+
+        // 2. Verifikasi deskripsi kontekstual untuk entri yang memiliki komentar/catatan
+        $response->assertSee('Catatan Pengajuan Peminjam:');
+        $response->assertSee('Catatan Hasil Telaah Pengelola BMN:');
+        $response->assertSee('Catatan Disposisi / Persetujuan Ketua Tim:');
     }
 }

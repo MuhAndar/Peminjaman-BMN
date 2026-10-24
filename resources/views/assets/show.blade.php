@@ -3,9 +3,12 @@
 @section('title', $asset->item_name . ' — BMN')
 
 @section('content')
-<div class="max-w-4xl mx-auto space-y-6">
-    <div class="flex items-center gap-2 text-xs text-slate-500 font-semibold">
-        <a href="{{ route('assets.index') }}" class="hover:text-slate-900">&larr; Kembali ke Katalog BMN</a>
+<div class="space-y-6">
+    <div class="flex items-center gap-2">
+        <a href="{{ route('assets.index') }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:text-slate-900 hover:bg-slate-50 transition shadow-2xs">
+            <i data-lucide="arrow-left" class="w-4 h-4 text-slate-500"></i>
+            <span>Kembali ke Katalog BMN</span>
+        </a>
     </div>
 
     <div class="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-8 shadow-sm space-y-6">

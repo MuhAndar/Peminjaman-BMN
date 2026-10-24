@@ -182,10 +182,10 @@
 
                 <!-- Ajukan Peminjaman (Quick Action) -->
                 <a href="{{ route('loans.create') }}"
-                   class="flex items-center rounded-xl h-10 transition-colors group relative select-none {{ request()->routeIs('loans.create') ? 'bg-[#0B63B5] text-white font-extrabold shadow-sm' : 'text-[#0B63B5] bg-blue-50/70 hover:bg-blue-100/80 font-bold' }}"
+                   class="flex items-center rounded-xl h-10 transition-colors group relative select-none {{ request()->routeIs('loans.create') ? 'bg-blue-50 text-[#0B63B5] font-extrabold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-bold' }}"
                    :class="sidebarCollapsed && !sidebarMobileOpen ? 'justify-center px-0' : 'px-3 gap-3'">
                     <div class="w-6 h-6 flex items-center justify-center shrink-0">
-                        <i data-lucide="plus-circle" class="w-5 h-5 {{ request()->routeIs('loans.create') ? 'text-white' : 'text-[#0B63B5]' }}"></i>
+                        <i data-lucide="plus-circle" class="w-5 h-5 {{ request()->routeIs('loans.create') ? 'text-[#0B63B5]' : 'text-slate-500 group-hover:text-slate-800' }}"></i>
                     </div>
                     <span x-show="!sidebarCollapsed || sidebarMobileOpen"
                           x-transition:enter="transition-opacity duration-150 delay-100"
@@ -663,12 +663,9 @@
                         <span class="text-xs font-bold text-slate-700">Menu</span>
                     </button>
 
-                    <!-- Satker Context Title -->
-                    <div class="hidden sm:flex flex-col justify-center min-w-0 py-1">
-                        <span class="text-xs sm:text-sm lg:text-base font-extrabold text-slate-900 tracking-tight leading-snug truncate">
-                            BBLSDM Komunikasi dan Digital Makassar
-                        </span>
-                        <span class="text-[10px] sm:text-xs lg:text-[13px] font-semibold text-slate-500 leading-normal truncate">
+                    <!-- Satker Context Title (Sesuai Permintaan: Hanya "Sistem Layanan Tata Kelola & Peminjaman BMN") -->
+                    <div class="hidden sm:flex items-center min-w-0 py-1">
+                        <span class="text-xs sm:text-sm lg:text-base font-extrabold text-slate-900 tracking-tight truncate">
                             Sistem Layanan Tata Kelola & Peminjaman BMN
                         </span>
                     </div>

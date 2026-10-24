@@ -3,16 +3,18 @@
 @section('title', 'Berita Acara Serah Terima (BAST) Peminjaman BMN')
 
 @section('content')
-    <div class="doc-title">
-        BERITA ACARA SERAH TERIMA PEMINJAMAN<br>
-        BARANG INVENTARIS BBLSDM-MAKASSAR
-    </div>
-    <div class="doc-number">
-        Nomor : {{ $document->doc_number ?? 'DRAF' }}
+    <div class="judul-wrapper">
+        <div class="doc-title">
+            <span class="doc-title-line">BERITA ACARA SERAH TERIMA PEMINJAMAN</span>
+            <span class="doc-title-line">BARANG INVENTARIS BBPSDMP-MAKASSAR</span>
+        </div>
+        <div class="doc-number">
+            Nomor : {{ $document->doc_number ?? '...............................................................' }}
+        </div>
     </div>
 
-    <div style="margin-bottom: 6px;">Yang bertanda tangan di bawah ini :</div>
-    <table class="info-table" style="margin-bottom: 4px;">
+    <div style="margin-bottom: 5pt;">Yang bertanda tangan di bawah ini:</div>
+    <table class="info-table" style="margin-bottom: 2pt;">
         <tr>
             <td class="label">N a m a</td>
             <td class="colon">:</td>
@@ -29,9 +31,9 @@
             <td>{{ $signatoryPengelola->employee->rank_grade ?? 'Penata Muda, III/a' }}</td>
         </tr>
     </table>
-    <div style="margin-bottom: 8px;">sebagai <strong>Pihak Pertama</strong> (Pengelola Aset), bersama</div>
+    <div style="margin-bottom: 6pt;">sebagai <strong>Pihak Pertama</strong> (Pengelola Aset), bersama</div>
 
-    <table class="info-table" style="margin-bottom: 4px;">
+    <table class="info-table" style="margin-bottom: 2pt;">
         <tr>
             <td class="label">N a m a</td>
             <td class="colon">:</td>
@@ -58,22 +60,22 @@
             <td>{{ $loan->snap_home_address ?? '-' }}</td>
         </tr>
     </table>
-    <div style="margin-bottom: 10px;">sebagai <strong>Pihak Kedua</strong> (Peminjam).</div>
+    <div style="margin-bottom: 6pt;">sebagai <strong>Pihak Kedua</strong> (Peminjam).</div>
 
-    <div class="paragraph no-indent" style="margin-bottom: 6px;">
-        Berdasarkan surat peminjaman No: <strong>{{ $suratPeminjamanDoc->doc_number ?? '-' }}</strong> maka dengan ini <strong>Pihak Pertama</strong> menyerahkan barang inventaris kantor kepada <strong>Pihak Kedua</strong> berupa :
+    <div class="paragraph no-indent" style="margin-bottom: 6pt;">
+        Berdasarkan surat peminjaman No: <strong>{{ $suratPeminjamanDoc->doc_number ?? '…………………….' }}</strong> maka dengan ini <strong>Pihak Pertama</strong> menyerahkan barang inventaris kantor kepada <strong>Pihak Kedua</strong> berupa:
     </div>
 
     <table class="data-table">
         <thead>
             <tr>
-                <th style="width: 28px;">NO</th>
-                <th>Nama Barang</th>
-                <th>Merk</th>
-                <th style="width: 45px;">NUP</th>
-                <th style="width: 45px;">Tahun</th>
-                <th>Nilai</th>
-                <th style="width: 75px;">Kondisi</th>
+                <th style="width: 5%;">NO</th>
+                <th style="width: 28%;">Nama Barang</th>
+                <th style="width: 19%;">Merk</th>
+                <th style="width: 7%;">NUP</th>
+                <th style="width: 8%;">Tahun</th>
+                <th style="width: 16%;">Nilai</th>
+                <th style="width: 17%;">Kondisi</th>
             </tr>
         </thead>
         <tbody>
@@ -91,9 +93,9 @@
         </tbody>
     </table>
 
-    <div style="margin-bottom: 10px;">
-        dengan ketentuan :
-        <ol style="margin-top: 3px; padding-left: 20px;">
+    <div style="margin: 6pt 0 8pt 0;">
+        dengan ketentuan:
+        <ol style="margin: 2pt 0 0 0; padding-left: 18pt;">
             <li>Barang digunakan sesuai peruntukan.</li>
             <li>Barang dikembalikan dengan tepat waktu.</li>
             <li>Jika rusak/hilang, peminjam bertanggung jawab mutlak dan tunduk pada peraturan yang berlaku.</li>
@@ -103,11 +105,11 @@
     <table class="signature-table">
         <tr>
             <td>
-                <br>
-                <strong>Pihak Pertama,</strong><br>
+                <div style="height: 14pt;"></div>
+                <strong>Pihak Pertama,</strong>
                 <div class="signature-space">
                     @if(!empty($officerSignatureBase64))
-                        <img src="{{ $officerSignatureBase64 }}" style="max-height: 65px; max-width: 150px; display: block;">
+                        <img src="{{ $officerSignatureBase64 }}" alt="TTD Pengelola">
                     @endif
                 </div>
                 <strong><u>{{ $signatoryPengelola->employee->full_name ?? 'Muhammad Agung, S.Ds.' }}</u></strong><br>
@@ -115,10 +117,10 @@
             </td>
             <td>
                 Makassar, {{ \App\Helpers\FormatHelper::formatDateIndo($document->doc_date ?? now()) }}<br>
-                <strong>Pihak Kedua,</strong><br>
+                <strong>Pihak Kedua,</strong>
                 <div class="signature-space">
                     @if(!empty($borrowerSignatureBase64))
-                        <img src="{{ $borrowerSignatureBase64 }}" style="max-height: 65px; max-width: 150px; display: block;">
+                        <img src="{{ $borrowerSignatureBase64 }}" alt="TTD Peminjam">
                     @endif
                 </div>
                 <strong><u>{{ $loan->snap_full_name }}</u></strong><br>
@@ -126,4 +128,41 @@
             </td>
         </tr>
     </table>
+
+    @if(!empty($photos))
+        <div style="page-break-before: always; padding-top: 10pt;">
+            <div class="judul-wrapper" style="margin-bottom: 12pt;">
+                <div class="doc-title">
+                    <span class="doc-title-line">LAMPIRAN DOKUMENTASI FISIK BARANG MILIK NEGARA (BMN)</span>
+                    <span class="doc-title-line">BERITA ACARA SERAH TERIMA PEMINJAMAN</span>
+                </div>
+                <div class="doc-number">
+                    Nomor Berita Acara: {{ $document->doc_number ?? '...............................................................' }}
+                </div>
+            </div>
+
+            <table style="width: 100%; border-collapse: collapse; margin-top: 10pt;">
+                @foreach(array_chunk($photos, 2) as $row)
+                    <tr>
+                        @foreach($row as $p)
+                            <td style="width: 50%; padding: 8pt; vertical-align: top; text-align: center; border: 1pt solid #D9D9D9; background: #fafafa;">
+                                <div style="background: #ffffff; border: 1pt solid #e2e8f0; padding: 4pt; border-radius: 4pt;">
+                                    <img src="{{ $p['src'] }}" style="max-width: 100%; max-height: 190pt; object-fit: contain;">
+                                </div>
+                                <div style="font-size: 8.5pt; color: #1e293b; margin-top: 6pt; font-weight: bold;">
+                                    {{ $p['caption'] }}
+                                </div>
+                                <div style="font-size: 7.5pt; color: #64748b; margin-top: 2pt;">
+                                    Waktu Dokumentasi: {{ $p['date'] }} WITA
+                                </div>
+                            </td>
+                        @endforeach
+                        @if(count($row) === 1)
+                            <td style="width: 50%; border: none;"></td>
+                        @endif
+                    </tr>
+                @endforeach
+            </table>
+        </div>
+    @endif
 @endsection
