@@ -4,12 +4,16 @@
 
 @section('content')
 <div class="space-y-6">
+    <!-- Top Bar Navigation -->
+    <div class="flex items-center justify-between gap-3">
+        <a href="{{ route('dashboard') }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:text-slate-900 hover:bg-slate-50 transition shadow-2xs">
+            <i data-lucide="arrow-left" class="w-4 h-4 text-slate-500"></i>
+            <span>Kembali ke Beranda</span>
+        </a>
+    </div>
+
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-            <a href="{{ route('dashboard') }}" class="inline-flex items-center gap-1 text-xs font-bold text-slate-500 hover:text-slate-800 mb-1 transition">
-                <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
-                <span>Kembali ke Beranda</span>
-            </a>
             <h1 class="text-2xl font-black text-slate-900 tracking-tight">Katalog Barang Milik Negara</h1>
             <p class="text-xs sm:text-sm text-slate-500 mt-1">
                 Daftar aset BMN aktif yang tersedia untuk dipinjam dalam rangka pelaksanaan tugas kedinasan.

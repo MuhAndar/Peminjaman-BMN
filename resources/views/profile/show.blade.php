@@ -280,19 +280,21 @@
     }
 }" x-init="if (mainTab === 'signature') initCanvas()">
 
+    <!-- Top Bar Navigation -->
+    <div class="flex items-center justify-between gap-3">
+        <a href="{{ route('dashboard') }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:text-slate-900 hover:bg-slate-50 transition shadow-2xs">
+            <i data-lucide="arrow-left" class="w-4 h-4 text-slate-500"></i>
+            <span>Kembali ke Beranda</span>
+        </a>
+    </div>
+
     <!-- HEADER & TOP NAVIGATION -->
     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-200/80 shadow-sm">
         <div>
-            <div class="flex items-center gap-3 mb-2">
-                <a href="{{ route('dashboard') }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-xs font-bold text-slate-700 transition shadow-2xs">
-                    <i data-lucide="arrow-left" class="w-4 h-4 text-slate-500"></i>
-                    <span>Kembali ke Beranda</span>
-                </a>
-                <div class="flex items-center gap-1.5 text-xs font-bold text-slate-400 uppercase tracking-wider">
-                    <a href="{{ route('dashboard') }}" class="hover:text-blue-600 transition">Beranda</a>
-                    <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
-                    <span class="text-[#0B63B5]">Profil & Data Diri</span>
-                </div>
+            <div class="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                <a href="{{ route('dashboard') }}" class="hover:text-blue-600 transition">Beranda</a>
+                <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                <span class="text-[#0B63B5]">Profil & Data Diri</span>
             </div>
             <h1 class="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
                 <div class="w-10 h-10 rounded-2xl bg-blue-100 text-[#0B63B5] flex items-center justify-center shrink-0">
