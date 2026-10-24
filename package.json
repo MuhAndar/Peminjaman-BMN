@@ -14,5 +14,8 @@
         "postcss": "^8.5.29",
         "tailwindcss": "^4.3.3",
         "vite": "^5.0"
+    },
+    "dependencies": {
+        "htmx.org": "^2.0.11"
     }
 }

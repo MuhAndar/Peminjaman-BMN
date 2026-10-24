@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Peminjaman BMN') — BBLSDM Komdigi Makassar</title>
 
     <!-- Google Fonts: Plus Jakarta Sans -->
@@ -38,9 +39,15 @@
             background: #CBD5E1;
         }
         [x-cloak] { display: none !important; }
+
+        /* HTMX Top Progress Bar Glow */
+        #bmn-top-progress {
+            box-shadow: 0 0 10px rgba(11, 99, 181, 0.6), 0 0 5px rgba(0, 163, 255, 0.6);
+        }
     </style>
 </head>
 <body class="h-full flex flex-col text-slate-800 antialiased"
+      hx-boost="true"
       x-data="{
           sidebarCollapsed: localStorage.getItem('bmn_sidebar_collapsed') === 'true',
           sidebarMobileOpen: false,
@@ -50,6 +57,9 @@
               this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
           }
       }">
+
+    <!-- Top Loading Progress Bar (SPA Indicator) -->
+    <div id="bmn-top-progress" class="fixed top-0 left-0 h-[3px] bg-gradient-to-r from-[#0B63B5] via-[#00A3FF] to-[#38BDF8] z-99999 pointer-events-none transition-all duration-300 opacity-0 w-0"></div>
 
     <!-- MOBILE BACKDROP OVERLAY -->
     <div x-show="sidebarMobileOpen"
@@ -751,7 +761,7 @@
                             <!-- Demo Role Quick Switcher -->
                             <div class="px-3 py-2 bg-slate-50/80 border-b border-slate-100">
                                 <span class="text-[10px] font-bold tracking-wider text-slate-400 uppercase block mb-1.5">Ganti Akun Demo (Uji Alur SOP):</span>
-                                <div class="grid grid-cols-2 gap-1.5">
+                                <div class="grid grid-cols-2 gap-1.5" hx-boost="false">
                                     <a href="{{ route('login.quick', 'PEMINJAM') }}" class="text-[11px] font-semibold p-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 hover:border-blue-500 hover:text-blue-600 text-center transition">
                                         Peminjam
                                     </a>
@@ -767,7 +777,7 @@
                                 </div>
                             </div>
 
-                            <form method="POST" action="{{ route('logout') }}" class="p-1">
+                            <form method="POST" action="{{ route('logout') }}" class="p-1" hx-boost="false">
                                 @csrf
                                 <button type="submit" class="w-full text-left px-3 py-2 text-xs text-red-600 hover:bg-red-50 rounded-xl font-bold transition flex items-center gap-2">
                                     <i data-lucide="log-out" class="w-4 h-4"></i>
