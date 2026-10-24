@@ -75,7 +75,7 @@
         <!-- Desktop Collapse / Expand Arrow Button (Di Antara Logo dan Beranda) -->
         <button type="button"
                 @click="toggleCollapse()"
-                class="hidden lg:flex absolute -right-3.5 top-[50px] lg:top-[66px] z-50 w-7 h-7 bg-white border border-slate-200 hover:border-[#0B63B5] text-slate-500 hover:text-[#0B63B5] rounded-full shadow-md items-center justify-center transition-all duration-200 focus:outline-none hover:scale-110 active:scale-95 cursor-pointer"
+                class="hidden lg:flex absolute -right-3.5 top-[50px] z-50 w-7 h-7 bg-white border border-slate-200 hover:border-[#0B63B5] text-slate-500 hover:text-[#0B63B5] rounded-full shadow-md items-center justify-center transition-all duration-200 focus:outline-none hover:scale-110 active:scale-95 cursor-pointer"
                 :title="sidebarCollapsed ? 'Perlebar Sidebar (Expand)' : 'Perkecil Sidebar (Minimize)'">
             <i data-lucide="chevron-left"
                class="w-4 h-4 transition-transform duration-300"
@@ -83,11 +83,11 @@
         </button>
 
         <!-- Sidebar Header (Brand Logo) -->
-        <div class="h-16 lg:h-20 px-4 border-b border-slate-100 flex items-center shrink-0 relative transition-all duration-300"
+        <div class="h-16 px-4 border-b border-slate-200 flex items-center shrink-0 relative transition-all duration-300"
              :class="sidebarCollapsed && !sidebarMobileOpen ? 'justify-center px-0' : 'justify-between px-4'">
             <!-- Brand Logo -->
             <a href="{{ route('dashboard') }}" class="flex items-center gap-3 overflow-hidden">
-                <div class="w-10 h-10 lg:w-11 lg:h-11 rounded-xl bg-gradient-to-tr from-[#0B63B5] to-[#12A8E0] flex items-center justify-center text-white font-black text-xl shadow-md shadow-blue-500/20 shrink-0">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#0B63B5] to-[#12A8E0] flex items-center justify-center text-white font-black text-xl shadow-md shadow-blue-500/20 shrink-0">
                     B
                 </div>
                 <div x-show="!sidebarCollapsed || sidebarMobileOpen"
@@ -98,10 +98,10 @@
                      x-transition:leave-start="opacity-100"
                      x-transition:leave-end="opacity-0"
                      class="truncate whitespace-nowrap">
-                    <span class="font-extrabold text-slate-900 text-base lg:text-lg tracking-tight flex items-center gap-1">
+                    <span class="font-extrabold text-slate-900 text-base tracking-tight flex items-center gap-1">
                         BMN <span class="text-[#0B63B5]">Makassar</span>
                     </span>
-                    <span class="text-[10px] lg:text-[11px] uppercase tracking-wider text-slate-500 font-semibold block -mt-0.5 truncate">
+                    <span class="text-[10px] uppercase tracking-wider text-slate-500 font-semibold block -mt-0.5 truncate">
                         BBLSDM Komdigi
                     </span>
                 </div>
@@ -649,7 +649,7 @@
          :class="sidebarCollapsed ? 'lg:pl-20' : 'lg:pl-64'">
 
         <!-- TOP HEADER BAR -->
-        <header class="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 h-16 lg:h-20 w-full transition-all duration-300 ease-in-out">
+        <header class="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 h-16 w-full transition-all duration-300 ease-in-out shrink-0">
             <div class="max-w-7xl mx-auto h-full px-4 sm:px-6 lg:px-10 xl:px-12 flex items-center justify-between gap-4">
 
                 <!-- Left: Satker Context Title (Tanpa burger menu) -->
@@ -673,20 +673,20 @@
 
                 <!-- Right: Actions, Demo Switcher, & User Menu -->
                 <div class="flex items-center gap-3 shrink-0">
-                    <a href="{{ route('loans.create') }}" class="hidden sm:inline-flex items-center gap-2 bg-[#0B63B5] hover:bg-[#0B4F8A] text-white text-xs lg:text-sm font-bold px-3.5 lg:px-4 py-2 lg:py-2.5 rounded-xl shadow-sm transition shrink-0">
+                    <a href="{{ route('loans.create') }}" class="hidden sm:inline-flex items-center gap-2 bg-[#0B63B5] hover:bg-[#0B4F8A] text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-sm transition shrink-0">
                         <i data-lucide="plus" class="w-4 h-4"></i>
                         <span>Ajukan BMN</span>
                     </a>
 
                     <!-- Profile Dropdown (Alpine.js) -->
                     <div x-data="{ open: false }" class="relative">
-                        <button @click="open = !open" type="button" class="flex items-center gap-2.5 p-1.5 lg:p-2 rounded-xl hover:bg-slate-100 transition text-left">
-                            <div class="w-8 h-8 lg:w-9 lg:h-9 rounded-lg lg:rounded-xl bg-blue-100 text-[#0B63B5] font-black flex items-center justify-center text-xs lg:text-sm border border-blue-200 shrink-0">
+                        <button @click="open = !open" type="button" class="flex items-center gap-2.5 p-1.5 rounded-xl hover:bg-slate-100 transition text-left">
+                            <div class="w-8 h-8 rounded-lg bg-blue-100 text-[#0B63B5] font-black flex items-center justify-center text-xs border border-blue-200 shrink-0">
                                 {{ substr(auth()->user()->name, 0, 1) }}
                             </div>
-                            <div class="hidden md:block text-xs lg:text-sm">
+                            <div class="hidden md:block text-xs">
                                 <span class="font-bold text-slate-800 block truncate max-w-[120px] lg:max-w-[160px] xl:max-w-[220px]">{{ auth()->user()->name }}</span>
-                                <span class="text-[10px] lg:text-[11px] font-bold text-[#0B63B5] uppercase block truncate">{{ str_replace('_', ' ', auth()->user()->role) }}</span>
+                                <span class="text-[10px] font-bold text-[#0B63B5] uppercase block truncate">{{ str_replace('_', ' ', auth()->user()->role) }}</span>
                             </div>
                             <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 shrink-0"></i>
                         </button>
