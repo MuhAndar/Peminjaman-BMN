@@ -517,6 +517,10 @@
             </div>
 
             <!-- 2. STATUS & BUBURKAN TANDA TANGAN DIGITAL DOKUMEN BAST -->
+            <!-- 4. SPESIMEN TANDA TANGAN DIGITAL DOKUMEN BAST -->
+            @php
+                $ketuaApproved = in_array($loan->status, ['APPROVED', 'BAST_ISSUED', 'ACTIVE', 'RETURN_REQUESTED', 'RETURN_CHECKED', 'RETURNED']);
+            @endphp
             <div class="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-sm space-y-4">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
                     <div class="flex items-center gap-2.5">
@@ -524,18 +528,18 @@
                             <i data-lucide="signature" class="w-4 h-4"></i>
                         </div>
                         <div>
-                            <h3 class="font-extrabold text-sm text-slate-900">Spesimen Tanda Tangan Digital BAST</h3>
-                            <p class="text-[11px] text-slate-500">Tanda tangan digital yang dibubuhkan otomatis dicetak pada lembar PDF resmi.</p>
+                            <h3 class="font-extrabold text-sm text-slate-900">Tanda Tangan Digital BAST</h3>
+                            <p class="text-[11px] text-slate-500">Tanda tangan digital resmi yang dibubuhkan otomatis dicetak pada lembar dokumen PDF BAST.</p>
                         </div>
                     </div>
 
-                    <!-- Tombol Aksi Tanda Tangan -->
+                    <!-- Tombol Aksi Tanda Tangan Cepat di Header -->
                     <div class="flex items-center gap-2">
                         @if($isOwner)
                             <button type="button" @click="openSigModal('borrower')"
                                     class="px-4 py-2 bg-[#0B63B5] hover:bg-[#0B4F8A] text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
                                 <i data-lucide="pen-tool" class="w-3.5 h-3.5"></i>
-                                <span>{{ $loan->borrower_signature ? 'Perbarui Tanda Tangan Peminjam' : 'Tanda Tangani (Pihak Kedua)' }}</span>
+                                <span>{{ $loan->borrower_signature ? 'Perbarui Tanda Tangan Anda' : 'Tanda Tangani BAST (Pihak Kedua)' }}</span>
                             </button>
                         @endif
 
@@ -543,150 +547,211 @@
                             <button type="button" @click="openSigModal('officer')"
                                     class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
                                 <i data-lucide="pen-tool" class="w-3.5 h-3.5"></i>
-                                <span>{{ $loan->officer_signature ? 'Perbarui Tanda Tangan Petugas' : 'Tanda Tangani (Pihak Pertama)' }}</span>
+                                <span>{{ $loan->officer_signature ? 'Perbarui Tanda Tangan Petugas' : 'Tanda Tangani BAST (Pihak Pertama)' }}</span>
                             </button>
                         @endif
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <!-- 1. Status Pihak Pertama (Pengelola BMN) -->
-                    <div class="p-4 rounded-2xl border {{ $loan->officer_signature ? 'border-emerald-200 bg-emerald-50/30' : 'border-slate-200 bg-slate-50/50' }} flex flex-col justify-between space-y-3">
-                        <div>
-                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Pihak Pertama (Pengelola Aset)</span>
-                            <span class="font-bold text-xs text-slate-800 block">Petugas Pengelola BMN</span>
-                        </div>
-
-                        @if($isPengelola)
-                            <!-- Tampilan Penuh Khusus Pemilik TTD (Pengelola) -->
-                            <div class="p-2.5 bg-white rounded-xl border border-dashed border-slate-300 flex flex-col items-center justify-center min-h-[85px] w-full max-w-[240px] mx-auto shadow-2xs relative">
-                                <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Ruang Dokumen (± 2,5 cm)</span>
-                                @if($loan->officer_signature)
-                                    <img src="{{ asset('storage/' . $loan->officer_signature) }}" class="max-h-[60px] max-w-[155px] object-contain" alt="TTD Pengelola">
-                                @else
-                                    <span class="text-xs text-slate-400 italic">Belum Ditandatangani</span>
-                                @endif
-                            </div>
+                <!-- 1 Baris Tracker Kelengkapan Penandatanganan (Horizontal Chips) -->
+                <div class="p-3 bg-slate-50/80 rounded-2xl border border-slate-200/70 flex flex-wrap items-center justify-between gap-2.5">
+                    <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                        <i data-lucide="users" class="w-3.5 h-3.5 text-slate-400"></i>
+                        <span>Kelengkapan Tanda Tangan Dokumen:</span>
+                    </span>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <!-- Pihak I: Petugas Pengelola BMN -->
+                        @if($loan->officer_signature)
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold shadow-2xs">
+                                <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-600"></i>
+                                <span>Pihak I (Petugas): Sudah Ditandatangani</span>
+                            </span>
                         @else
-                            <!-- Tampilan Simpel untuk Role Lain -->
-                            <div class="py-4 flex items-center justify-center">
-                                @if($loan->officer_signature)
-                                    <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold shadow-2xs">
-                                        <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-600"></i>
-                                        <span>Sudah Ditandatangani</span>
-                                    </div>
-                                @else
-                                    <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-500 text-xs font-medium">
-                                        <i data-lucide="clock" class="w-4 h-4 text-slate-400"></i>
-                                        <span>Belum Ditandatangani</span>
-                                    </div>
-                                @endif
-                            </div>
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white border border-slate-200 text-slate-600 text-xs font-medium shadow-2xs">
+                                <i data-lucide="clock" class="w-3.5 h-3.5 text-slate-400"></i>
+                                <span>Pihak I (Petugas): Belum Ditandatangani</span>
+                            </span>
                         @endif
 
-                        <div class="flex items-center justify-between text-[11px] pt-1 border-t border-slate-100/60">
-                            <span class="font-bold {{ $loan->officer_signature ? 'text-emerald-700' : 'text-slate-400' }}">
-                                {{ $loan->officer_signature ? '✓ Ditandatangani Digital' : 'Tanda Tangan Manual Basah' }}
+                        <!-- Pihak II: Peminjam BMN -->
+                        @if($loan->borrower_signature)
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold shadow-2xs">
+                                <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-600"></i>
+                                <span>Pihak II (Peminjam): Sudah Ditandatangani</span>
                             </span>
-                            @if($isPengelola)
-                                <button type="button" @click="openSigModal('officer')" class="text-[#0B63B5] font-bold hover:underline">
-                                    {{ $loan->officer_signature ? 'Ubah' : 'Tanda Tangani' }}
+                        @else
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold shadow-2xs">
+                                <i data-lucide="alert-circle" class="w-3.5 h-3.5 text-amber-600"></i>
+                                <span>Pihak II (Peminjam): Belum Ditandatangani</span>
+                            </span>
+                        @endif
+
+                        <!-- Mengetahui: Disposisi Ketua Tim -->
+                        @if($ketuaApproved)
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-blue-50 border border-blue-200 text-[#0B63B5] text-xs font-bold shadow-2xs">
+                                <i data-lucide="check-check" class="w-3.5 h-3.5 text-[#0B63B5]"></i>
+                                <span>Mengetahui: Disahkan Ketua Tim</span>
+                            </span>
+                        @else
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white border border-slate-200 text-slate-500 text-xs font-medium shadow-2xs">
+                                <i data-lucide="clock" class="w-3.5 h-3.5 text-slate-400"></i>
+                                <span>Mengetahui: Menunggu Disposisi</span>
+                            </span>
+                        @endif
+                    </div>
+                </div>
+
+                <!-- Focused Action Card: Tanda Tangan Anda Sendiri -->
+                @if($isOwner)
+                    <!-- Tanda Tangan Peminjam (Pihak Kedua) -->
+                    <div class="p-5 rounded-2xl border {{ $loan->borrower_signature ? 'border-emerald-200 bg-emerald-50/20' : 'border-blue-200 bg-blue-50/20' }} flex flex-col md:flex-row md:items-center justify-between gap-5">
+                        <div class="space-y-1">
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs font-bold text-slate-800 uppercase tracking-wider">Tanda Tangan Anda (Pihak Kedua - Peminjam BMN)</span>
+                                @if($loan->borrower_signature)
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-200">Sudah Ditandatangani</span>
+                                @else
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">Perlu Tindakan</span>
+                                @endif
+                            </div>
+                            <p class="text-xs text-slate-600">
+                                Atas nama: <strong class="text-slate-900">{{ $loan->snap_full_name }}</strong> (NIP. {{ \App\Helpers\FormatHelper::formatNip($loan->snap_nip) }})
+                            </p>
+                            <p class="text-[11px] text-slate-500 leading-relaxed max-w-xl">
+                                Tanda tangan ini dicetak pada kolom Pihak Kedua di lembar dokumen BAST resmi. Anda dapat menggambar goresan tanda tangan baru atau menggunakan tanda tangan tersimpan dari profil Anda.
+                            </p>
+                        </div>
+
+                        <div class="flex flex-col sm:flex-row items-center gap-4 shrink-0">
+                            @if($loan->borrower_signature)
+                                <div class="p-3 bg-white rounded-2xl border-2 border-dashed border-emerald-300 flex flex-col items-center justify-center min-h-[90px] w-56 shadow-2xs relative">
+                                    <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Pratinjau Tanda Tangan Anda</span>
+                                    <img src="{{ asset('storage/' . $loan->borrower_signature) }}" class="max-h-[60px] max-w-[170px] object-contain" alt="Tanda Tangan Peminjam">
+                                </div>
+                                <button type="button" @click="openSigModal('borrower')"
+                                        class="px-4 py-2.5 bg-white hover:bg-slate-50 text-[#0B63B5] border border-blue-200 rounded-xl text-xs font-bold shadow-2xs transition flex items-center gap-1.5 self-stretch sm:self-auto justify-center">
+                                    <i data-lucide="edit-3" class="w-4 h-4"></i>
+                                    <span>Ubah Tanda Tangan</span>
+                                </button>
+                            @else
+                                <div class="p-3 bg-white rounded-2xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center min-h-[90px] w-56 text-center shadow-2xs">
+                                    <i data-lucide="signature" class="w-6 h-6 text-slate-300 mb-1"></i>
+                                    <span class="text-xs text-slate-400 font-semibold italic">Belum Ditandatangani</span>
+                                </div>
+                                <button type="button" @click="openSigModal('borrower')"
+                                        class="px-5 py-2.5 bg-[#0B63B5] hover:bg-[#0B4F8A] text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/20 transition flex items-center gap-2 self-stretch sm:self-auto justify-center">
+                                    <i data-lucide="pen-tool" class="w-4 h-4"></i>
+                                    <span>Tanda Tangani BAST Sekarang</span>
                                 </button>
                             @endif
                         </div>
                     </div>
-
-                    <!-- 2. Status Pihak Kedua (Peminjam) -->
-                    <div class="p-4 rounded-2xl border {{ $loan->borrower_signature ? 'border-emerald-200 bg-emerald-50/30' : 'border-slate-200 bg-slate-50/50' }} flex flex-col justify-between space-y-3">
-                        <div>
-                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Pihak Kedua (Peminjam BMN)</span>
-                            <span class="font-bold text-xs text-slate-800 block truncate">{{ $loan->snap_full_name }}</span>
+                @elseif($isPengelola)
+                    <!-- Tanda Tangan Petugas Pengelola BMN (Pihak Pertama) -->
+                    <div class="p-5 rounded-2xl border {{ $loan->officer_signature ? 'border-emerald-200 bg-emerald-50/20' : 'border-indigo-200 bg-indigo-50/20' }} flex flex-col md:flex-row md:items-center justify-between gap-5">
+                        <div class="space-y-1">
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs font-bold text-slate-800 uppercase tracking-wider">Tanda Tangan Anda (Pihak Pertama - Petugas BMN)</span>
+                                @if($loan->officer_signature)
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-200">Sudah Ditandatangani</span>
+                                @else
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">Perlu Tindakan</span>
+                                @endif
+                            </div>
+                            <p class="text-xs text-slate-600">
+                                Petugas Penyerah & Pemeriksa BMN: <strong class="text-slate-900">{{ auth()->user()->name }}</strong>
+                            </p>
+                            <p class="text-[11px] text-slate-500 leading-relaxed max-w-xl">
+                                Tanda tangan ini dicetak pada kolom Pihak Pertama di lembar BAST Peminjaman & Pengembalian resmi.
+                            </p>
                         </div>
 
-                        @if($isOwner)
-                            <!-- Tampilan Penuh Khusus Pemilik TTD (Peminjam) -->
-                            <div class="p-2.5 bg-white rounded-xl border border-dashed border-slate-300 flex flex-col items-center justify-center min-h-[85px] w-full max-w-[240px] mx-auto shadow-2xs relative">
-                                <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Ruang Dokumen (± 2,5 cm)</span>
-                                @if($loan->borrower_signature)
-                                    <img src="{{ asset('storage/' . $loan->borrower_signature) }}" class="max-h-[60px] max-w-[155px] object-contain" alt="TTD Peminjam">
-                                @else
-                                    <span class="text-xs text-slate-400 italic">Belum Ditandatangani</span>
-                                @endif
-                            </div>
-                        @else
-                            <!-- Tampilan Simpel untuk Role Lain -->
-                            <div class="py-4 flex items-center justify-center">
-                                @if($loan->borrower_signature)
-                                    <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold shadow-2xs">
-                                        <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-600"></i>
-                                        <span>Sudah Ditandatangani</span>
-                                    </div>
-                                @else
-                                    <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-500 text-xs font-medium">
-                                        <i data-lucide="clock" class="w-4 h-4 text-slate-400"></i>
-                                        <span>Belum Ditandatangani</span>
-                                    </div>
-                                @endif
-                            </div>
-                        @endif
-
-                        <div class="flex items-center justify-between text-[11px] pt-1 border-t border-slate-100/60">
-                            <span class="font-bold {{ $loan->borrower_signature ? 'text-emerald-700' : 'text-slate-400' }}">
-                                {{ $loan->borrower_signature ? '✓ Ditandatangani Digital' : 'Tanda Tangan Manual Basah' }}
-                            </span>
-                            @if($isOwner)
-                                <button type="button" @click="openSigModal('borrower')" class="text-[#0B63B5] font-bold hover:underline">
-                                    {{ $loan->borrower_signature ? 'Ubah' : 'Tanda Tangani' }}
+                        <div class="flex flex-col sm:flex-row items-center gap-4 shrink-0">
+                            @if($loan->officer_signature)
+                                <div class="p-3 bg-white rounded-2xl border-2 border-dashed border-emerald-300 flex flex-col items-center justify-center min-h-[90px] w-56 shadow-2xs relative">
+                                    <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Pratinjau Tanda Tangan Petugas</span>
+                                    <img src="{{ asset('storage/' . $loan->officer_signature) }}" class="max-h-[60px] max-w-[170px] object-contain" alt="Tanda Tangan Petugas">
+                                </div>
+                                <button type="button" @click="openSigModal('officer')"
+                                        class="px-4 py-2.5 bg-white hover:bg-slate-50 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold shadow-2xs transition flex items-center gap-1.5 self-stretch sm:self-auto justify-center">
+                                    <i data-lucide="edit-3" class="w-4 h-4"></i>
+                                    <span>Ubah Tanda Tangan</span>
+                                </button>
+                            @else
+                                <div class="p-3 bg-white rounded-2xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center min-h-[90px] w-56 text-center shadow-2xs">
+                                    <i data-lucide="signature" class="w-6 h-6 text-slate-300 mb-1"></i>
+                                    <span class="text-xs text-slate-400 font-semibold italic">Belum Ditandatangani</span>
+                                </div>
+                                <button type="button" @click="openSigModal('officer')"
+                                        class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-500/20 transition flex items-center gap-2 self-stretch sm:self-auto justify-center">
+                                    <i data-lucide="pen-tool" class="w-4 h-4"></i>
+                                    <span>Tanda Tangani BAST Sekarang</span>
                                 </button>
                             @endif
                         </div>
                     </div>
-
-                    <!-- 3. Status Mengetahui (Ketua Tim Keuangan & Aset) -->
-                    @php
-                        $ketuaApproved = in_array($loan->status, ['APPROVED', 'BAST_ISSUED', 'ACTIVE', 'RETURN_REQUESTED', 'RETURN_CHECKED', 'RETURNED']);
-                    @endphp
-                    <div class="p-4 rounded-2xl border {{ $ketuaApproved ? 'border-emerald-200 bg-emerald-50/30' : 'border-slate-200 bg-slate-50/50' }} flex flex-col justify-between space-y-3">
-                        <div>
-                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Mengetahui (Persetujuan Aset)</span>
-                            <span class="font-bold text-xs text-slate-800 block">Ketua Tim Keuangan & Aset</span>
-                        </div>
-
-                        @if($isKetuaTim && auth()->user()->signature_path)
-                            <!-- Tampilan Penuh Khusus Pemilik TTD (Ketua Tim) -->
-                            <div class="p-2.5 bg-white rounded-xl border border-dashed border-slate-300 flex flex-col items-center justify-center min-h-[85px] w-full max-w-[240px] mx-auto shadow-2xs relative">
-                                <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Ruang Dokumen (± 2,5 cm)</span>
-                                <img src="{{ asset('storage/' . auth()->user()->signature_path) }}" class="max-h-[60px] max-w-[155px] object-contain" alt="TTD Ketua Tim">
-                            </div>
-                        @else
-                            <!-- Tampilan Simpel untuk Role Lain -->
-                            <div class="py-4 flex items-center justify-center">
+                @elseif($isKetuaTim)
+                    <!-- Otoritas Pengesahan Ketua Tim -->
+                    <div class="p-5 rounded-2xl border border-blue-200 bg-blue-50/20 flex flex-col md:flex-row md:items-center justify-between gap-5">
+                        <div class="space-y-1">
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs font-bold text-slate-800 uppercase tracking-wider">Otoritas Pengesahan (Ketua Tim Keuangan & Aset)</span>
                                 @if($ketuaApproved)
-                                    <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold shadow-2xs">
-                                        <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-600"></i>
-                                        <span>Sudah Disahkan</span>
-                                    </div>
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-200">Disahkan Sah</span>
                                 @else
-                                    <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-500 text-xs font-medium">
-                                        <i data-lucide="clock" class="w-4 h-4 text-slate-400"></i>
-                                        <span>Menunggu Disposisi</span>
-                                    </div>
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">Menunggu Telaah</span>
                                 @endif
                             </div>
-                        @endif
+                            <p class="text-xs text-slate-600">
+                                Penandatangan Pengesahan: <strong class="text-slate-900">{{ auth()->user()->name }}</strong>
+                            </p>
+                            <p class="text-[11px] text-slate-500 leading-relaxed max-w-xl">
+                                Pengesahan peminjaman barang ini dilakukan melalui modul Disposisi Persetujuan. Tanda tangan profil Anda otomatis tersemat pada kolom Mengetahui dokumen BAST.
+                            </p>
+                        </div>
 
-                        <div class="flex items-center justify-between text-[11px] pt-1 border-t border-slate-100/60">
-                            <span class="font-bold {{ $ketuaApproved ? 'text-emerald-700' : 'text-slate-400' }}">
-                                {{ $ketuaApproved ? '✓ Disetujui & Disahkan' : 'Menunggu Disposisi' }}
-                            </span>
-                            @if($isKetuaTim)
-                                <a href="{{ route('profile.show', ['tab' => 'signature']) }}" class="text-[#0B63B5] font-bold hover:underline">
-                                    Kelola TTD
+                        <div class="flex items-center gap-4 shrink-0">
+                            @if(auth()->user()->signature_path)
+                                <div class="p-3 bg-white rounded-2xl border-2 border-dashed border-blue-300 flex flex-col items-center justify-center min-h-[90px] w-56 shadow-2xs relative">
+                                    <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Spesimen Profil Anda</span>
+                                    <img src="{{ asset('storage/' . auth()->user()->signature_path) }}" class="max-h-[60px] max-w-[170px] object-contain" alt="Tanda Tangan Ketua Tim">
+                                </div>
+                                <a href="{{ route('profile.show', ['tab' => 'signature']) }}" class="px-4 py-2.5 bg-white hover:bg-slate-50 text-[#0B63B5] border border-blue-200 rounded-xl text-xs font-bold shadow-2xs transition flex items-center gap-1.5">
+                                    <i data-lucide="edit-3" class="w-4 h-4"></i>
+                                    <span>Ubah di Profil</span>
+                                </a>
+                            @else
+                                <div class="p-3 bg-white rounded-2xl border border-slate-200 text-xs text-slate-500 text-center w-56">
+                                    <span>Belum ada tanda tangan di profil</span>
+                                </div>
+                                <a href="{{ route('profile.show', ['tab' => 'signature']) }}" class="px-4 py-2.5 bg-[#0B63B5] hover:bg-[#0B4F8A] text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5">
+                                    <i data-lucide="plus" class="w-4 h-4"></i>
+                                    <span>Atur Tanda Tangan</span>
                                 </a>
                             @endif
                         </div>
                     </div>
-                </div>
+                @else
+                    <!-- Mode Pengawas / Admin -->
+                    <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 rounded-xl bg-blue-100 text-[#0B63B5] flex items-center justify-center shrink-0">
+                                <i data-lucide="file-check" class="w-4 h-4"></i>
+                            </div>
+                            <div>
+                                <span class="text-xs font-bold text-slate-800 block">Tinjauan Penandatanganan Dokumen BAST (Mode Administrator)</span>
+                                <p class="text-[11px] text-slate-500">Tanda tangan masing-masing pihak telah tersimpan aman dan dicetak utuh pada lembar dokumen PDF BAST.</p>
+                            </div>
+                        </div>
+                        @if($loan->status !== 'DRAFT' && $loan->status !== 'SUBMITTED' && $loan->status !== 'UNDER_APPROVAL')
+                            <a href="{{ route('documents.pdf', [$loan->id, 'BAST_PEMINJAMAN']) }}" target="_blank"
+                               class="px-4 py-2 bg-[#0B63B5] hover:bg-[#0B4F8A] text-white rounded-xl text-xs font-bold shadow-2xs transition flex items-center gap-1.5 shrink-0 self-start sm:self-auto">
+                                <i data-lucide="file-text" class="w-4 h-4"></i>
+                                <span>Buka PDF BAST</span>
+                            </a>
+                        @endif
+                    </div>
+                @endif
             </div>
 
             <!-- 3. DOKUMENTASI FOTO BAST (SERAH TERIMA & PENGEMBALIAN) -->
