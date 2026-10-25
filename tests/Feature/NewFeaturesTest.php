@@ -845,5 +845,54 @@ class NewFeaturesTest extends TestCase
         $resQueueReturned->assertOk();
         $resQueueReturned->assertSee('Selesai / Riwayat Arsip');
     }
+
+    /**
+     * Uji draft tanda tangan Ketua Tim tersimpan secara autosave sehingga saat refresh halaman ttd tidak hilang.
+     */
+    public function test_ketua_tim_draft_signature_persists_across_refresh_and_allows_approval(): void
+    {
+        $ketuaTim = User::where('role', 'KETUA_TIM_ASET')->first();
+        $user = User::where('role', 'PEMINJAM')->first();
+        $pengelola = User::where('role', 'PENGELOLA_BMN')->first();
+
+        // Siapkan pengajuan dalam status UNDER_APPROVAL
+        $loan = $this->createActiveLoan($user->employee, $pengelola, $ketuaTim);
+        $loan->status = 'UNDER_APPROVAL';
+        $loan->approver_signature = null;
+        $loan->save();
+
+        $this->actingAs($ketuaTim);
+
+        $dummyBase64Png = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+
+        // 1. Ketua Tim mengklik "Bubuhkan ke Dokumen" yang mengirim autosave draft signature
+        $resDraft = $this->postJson(route('persetujuan.draft-signature', $loan->id), [
+            'signature_source' => 'pad',
+            'signature_data' => $dummyBase64Png,
+            'save_to_profile' => false,
+        ]);
+
+        $resDraft->assertOk();
+        $resDraft->assertJson(['ok' => true]);
+
+        // Verifikasi tanda tangan tersimpan di model loan_requests
+        $loanFresh = $loan->fresh();
+        $this->assertNotNull($loanFresh->approver_signature);
+        Storage::disk('public')->assertExists($loanFresh->approver_signature);
+
+        // 2. Simulasi refresh halaman: panggil GET show
+        $resShow = $this->get(route('persetujuan.show', $loan->id));
+        $resShow->assertOk();
+        $resShow->assertSee($loanFresh->approver_signature);
+
+        // 3. Setujui pengajuan tanpa mengirim ulang ttd (menggunakan ttd yang sudah terpasang)
+        $resApprove = $this->post(route('persetujuan.approve', $loan->id), [
+            'note' => 'Disetujui menggunakan draft tanda tangan yang sudah terpasang',
+        ]);
+
+        $resApprove->assertRedirect(route('persetujuan.index'));
+        $this->assertEquals('APPROVED', $loan->fresh()->status);
+        $this->assertEquals($loanFresh->approver_signature, $loan->fresh()->approver_signature);
+    }
 }
 

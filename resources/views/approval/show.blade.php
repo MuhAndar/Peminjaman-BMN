@@ -382,12 +382,13 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </form>rm>
+                </form>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
                     <!-- 2. Form Kembalikan untuk Diperbaiki -->
-                    <form method="POST" action="{{ route('persetujuan.revision', $loan->id) }}" class="p-4 rounded-2xl bg-amber-50/70 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 space-y-3">
+                    <form method="POST" action="{{ route('persetujuan.revision', $loan->id) }}"
+                          @submit="clearDraftStorage()"
+                          class="p-4 rounded-2xl bg-amber-50/70 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 space-y-3">
                         @csrf
                         <div class="flex items-center gap-2 text-amber-800 dark:text-amber-300 font-bold text-xs">
                             <i data-lucide="undo-2" class="w-4 h-4 text-amber-600 dark:text-amber-400"></i>
@@ -406,7 +407,9 @@
                     </form>
 
                     <!-- 3. Form Tolak Final -->
-                    <form method="POST" action="{{ route('persetujuan.reject', $loan->id) }}" class="p-4 rounded-2xl bg-red-50/70 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60 space-y-3">
+                    <form method="POST" action="{{ route('persetujuan.reject', $loan->id) }}"
+                          @submit="clearDraftStorage()"
+                          class="p-4 rounded-2xl bg-red-50/70 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60 space-y-3">
                         @csrf
                         <div class="flex items-center gap-2 text-red-800 dark:text-red-300 font-bold text-xs">
                             <i data-lucide="x-circle" class="w-4 h-4 text-red-600 dark:text-red-400"></i>
@@ -431,18 +434,44 @@
 
 <script>
 function ketuaTimApproval() {
+    const loanDbSig = @json($loan->approver_signature ? asset('storage/' . $loan->approver_signature) : '', JSON_UNESCAPED_SLASHES);
+    const userProfileSig = @json(auth()->user()->signature_path ? asset('storage/' . auth()->user()->signature_path) : '', JSON_UNESCAPED_SLASHES);
+    const draftKey = 'bmn_ketua_sig_draft_{{ $loan->id }}';
+
+    let initialSigUrl = loanDbSig || userProfileSig || '';
+    let initialSource = loanDbSig ? 'pad' : (userProfileSig ? 'profile' : '');
+    let initialSigData = '';
+    let initialSaveToProfile = false;
+
+    // Cek apakah ada draft tanda tangan di localStorage yang tersimpan sebelumnya (bertahan saat refresh)
+    try {
+        const savedDraft = localStorage.getItem(draftKey);
+        if (savedDraft) {
+            const parsed = JSON.parse(savedDraft);
+            if (parsed && parsed.sigPreviewUrl) {
+                initialSigUrl = parsed.sigPreviewUrl;
+                initialSource = parsed.sigSource || initialSource;
+                initialSigData = parsed.sigData || '';
+                initialSaveToProfile = !!parsed.saveToProfile;
+            }
+        }
+    } catch (e) {
+        console.warn('Draft storage error:', e);
+    }
+
     return {
         sigModalOpen: false,
-        sigTab: '{{ auth()->user()->signature_path ? "profile" : "pad" }}',
-        sigSource: '{{ auth()->user()->signature_path ? "profile" : "" }}',
-        sigData: '',
-        sigPreviewUrl: '{{ auth()->user()->signature_path ? asset("storage/" . auth()->user()->signature_path) : "" }}',
-        saveToProfile: false,
+        sigTab: initialSource || (userProfileSig ? 'profile' : 'pad'),
+        sigSource: initialSource,
+        sigData: initialSigData,
+        sigPreviewUrl: initialSigUrl,
+        saveToProfile: initialSaveToProfile,
         modalSaveToProfile: false, // Default KOSONG / UNCHECKED sesuai permintaan user
         filePreviewUrl: null,
         selectedFileName: '',
         smoothingEnabled: true,
         justCorrected: false,
+        isSavingDraft: false,
 
         canvas: null,
         ctx: null,
@@ -762,9 +791,72 @@ function ketuaTimApproval() {
                 this.sigModalOpen = false;
             }
 
+            // Simpan langsung ke localStorage agar jika halaman di-refresh, ttd tetap terpasang
+            try {
+                localStorage.setItem(draftKey, JSON.stringify({
+                    sigPreviewUrl: this.sigPreviewUrl,
+                    sigData: this.sigData,
+                    sigSource: this.sigSource,
+                    saveToProfile: this.saveToProfile
+                }));
+            } catch (e) {
+                console.warn('Gagal menyimpan draft tanda tangan ke localStorage:', e);
+            }
+
+            // Sinkronisasi otomatis ke server di latar belakang
+            this.syncDraftToServer();
+
             this.$nextTick(() => {
                 if (window.lucide) lucide.createIcons();
             });
+        },
+
+        async syncDraftToServer() {
+            if (!this.sigSource) return;
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            const formData = new FormData();
+            formData.append('_token', csrfToken);
+            formData.append('signature_source', this.sigSource);
+            formData.append('signature_data', this.sigData);
+            formData.append('save_to_profile', this.saveToProfile ? '1' : '0');
+
+            if (this.sigSource === 'file') {
+                const fileInput = document.getElementById('ketua_sig_file_input');
+                if (fileInput && fileInput.files[0]) {
+                    formData.append('signature_file', fileInput.files[0]);
+                }
+            }
+
+            try {
+                this.isSavingDraft = true;
+                const res = await fetch("{{ route('persetujuan.draft-signature', $loan->id) }}", {
+                    method: 'POST',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    body: formData
+                });
+                const data = await res.json();
+                if (data.ok && data.signature_url) {
+                    this.sigPreviewUrl = data.signature_url;
+                    try {
+                        localStorage.setItem(draftKey, JSON.stringify({
+                            sigPreviewUrl: data.signature_url,
+                            sigData: '',
+                            sigSource: this.sigSource,
+                            saveToProfile: this.saveToProfile
+                        }));
+                    } catch (e) {}
+                }
+            } catch (err) {
+                console.warn('Autosave server gagal, cadangan localStorage tetap aktif:', err);
+            } finally {
+                this.isSavingDraft = false;
+            }
+        },
+
+        clearDraftStorage() {
+            try {
+                localStorage.removeItem(draftKey);
+            } catch (e) {}
         },
 
         sigSourceLabel() {
@@ -782,6 +874,7 @@ function ketuaTimApproval() {
                 this.openSigModal();
                 return false;
             }
+            this.clearDraftStorage();
         }
     };
 }

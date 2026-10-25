@@ -64,6 +64,7 @@ Route::middleware('auth')->group(function () {
     Route::prefix('persetujuan')->name('persetujuan.')->group(function () {
         Route::get('/', [ApprovalController::class, 'index'])->name('index');
         Route::get('/{id}', [ApprovalController::class, 'show'])->name('show');
+        Route::post('/{id}/draft-signature', [ApprovalController::class, 'saveDraftSignature'])->name('draft-signature');
         Route::post('/{id}/setujui', [ApprovalController::class, 'approve'])->name('approve');
         Route::post('/{id}/revisi', [ApprovalController::class, 'requestRevision'])->name('revision');
         Route::post('/{id}/tolak', [ApprovalController::class, 'reject'])->name('reject');
