@@ -97,10 +97,18 @@
         Apabila terjadi kehilangan atau kerusakan atas barang inventaris tersebut yang menimbulkan kerugian negara, saya bertanggung jawab mutlak dan tunduk pada peraturan yang berlaku, seperti yang telah diatur dalam Undang-Undang RI No. 1 Tahun 2004 tanggal 14 Januari 2004.
     </div>
 
-    <table class="signature-table">
+    <table class="signature-date-table" style="width: 100%; border-collapse: collapse; margin-top: 14pt; margin-bottom: 2pt;">
         <tr>
-            <td>
-                <div style="height: 14pt;"></div>
+            <td style="width: 50%;"></td>
+            <td style="width: 50%; text-align: center; font-size: 11pt; line-height: 1.25;">
+                Makassar, {{ \App\Helpers\FormatHelper::formatDateIndo($document->doc_date ?? now()) }}
+            </td>
+        </tr>
+    </table>
+
+    <table class="signature-table" style="width: 100%; margin-top: 0; border-collapse: collapse; page-break-inside: avoid;">
+        <tr>
+            <td style="width: 50%; text-align: center; vertical-align: top; font-size: 11pt; line-height: 1.25;">
                 Ketua Tim Keuangan dan Aset<br>
                 BBLSDM Komdigi Makassar,
                 <div class="signature-space">
@@ -111,10 +119,9 @@
                 <strong><u>{{ $signatoryKetua->employee->full_name ?? 'Olga Olivia Sombolayuk, SE' }}</u></strong><br>
                 NIP. {{ \App\Helpers\FormatHelper::formatNip($signatoryKetua->employee->nip ?? '198206082009012001') }}
             </td>
-            <td>
-                Makassar, {{ \App\Helpers\FormatHelper::formatDateIndo($document->doc_date ?? now()) }}<br>
+            <td style="width: 50%; text-align: center; vertical-align: top; font-size: 11pt; line-height: 1.25;">
                 Peminjam,<br>
-                <div style="height: 14pt;"></div>
+                <span style="display: inline-block; height: 1.25em;">&nbsp;</span>
                 <div class="signature-space">
                     @if(!empty($borrowerSignatureBase64))
                         <img src="{{ $borrowerSignatureBase64 }}" alt="TTD Peminjam">

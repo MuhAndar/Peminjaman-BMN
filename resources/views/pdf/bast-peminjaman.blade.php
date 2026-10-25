@@ -102,10 +102,18 @@
         </ol>
     </div>
 
-    <table class="signature-table">
+    <table class="signature-date-table" style="width: 100%; border-collapse: collapse; margin-top: 14pt; margin-bottom: 2pt;">
         <tr>
-            <td>
-                <div style="height: 14pt;"></div>
+            <td style="width: 50%;"></td>
+            <td style="width: 50%; text-align: center; font-size: 11pt; line-height: 1.25;">
+                Makassar, {{ \App\Helpers\FormatHelper::formatDateIndo($document->doc_date ?? now()) }}
+            </td>
+        </tr>
+    </table>
+
+    <table class="signature-table" style="width: 100%; margin-top: 0; border-collapse: collapse; page-break-inside: avoid;">
+        <tr>
+            <td style="width: 50%; text-align: center; vertical-align: top; font-size: 11pt; line-height: 1.25;">
                 <strong>Pihak Pertama,</strong>
                 <div class="signature-space">
                     @if(!empty($officerSignatureBase64))
@@ -115,8 +123,7 @@
                 <strong><u>{{ $signatoryPengelola->employee->full_name ?? 'Muhammad Agung, S.Ds.' }}</u></strong><br>
                 NIP. {{ \App\Helpers\FormatHelper::formatNip($signatoryPengelola->employee->nip ?? '199803112025041003') }}
             </td>
-            <td>
-                Makassar, {{ \App\Helpers\FormatHelper::formatDateIndo($document->doc_date ?? now()) }}<br>
+            <td style="width: 50%; text-align: center; vertical-align: top; font-size: 11pt; line-height: 1.25;">
                 <strong>Pihak Kedua,</strong>
                 <div class="signature-space">
                     @if(!empty($borrowerSignatureBase64))

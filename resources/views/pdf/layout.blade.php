@@ -154,9 +154,21 @@
         }
 
         /* ===================== TANDA TANGAN ===================== */
+        .signature-date-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 14pt;
+            margin-bottom: 2pt;
+            page-break-inside: avoid;
+        }
+        .signature-date-table td {
+            font-size: 11pt;
+            line-height: 1.25;
+            vertical-align: bottom;
+        }
         .signature-table {
             width: 100%;
-            margin-top: 16pt;
+            margin-top: 0;
             border-collapse: collapse;
             page-break-inside: avoid;
         }
