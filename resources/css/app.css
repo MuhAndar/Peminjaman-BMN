@@ -1,18 +1,28 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @layer base {
   :root {
     --color-primary: #0B63B5;
     --color-primary-strong: #0B4F8A;
     --color-accent: #12A8E0;
-    --color-bg: #F7F9FC;
+    --color-bg: #F8FAFC;
     --color-surface: #FFFFFF;
     --color-border: #E2E8F0;
     --color-text: #0F172A;
-    --color-text-muted: #475569;
+    --color-text-muted: #64748B;
     --color-success: #15803D;
     --color-warning: #B45309;
     --color-danger: #B3261E;
+  }
+
+  html.dark {
+    --color-bg: #0B1120;
+    --color-surface: #1E293B;
+    --color-border: #334155;
+    --color-text: #F1F5F9;
+    --color-text-muted: #94A3B8;
   }
 
   body {
@@ -26,3 +36,219 @@
     font-variant-numeric: tabular-nums;
   }
 }
+
+@layer utilities {
+  /* Global Dark Mode Surfaces & Elements */
+  html.dark .bg-white {
+    background-color: #1E293B !important;
+  }
+  html.dark .bg-slate-50,
+  html.dark .bg-slate-50\/50,
+  html.dark .bg-slate-50\/60,
+  html.dark .bg-slate-50\/80 {
+    background-color: #0F172A !important;
+  }
+  html.dark .bg-slate-100,
+  html.dark .bg-slate-100\/80,
+  html.dark .bg-slate-100\/90,
+  html.dark .bg-slate-200,
+  html.dark .bg-slate-200\/80 {
+    background-color: #0F172A !important;
+    color: #94A3B8 !important;
+  }
+
+  /* Borders */
+  html.dark .border-slate-200,
+  html.dark .border-slate-200\/80,
+  html.dark .border-slate-200\/60,
+  html.dark .border-slate-100,
+  html.dark .border-slate-300 {
+    border-color: #334155 !important;
+  }
+
+  /* Texts */
+  html.dark .text-slate-900,
+  html.dark .text-slate-800 {
+    color: #F8FAFC !important;
+  }
+  html.dark .text-slate-700,
+  html.dark .text-slate-600 {
+    color: #CBD5E1 !important;
+  }
+  html.dark .text-slate-500 {
+    color: #94A3B8 !important;
+  }
+  html.dark .text-slate-400 {
+    color: #64748B !important;
+  }
+
+  /* Hover states */
+  html.dark .hover\:bg-slate-50:hover,
+  html.dark .hover\:bg-slate-50\/70:hover,
+  html.dark .hover\:bg-slate-100:hover,
+  html.dark .hover\:bg-slate-200:hover,
+  html.dark tbody tr:hover {
+    background-color: rgba(51, 65, 85, 0.45) !important;
+  }
+  html.dark .hover\:text-slate-900:hover,
+  html.dark .hover\:text-slate-800:hover {
+    color: #FFFFFF !important;
+  }
+
+  /* Official Signature & Document Paper Surface (Preserve White Background for Crisp Black Ink) */
+  html.dark .signature-paper {
+    background-color: #FFFFFF !important;
+    border-color: #CBD5E1 !important;
+  }
+  html.dark .signature-paper span,
+  html.dark .signature-paper div,
+  html.dark .signature-paper p {
+    color: #334155 !important;
+  }
+  html.dark .signature-paper img {
+    filter: none !important;
+  }
+
+  /* Inputs, selects, and textareas */
+  html.dark input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]),
+  html.dark select,
+  html.dark textarea {
+    background-color: #1E293B !important;
+    color: #F1F5F9 !important;
+    border-color: #334155 !important;
+  }
+  html.dark input::placeholder,
+  html.dark textarea::placeholder {
+    color: #64748B !important;
+  }
+
+  /* Blue (Primary & Informational) */
+  html.dark .bg-blue-50,
+  html.dark .bg-blue-50\/25,
+  html.dark .bg-blue-50\/50,
+  html.dark .bg-blue-50\/60,
+  html.dark .bg-blue-50\/80 {
+    background-color: rgba(11, 99, 181, 0.2) !important;
+  }
+  html.dark .border-blue-200,
+  html.dark .border-blue-200\/60,
+  html.dark .border-blue-200\/80 {
+    border-color: rgba(56, 189, 248, 0.35) !important;
+  }
+  html.dark .text-\[\#0B63B5\] {
+    color: #38BDF8 !important;
+  }
+  html.dark .text-blue-700,
+  html.dark .text-blue-600 {
+    color: #60A5FA !important;
+  }
+
+  /* Emerald & Green (Tersedia, Disetujui, Selesai) */
+  html.dark .bg-emerald-50,
+  html.dark .bg-emerald-50\/25,
+  html.dark .bg-emerald-50\/30,
+  html.dark .bg-green-50 {
+    background-color: rgba(16, 185, 129, 0.18) !important;
+  }
+  html.dark .border-emerald-200,
+  html.dark .border-emerald-200\/80,
+  html.dark .border-emerald-300,
+  html.dark .border-green-300 {
+    border-color: rgba(16, 185, 129, 0.35) !important;
+  }
+  html.dark .text-emerald-700,
+  html.dark .text-emerald-800,
+  html.dark .text-green-700 {
+    color: #34D399 !important;
+  }
+
+  /* Amber & Yellow (Sedang Dipinjam, Perlu Perbaikan) */
+  html.dark .bg-amber-50,
+  html.dark .bg-amber-50\/70,
+  html.dark .bg-amber-100 {
+    background-color: rgba(245, 158, 11, 0.2) !important;
+  }
+  html.dark .border-amber-200,
+  html.dark .border-amber-300 {
+    border-color: rgba(245, 158, 11, 0.4) !important;
+  }
+  html.dark .text-amber-700,
+  html.dark .text-amber-800 {
+    color: #FCD34D !important;
+  }
+
+  /* Red & Rose (Belum Kembali, Terlambat, Ditolak) */
+  html.dark .bg-red-50,
+  html.dark .bg-rose-100 {
+    background-color: rgba(239, 68, 68, 0.2) !important;
+  }
+  html.dark .border-red-200,
+  html.dark .border-red-300,
+  html.dark .border-rose-200 {
+    border-color: rgba(239, 68, 68, 0.4) !important;
+  }
+  html.dark .text-red-700,
+  html.dark .text-red-800,
+  html.dark .text-red-600,
+  html.dark .text-rose-700,
+  html.dark .text-rose-600 {
+    color: #F87171 !important;
+  }
+
+  /* Indigo (Menunggu Persetujuan, Pemeriksaan Fisik) */
+  html.dark .bg-indigo-50,
+  html.dark .bg-indigo-50\/25 {
+    background-color: rgba(99, 102, 241, 0.2) !important;
+  }
+  html.dark .border-indigo-200 {
+    border-color: rgba(129, 140, 248, 0.35) !important;
+  }
+  html.dark .text-indigo-700 {
+    color: #A5B4FC !important;
+  }
+
+  /* Teal & Cyan (BAST Terbit / Disetujui) */
+  html.dark .bg-teal-50 {
+    background-color: rgba(20, 184, 166, 0.2) !important;
+  }
+  html.dark .border-teal-200 {
+    border-color: rgba(45, 212, 191, 0.35) !important;
+  }
+  html.dark .text-teal-700 {
+    color: #5EEAD4 !important;
+  }
+
+  html.dark .bg-cyan-50 {
+    background-color: rgba(6, 182, 212, 0.2) !important;
+  }
+  html.dark .border-cyan-300 {
+    border-color: rgba(34, 211, 238, 0.35) !important;
+  }
+  html.dark .text-cyan-700 {
+    color: #67E8F9 !important;
+  }
+
+  /* Solid action buttons keep their bold high-contrast appearance */
+  html.dark .bg-\[\#0B63B5\] {
+    background-color: #0B63B5 !important;
+    color: #FFFFFF !important;
+  }
+
+  /* Tactile Button Press Animation ("Tombol Dipencet") */
+  .btn-tactile-press {
+    transition: transform 0.12s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.12s ease-out, filter 0.12s ease-out !important;
+    user-select: none !important;
+    -webkit-user-select: none !important;
+    cursor: pointer !important;
+  }
+  .btn-tactile-press:hover {
+    transform: translateY(-1.5px);
+    box-shadow: 0 6px 16px rgba(11, 99, 181, 0.3) !important;
+  }
+  .btn-tactile-press:active {
+    transform: translateY(2px) scale(0.95) !important;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3) !important;
+    filter: brightness(0.92) !important;
+  }
+}
+

@@ -1,10 +1,19 @@
 <!DOCTYPE html>
-<html lang="id" class="h-full bg-slate-50">
+<html lang="id" class="h-full bg-slate-50 dark:bg-[#0B1120]">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Peminjaman BMN') — BBLSDM Komdigi Makassar</title>
+
+    <!-- Theme Detection Script (Mencegah FOUC / Layar Berkedip Putih) -->
+    <script>
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
 
     <!-- Google Fonts: Plus Jakarta Sans -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -19,7 +28,7 @@
     <style>
         body {
             font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-            background-color: #F8FAFC;
+            background-color: var(--color-bg, #F8FAFC);
         }
         .tabular-nums {
             font-variant-numeric: tabular-nums;
@@ -38,6 +47,12 @@
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
             background: #CBD5E1;
         }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #334155;
+        }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
         [x-cloak] { display: none !important; }
 
         /* HTMX Top Progress Bar Glow */
@@ -46,14 +61,26 @@
         }
     </style>
 </head>
-<body class="h-full flex flex-col text-slate-800 antialiased"
+<body class="h-full flex flex-col text-slate-800 dark:text-slate-100 bg-slate-50 dark:bg-[#0B1120] antialiased transition-colors duration-200"
       hx-boost="true"
       x-data="{
           sidebarCollapsed: localStorage.getItem('bmn_sidebar_collapsed') === 'true',
           sidebarMobileOpen: false,
+          darkMode: document.documentElement.classList.contains('dark'),
           toggleCollapse() {
               this.sidebarCollapsed = !this.sidebarCollapsed;
               localStorage.setItem('bmn_sidebar_collapsed', this.sidebarCollapsed);
+              this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
+          },
+          toggleDarkMode() {
+              this.darkMode = !this.darkMode;
+              if (this.darkMode) {
+                  document.documentElement.classList.add('dark');
+                  localStorage.setItem('theme', 'dark');
+              } else {
+                  document.documentElement.classList.remove('dark');
+                  localStorage.setItem('theme', 'light');
+              }
               this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
           }
       }">
@@ -74,18 +101,18 @@
          class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 lg:hidden"></div>
 
     <!-- LEFT SIDEBAR NAVIGATION -->
-    <aside class="fixed top-0 bottom-0 left-0 z-40 bg-white border-r border-slate-200 flex flex-col transition-all duration-300 ease-in-out shadow-sm select-none overflow-visible"
+    <aside class="fixed top-0 bottom-0 left-0 z-40 bg-white dark:bg-[#0F172A] border-r border-slate-200 dark:border-slate-800 flex flex-col -translate-x-full lg:translate-x-0 w-64 transition-transform duration-300 lg:transition-[width,transform] lg:duration-300 ease-in-out shadow-sm select-none overflow-visible"
            :class="{
                'w-64': !sidebarCollapsed,
                'w-20': sidebarCollapsed,
-               'translate-x-0 w-72': sidebarMobileOpen,
+               'translate-x-0': sidebarMobileOpen,
                '-translate-x-full lg:translate-x-0': !sidebarMobileOpen
            }">
 
         <!-- Desktop Collapse / Expand Arrow Button (Di Antara Logo dan Beranda) -->
         <button type="button"
                 @click="toggleCollapse()"
-                class="hidden lg:flex absolute -right-3.5 top-[50px] z-50 w-7 h-7 bg-white border border-slate-200 hover:border-[#0B63B5] text-slate-500 hover:text-[#0B63B5] rounded-full shadow-md items-center justify-center transition-all duration-200 focus:outline-none hover:scale-110 active:scale-95 cursor-pointer"
+                class="hidden lg:flex absolute -right-3.5 top-[50px] z-50 w-7 h-7 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-[#0B63B5] dark:hover:border-blue-400 text-slate-500 dark:text-slate-400 hover:text-[#0B63B5] dark:hover:text-blue-400 rounded-full shadow-md items-center justify-center transition-all duration-200 focus:outline-none hover:scale-110 active:scale-95 cursor-pointer"
                 :title="sidebarCollapsed ? 'Perlebar Sidebar (Expand)' : 'Perkecil Sidebar (Minimize)'">
             <i data-lucide="chevron-left"
                class="w-4 h-4 transition-transform duration-300"
@@ -93,7 +120,7 @@
         </button>
 
         <!-- Sidebar Header (Brand Logo) -->
-        <div class="h-16 px-4 border-b border-slate-200 flex items-center shrink-0 relative transition-all duration-300"
+        <div class="h-16 px-4 border-b border-slate-200 dark:border-slate-800 flex items-center shrink-0 relative transition-all duration-300"
              :class="sidebarCollapsed && !sidebarMobileOpen ? 'justify-center px-0' : 'justify-between px-4'">
             <!-- Brand Logo -->
             <a href="{{ route('dashboard') }}" class="flex items-center gap-3 overflow-hidden">
@@ -108,17 +135,17 @@
                      x-transition:leave-start="opacity-100"
                      x-transition:leave-end="opacity-0"
                      class="truncate whitespace-nowrap">
-                    <span class="font-extrabold text-slate-900 text-base tracking-tight flex items-center gap-1">
-                        BMN <span class="text-[#0B63B5]">Makassar</span>
+                    <span class="font-extrabold text-slate-900 dark:text-white text-base tracking-tight flex items-center gap-1">
+                        BMN <span class="text-[#0B63B5] dark:text-blue-400">Makassar</span>
                     </span>
-                    <span class="text-[10px] uppercase tracking-wider text-slate-500 font-semibold block -mt-0.5 truncate">
+                    <span class="text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold block -mt-0.5 truncate">
                         BBLSDM Komdigi
                     </span>
                 </div>
             </a>
 
             <!-- Mobile Close Button -->
-            <button type="button" @click="sidebarMobileOpen = false" class="lg:hidden p-1.5 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-700">
+            <button type="button" @click="sidebarMobileOpen = false" class="lg:hidden p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
                 <i data-lucide="x" class="w-5 h-5"></i>
             </button>
         </div>
@@ -132,13 +159,13 @@
                 <div x-show="!sidebarCollapsed || sidebarMobileOpen"
                      x-transition:enter="transition-opacity duration-150 delay-75"
                      x-transition:leave="transition-opacity duration-75"
-                     class="px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-400 truncate whitespace-nowrap">
+                     class="px-3 pt-2.5 pb-1 text-[11px] font-bold uppercase tracking-wider text-slate-400 truncate whitespace-nowrap">
                     Menu Utama
                 </div>
 
                 <!-- Beranda -->
                 <a href="{{ route('dashboard') }}"
-                   class="flex items-center rounded-xl h-10 transition-colors group relative select-none {{ request()->routeIs('dashboard') ? 'bg-blue-50 text-[#0B63B5] font-extrabold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-bold' }}"
+                   class="flex items-center rounded-xl h-11 transition-colors group relative select-none {{ request()->routeIs('dashboard') ? 'bg-blue-50 text-[#0B63B5] font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium' }}"
                    :class="sidebarCollapsed && !sidebarMobileOpen ? 'justify-center px-0' : 'px-3 gap-3'">
                     <div class="w-6 h-6 flex items-center justify-center shrink-0">
                         <i data-lucide="layout-dashboard" class="w-5 h-5 {{ request()->routeIs('dashboard') ? 'text-[#0B63B5]' : 'text-slate-500 group-hover:text-slate-800' }}"></i>
@@ -150,14 +177,14 @@
                           x-transition:leave="transition-opacity duration-75"
                           x-transition:leave-start="opacity-100"
                           x-transition:leave-end="opacity-0"
-                          class="truncate whitespace-nowrap text-xs">
+                          class="truncate whitespace-nowrap text-sm">
                         Beranda
                     </span>
 
                     <!-- Floating Tooltip (Hanya tampil saat navbar di-minimize) -->
                     <div x-show="sidebarCollapsed && !sidebarMobileOpen"
                          x-cloak
-                         class="absolute left-full top-1/2 -translate-y-1/2 ml-3.5 px-3 py-1.5 bg-slate-900/95 text-white text-xs font-bold rounded-xl shadow-xl whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0 transition-all duration-150 z-50 flex items-center gap-1.5">
+                         class="absolute left-full top-1/2 -translate-y-1/2 ml-3.5 px-3 py-1.5 bg-slate-900/95 text-white text-xs font-semibold rounded-xl shadow-xl whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0 transition-all duration-150 z-50 flex items-center gap-1.5">
                         <span class="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 bg-slate-900/95 rotate-45"></span>
                         <span class="relative z-10">Beranda</span>
                     </div>
@@ -165,7 +192,7 @@
 
                 <!-- Katalog BMN -->
                 <a href="{{ route('assets.index') }}"
-                   class="flex items-center rounded-xl h-10 transition-colors group relative select-none {{ request()->routeIs('assets.*') ? 'bg-blue-50 text-[#0B63B5] font-extrabold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-bold' }}"
+                   class="flex items-center rounded-xl h-11 transition-colors group relative select-none {{ request()->routeIs('assets.*') ? 'bg-blue-50 text-[#0B63B5] font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium' }}"
                    :class="sidebarCollapsed && !sidebarMobileOpen ? 'justify-center px-0' : 'px-3 gap-3'">
                     <div class="w-6 h-6 flex items-center justify-center shrink-0">
                         <i data-lucide="package" class="w-5 h-5 {{ request()->routeIs('assets.*') ? 'text-[#0B63B5]' : 'text-slate-500 group-hover:text-slate-800' }}"></i>
@@ -177,14 +204,14 @@
                           x-transition:leave="transition-opacity duration-75"
                           x-transition:leave-start="opacity-100"
                           x-transition:leave-end="opacity-0"
-                          class="truncate whitespace-nowrap text-xs">
+                          class="truncate whitespace-nowrap text-sm">
                         Katalog BMN
                     </span>
 
                     <!-- Floating Tooltip -->
                     <div x-show="sidebarCollapsed && !sidebarMobileOpen"
                          x-cloak
-                         class="absolute left-full top-1/2 -translate-y-1/2 ml-3.5 px-3 py-1.5 bg-slate-900/95 text-white text-xs font-bold rounded-xl shadow-xl whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0 transition-all duration-150 z-50 flex items-center gap-1.5">
+                         class="absolute left-full top-1/2 -translate-y-1/2 ml-3.5 px-3 py-1.5 bg-slate-900/95 text-white text-xs font-semibold rounded-xl shadow-xl whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0 transition-all duration-150 z-50 flex items-center gap-1.5">
                         <span class="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 bg-slate-900/95 rotate-45"></span>
                         <span class="relative z-10">Katalog BMN</span>
                     </div>
@@ -192,7 +219,7 @@
 
                 <!-- Ajukan Peminjaman (Quick Action) -->
                 <a href="{{ route('loans.create') }}"
-                   class="flex items-center rounded-xl h-10 transition-colors group relative select-none {{ request()->routeIs('loans.create') ? 'bg-blue-50 text-[#0B63B5] font-extrabold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-bold' }}"
+                   class="flex items-center rounded-xl h-11 transition-colors group relative select-none {{ request()->routeIs('loans.create') ? 'bg-blue-50 text-[#0B63B5] font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium' }}"
                    :class="sidebarCollapsed && !sidebarMobileOpen ? 'justify-center px-0' : 'px-3 gap-3'">
                     <div class="w-6 h-6 flex items-center justify-center shrink-0">
                         <i data-lucide="plus-circle" class="w-5 h-5 {{ request()->routeIs('loans.create') ? 'text-[#0B63B5]' : 'text-slate-500 group-hover:text-slate-800' }}"></i>
@@ -204,14 +231,14 @@
                           x-transition:leave="transition-opacity duration-75"
                           x-transition:leave-start="opacity-100"
                           x-transition:leave-end="opacity-0"
-                          class="truncate whitespace-nowrap text-xs">
+                          class="truncate whitespace-nowrap text-sm">
                         Ajukan BMN Baru
                     </span>
 
                     <!-- Floating Tooltip -->
                     <div x-show="sidebarCollapsed && !sidebarMobileOpen"
                          x-cloak
-                         class="absolute left-full top-1/2 -translate-y-1/2 ml-3.5 px-3 py-1.5 bg-slate-900/95 text-white text-xs font-bold rounded-xl shadow-xl whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0 transition-all duration-150 z-50 flex items-center gap-1.5">
+                         class="absolute left-full top-1/2 -translate-y-1/2 ml-3.5 px-3 py-1.5 bg-slate-900/95 text-white text-xs font-semibold rounded-xl shadow-xl whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0 transition-all duration-150 z-50 flex items-center gap-1.5">
                         <span class="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 bg-slate-900/95 rotate-45"></span>
                         <span class="relative z-10">Ajukan BMN Baru</span>
                     </div>
@@ -224,12 +251,12 @@
                 <div x-show="!sidebarCollapsed || sidebarMobileOpen"
                      x-transition:enter="transition-opacity duration-150 delay-75"
                      x-transition:leave="transition-opacity duration-75"
-                     class="px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-400 truncate whitespace-nowrap">
+                     class="px-3 pt-2.5 pb-1 text-[11px] font-bold uppercase tracking-wider text-slate-400 truncate whitespace-nowrap">
                     Layanan Peminjam
                 </div>
 
                 <a href="{{ route('loans.index') }}"
-                   class="flex items-center rounded-xl h-10 transition-colors group relative select-none {{ request()->routeIs('loans.index') ? 'bg-blue-50 text-[#0B63B5] font-extrabold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-bold' }}"
+                   class="flex items-center rounded-xl h-11 transition-colors group relative select-none {{ request()->routeIs('loans.index') ? 'bg-blue-50 text-[#0B63B5] font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium' }}"
                    :class="sidebarCollapsed && !sidebarMobileOpen ? 'justify-center px-0' : 'px-3 gap-3'">
                     <div class="w-6 h-6 flex items-center justify-center shrink-0">
                         <i data-lucide="file-text" class="w-5 h-5 {{ request()->routeIs('loans.index') ? 'text-[#0B63B5]' : 'text-slate-500 group-hover:text-slate-800' }}"></i>
@@ -241,14 +268,14 @@
                           x-transition:leave="transition-opacity duration-75"
                           x-transition:leave-start="opacity-100"
                           x-transition:leave-end="opacity-0"
-                          class="truncate whitespace-nowrap text-xs">
+                          class="truncate whitespace-nowrap text-sm">
                         Pengajuan
                     </span>
 
                     <!-- Floating Tooltip -->
                     <div x-show="sidebarCollapsed && !sidebarMobileOpen"
                          x-cloak
-                         class="absolute left-full top-1/2 -translate-y-1/2 ml-3.5 px-3 py-1.5 bg-slate-900/95 text-white text-xs font-bold rounded-xl shadow-xl whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0 transition-all duration-150 z-50 flex items-center gap-1.5">
+                         class="absolute left-full top-1/2 -translate-y-1/2 ml-3.5 px-3 py-1.5 bg-slate-900/95 text-white text-xs font-semibold rounded-xl shadow-xl whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0 transition-all duration-150 z-50 flex items-center gap-1.5">
                         <span class="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 bg-slate-900/95 rotate-45"></span>
                         <span class="relative z-10">Pengajuan</span>
                     </div>
@@ -256,7 +283,7 @@
 
                 <!-- Data Diri Peminjaman & Profil -->
                 <a href="{{ route('profile.show') }}"
-                   class="flex items-center rounded-xl h-10 transition-colors group relative select-none {{ request()->routeIs('profile.*') ? 'bg-blue-50 text-[#0B63B5] font-extrabold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-bold' }}"
+                   class="flex items-center rounded-xl h-11 transition-colors group relative select-none {{ request()->routeIs('profile.*') ? 'bg-blue-50 text-[#0B63B5] font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium' }}"
                    :class="sidebarCollapsed && !sidebarMobileOpen ? 'justify-center px-0' : 'px-3 gap-3'">
                     <div class="w-6 h-6 flex items-center justify-center shrink-0">
                         <i data-lucide="user-pen" class="w-5 h-5 {{ request()->routeIs('profile.*') ? 'text-[#0B63B5]' : 'text-slate-500 group-hover:text-slate-800' }}"></i>
@@ -268,14 +295,14 @@
                           x-transition:leave="transition-opacity duration-75"
                           x-transition:leave-start="opacity-100"
                           x-transition:leave-end="opacity-0"
-                          class="truncate whitespace-nowrap text-xs">
+                          class="truncate whitespace-nowrap text-sm">
                         Data Diri
                     </span>
 
                     <!-- Floating Tooltip -->
                     <div x-show="sidebarCollapsed && !sidebarMobileOpen"
                          x-cloak
-                         class="absolute left-full top-1/2 -translate-y-1/2 ml-3.5 px-3 py-1.5 bg-slate-900/95 text-white text-xs font-bold rounded-xl shadow-xl whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0 transition-all duration-150 z-50 flex items-center gap-1.5">
+                         class="absolute left-full top-1/2 -translate-y-1/2 ml-3.5 px-3 py-1.5 bg-slate-900/95 text-white text-xs font-semibold rounded-xl shadow-xl whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0 transition-all duration-150 z-50 flex items-center gap-1.5">
                         <span class="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 bg-slate-900/95 rotate-45"></span>
                         <span class="relative z-10">Data Diri</span>
                     </div>
@@ -289,16 +316,20 @@
                 <div x-show="!sidebarCollapsed || sidebarMobileOpen"
                      x-transition:enter="transition-opacity duration-150 delay-75"
                      x-transition:leave="transition-opacity duration-75"
-                     class="px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-400 truncate whitespace-nowrap">
+                     class="px-3 pt-2.5 pb-1 text-[11px] font-bold uppercase tracking-wider text-slate-400 truncate whitespace-nowrap">
                     Pengelolaan BMN
                 </div>
 
+                @php
+                    $isQueueActive = request()->routeIs('kelola.queue') || (request()->routeIs('kelola.*') && !request()->routeIs('kelola.import.*'));
+                    $isImportActive = request()->routeIs('kelola.import.*');
+                @endphp
                 <a href="{{ route('kelola.queue') }}"
-                   class="flex items-center justify-between rounded-xl h-10 transition-colors group relative select-none {{ request()->routeIs('kelola.*') ? 'bg-blue-50 text-[#0B63B5] font-extrabold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-bold' }}"
+                   class="flex items-center justify-between rounded-xl h-11 transition-colors group relative select-none {{ $isQueueActive ? 'bg-blue-50 dark:bg-blue-950/50 text-[#0B63B5] dark:text-blue-400 font-bold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/60 font-medium' }}"
                    :class="sidebarCollapsed && !sidebarMobileOpen ? 'justify-center px-0' : 'px-3'">
                     <div class="flex items-center gap-3 truncate">
                         <div class="w-6 h-6 flex items-center justify-center shrink-0">
-                            <i data-lucide="inbox" class="w-5 h-5 {{ request()->routeIs('kelola.*') ? 'text-[#0B63B5]' : 'text-slate-500 group-hover:text-slate-800' }}"></i>
+                            <i data-lucide="inbox" class="w-5 h-5 {{ $isQueueActive ? 'text-[#0B63B5] dark:text-blue-400' : 'text-slate-500 group-hover:text-slate-800 dark:group-hover:text-slate-200' }}"></i>
                         </div>
                         <span x-show="!sidebarCollapsed || sidebarMobileOpen"
                               x-transition:enter="transition-opacity duration-150 delay-100"
@@ -307,7 +338,7 @@
                               x-transition:leave="transition-opacity duration-75"
                               x-transition:leave-start="opacity-100"
                               x-transition:leave-end="opacity-0"
-                              class="truncate whitespace-nowrap text-xs">
+                              class="truncate whitespace-nowrap text-sm">
                             Antrean Telaah
                         </span>
                     </div>
@@ -323,7 +354,7 @@
                     <!-- Floating Tooltip -->
                     <div x-show="sidebarCollapsed && !sidebarMobileOpen"
                          x-cloak
-                         class="absolute left-full top-1/2 -translate-y-1/2 ml-3.5 px-3 py-1.5 bg-slate-900/95 text-white text-xs font-bold rounded-xl shadow-xl whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0 transition-all duration-150 z-50 flex items-center gap-2">
+                         class="absolute left-full top-1/2 -translate-y-1/2 ml-3.5 px-3 py-1.5 bg-slate-900/95 text-white text-xs font-semibold rounded-xl shadow-xl whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0 transition-all duration-150 z-50 flex items-center gap-2">
                         <span class="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 bg-slate-900/95 rotate-45"></span>
                         <span class="relative z-10">Antrean Telaah</span>
                         @if($pendingCount > 0)
@@ -334,10 +365,10 @@
 
                 <!-- Unggah Data Excel (.xlsx) -->
                 <a href="{{ route('kelola.import.index') }}"
-                   class="flex items-center rounded-xl h-10 transition-colors group relative select-none {{ request()->routeIs('kelola.import.*') ? 'bg-blue-50 text-[#0B63B5] font-extrabold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-bold' }}"
+                   class="flex items-center rounded-xl h-11 transition-colors group relative select-none {{ $isImportActive ? 'bg-blue-50 dark:bg-blue-950/50 text-[#0B63B5] dark:text-blue-400 font-bold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/60 font-medium' }}"
                    :class="sidebarCollapsed && !sidebarMobileOpen ? 'justify-center px-0' : 'px-3 gap-3'">
                     <div class="w-6 h-6 flex items-center justify-center shrink-0">
-                        <i data-lucide="file-spreadsheet" class="w-5 h-5 {{ request()->routeIs('kelola.import.*') ? 'text-[#0B63B5]' : 'text-slate-500 group-hover:text-slate-800' }}"></i>
+                        <i data-lucide="file-spreadsheet" class="w-5 h-5 {{ $isImportActive ? 'text-[#0B63B5] dark:text-blue-400' : 'text-slate-500 group-hover:text-slate-800 dark:group-hover:text-slate-200' }}"></i>
                     </div>
                     <span x-show="!sidebarCollapsed || sidebarMobileOpen"
                           x-transition:enter="transition-opacity duration-150 delay-100"
@@ -346,14 +377,14 @@
                           x-transition:leave="transition-opacity duration-75"
                           x-transition:leave-start="opacity-100"
                           x-transition:leave-end="opacity-0"
-                          class="truncate whitespace-nowrap text-xs">
+                          class="truncate whitespace-nowrap text-sm">
                         Unggah Data (.xlsx)
                     </span>
 
                     <!-- Floating Tooltip -->
                     <div x-show="sidebarCollapsed && !sidebarMobileOpen"
                          x-cloak
-                         class="absolute left-full top-1/2 -translate-y-1/2 ml-3.5 px-3 py-1.5 bg-slate-900/95 text-white text-xs font-bold rounded-xl shadow-xl whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0 transition-all duration-150 z-50 flex items-center gap-1.5">
+                         class="absolute left-full top-1/2 -translate-y-1/2 ml-3.5 px-3 py-1.5 bg-slate-900/95 text-white text-xs font-semibold rounded-xl shadow-xl whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0 transition-all duration-150 z-50 flex items-center gap-1.5">
                         <span class="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 bg-slate-900/95 rotate-45"></span>
                         <span class="relative z-10">Unggah Data (.xlsx)</span>
                     </div>
@@ -361,7 +392,7 @@
 
                 <!-- Audit Aktivitas Peminjaman (Pengelola) -->
                 <a href="{{ route('audit.loans') }}"
-                   class="flex items-center rounded-xl h-10 transition-colors group relative select-none {{ request()->routeIs('audit.*') ? 'bg-blue-50 text-[#0B63B5] font-extrabold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-bold' }}"
+                   class="flex items-center rounded-xl h-11 transition-colors group relative select-none {{ request()->routeIs('audit.*') ? 'bg-blue-50 text-[#0B63B5] font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium' }}"
                    :class="sidebarCollapsed && !sidebarMobileOpen ? 'justify-center px-0' : 'px-3 gap-3'">
                     <div class="w-6 h-6 flex items-center justify-center shrink-0">
                         <i data-lucide="clipboard-check" class="w-5 h-5 {{ request()->routeIs('audit.*') ? 'text-[#0B63B5]' : 'text-slate-500 group-hover:text-slate-800' }}"></i>
@@ -373,14 +404,14 @@
                           x-transition:leave="transition-opacity duration-75"
                           x-transition:leave-start="opacity-100"
                           x-transition:leave-end="opacity-0"
-                          class="truncate whitespace-nowrap text-xs">
+                          class="truncate whitespace-nowrap text-sm">
                         Audit Peminjaman
                     </span>
 
                     <!-- Floating Tooltip -->
                     <div x-show="sidebarCollapsed && !sidebarMobileOpen"
                          x-cloak
-                         class="absolute left-full top-1/2 -translate-y-1/2 ml-3.5 px-3 py-1.5 bg-slate-900/95 text-white text-xs font-bold rounded-xl shadow-xl whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0 transition-all duration-150 z-50 flex items-center gap-1.5">
+                         class="absolute left-full top-1/2 -translate-y-1/2 ml-3.5 px-3 py-1.5 bg-slate-900/95 text-white text-xs font-semibold rounded-xl shadow-xl whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0 transition-all duration-150 z-50 flex items-center gap-1.5">
                         <span class="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 bg-slate-900/95 rotate-45"></span>
                         <span class="relative z-10">Audit Peminjaman BMN</span>
                     </div>
@@ -394,12 +425,12 @@
                 <div x-show="!sidebarCollapsed || sidebarMobileOpen"
                      x-transition:enter="transition-opacity duration-150 delay-75"
                      x-transition:leave="transition-opacity duration-75"
-                     class="px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-400 truncate whitespace-nowrap">
+                     class="px-3 pt-2.5 pb-1 text-[11px] font-bold uppercase tracking-wider text-slate-400 truncate whitespace-nowrap">
                     Persetujuan
                 </div>
 
                 <a href="{{ route('persetujuan.index') }}"
-                   class="flex items-center justify-between rounded-xl h-10 transition-colors group relative select-none {{ request()->routeIs('persetujuan.*') ? 'bg-blue-50 text-[#0B63B5] font-extrabold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-bold' }}"
+                   class="flex items-center justify-between rounded-xl h-11 transition-colors group relative select-none {{ request()->routeIs('persetujuan.*') ? 'bg-blue-50 text-[#0B63B5] font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium' }}"
                    :class="sidebarCollapsed && !sidebarMobileOpen ? 'justify-center px-0' : 'px-3'">
                     <div class="flex items-center gap-3 truncate">
                         <div class="w-6 h-6 flex items-center justify-center shrink-0">
@@ -412,7 +443,7 @@
                               x-transition:leave="transition-opacity duration-75"
                               x-transition:leave-start="opacity-100"
                               x-transition:leave-end="opacity-0"
-                              class="truncate whitespace-nowrap text-xs">
+                              class="truncate whitespace-nowrap text-sm">
                             Persetujuan BMN
                         </span>
                     </div>
@@ -428,7 +459,7 @@
                     <!-- Floating Tooltip -->
                     <div x-show="sidebarCollapsed && !sidebarMobileOpen"
                          x-cloak
-                         class="absolute left-full top-1/2 -translate-y-1/2 ml-3.5 px-3 py-1.5 bg-slate-900/95 text-white text-xs font-bold rounded-xl shadow-xl whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0 transition-all duration-150 z-50 flex items-center gap-2">
+                         class="absolute left-full top-1/2 -translate-y-1/2 ml-3.5 px-3 py-1.5 bg-slate-900/95 text-white text-xs font-semibold rounded-xl shadow-xl whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0 transition-all duration-150 z-50 flex items-center gap-2">
                         <span class="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 bg-slate-900/95 rotate-45"></span>
                         <span class="relative z-10">Persetujuan BMN</span>
                         @if($approvalCount > 0)
@@ -439,7 +470,7 @@
 
                 <!-- Audit Aktivitas Peminjaman (Ketua Tim) -->
                 <a href="{{ route('audit.loans') }}"
-                   class="flex items-center rounded-xl h-10 transition-colors group relative select-none {{ request()->routeIs('audit.*') ? 'bg-blue-50 text-[#0B63B5] font-extrabold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-bold' }}"
+                   class="flex items-center rounded-xl h-11 transition-colors group relative select-none {{ request()->routeIs('audit.*') ? 'bg-blue-50 text-[#0B63B5] font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium' }}"
                    :class="sidebarCollapsed && !sidebarMobileOpen ? 'justify-center px-0' : 'px-3 gap-3'">
                     <div class="w-6 h-6 flex items-center justify-center shrink-0">
                         <i data-lucide="clipboard-check" class="w-5 h-5 {{ request()->routeIs('audit.*') ? 'text-[#0B63B5]' : 'text-slate-500 group-hover:text-slate-800' }}"></i>
@@ -451,14 +482,14 @@
                           x-transition:leave="transition-opacity duration-75"
                           x-transition:leave-start="opacity-100"
                           x-transition:leave-end="opacity-0"
-                          class="truncate whitespace-nowrap text-xs">
+                          class="truncate whitespace-nowrap text-sm">
                         Audit Peminjaman
                     </span>
 
                     <!-- Floating Tooltip -->
                     <div x-show="sidebarCollapsed && !sidebarMobileOpen"
                          x-cloak
-                         class="absolute left-full top-1/2 -translate-y-1/2 ml-3.5 px-3 py-1.5 bg-slate-900/95 text-white text-xs font-bold rounded-xl shadow-xl whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0 transition-all duration-150 z-50 flex items-center gap-1.5">
+                         class="absolute left-full top-1/2 -translate-y-1/2 ml-3.5 px-3 py-1.5 bg-slate-900/95 text-white text-xs font-semibold rounded-xl shadow-xl whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0 transition-all duration-150 z-50 flex items-center gap-1.5">
                         <span class="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 bg-slate-900/95 rotate-45"></span>
                         <span class="relative z-10">Audit Peminjaman BMN</span>
                     </div>
@@ -472,13 +503,13 @@
                 <div x-show="!sidebarCollapsed || sidebarMobileOpen"
                      x-transition:enter="transition-opacity duration-150 delay-75"
                      x-transition:leave="transition-opacity duration-75"
-                     class="px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-400 truncate whitespace-nowrap">
+                     class="px-3 pt-2.5 pb-1 text-[11px] font-bold uppercase tracking-wider text-slate-400 truncate whitespace-nowrap">
                     Administrasi & Audit
                 </div>
 
                 <!-- 1. Audit Aktivitas Peminjaman (Khusus Peminjaman BMN Tanpa Data Sensitif) -->
                 <a href="{{ route('audit.loans') }}"
-                   class="flex items-center justify-between rounded-xl h-10 transition-colors group relative select-none {{ request()->routeIs('audit.*') ? 'bg-blue-50 text-[#0B63B5] font-extrabold border border-blue-200/80 shadow-2xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-bold' }}"
+                   class="flex items-center justify-between rounded-xl h-11 transition-colors group relative select-none {{ request()->routeIs('audit.*') ? 'bg-blue-50 text-[#0B63B5] font-bold border border-blue-200/80 shadow-2xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium' }}"
                    :class="sidebarCollapsed && !sidebarMobileOpen ? 'justify-center px-0' : 'px-3'">
                     <div class="flex items-center gap-3 truncate">
                         <div class="w-6 h-6 flex items-center justify-center shrink-0">
@@ -491,16 +522,16 @@
                               x-transition:leave="transition-opacity duration-75"
                               x-transition:leave-start="opacity-100"
                               x-transition:leave-end="opacity-0"
-                              class="truncate whitespace-nowrap text-xs">
+                              class="truncate whitespace-nowrap text-sm">
                             Audit Peminjaman
                         </span>
                     </div>
-                    <span x-show="!sidebarCollapsed || sidebarMobileOpen" class="px-1.5 py-0.5 text-[9px] bg-blue-100 text-[#0B63B5] rounded-md font-extrabold uppercase">BMN</span>
+                    <span x-show="!sidebarCollapsed || sidebarMobileOpen" class="px-1.5 py-0.5 text-[9px] bg-blue-100 text-[#0B63B5] rounded-md font-bold uppercase">BMN</span>
 
                     <!-- Floating Tooltip -->
                     <div x-show="sidebarCollapsed && !sidebarMobileOpen"
                          x-cloak
-                         class="absolute left-full top-1/2 -translate-y-1/2 ml-3.5 px-3 py-1.5 bg-slate-900/95 text-white text-xs font-bold rounded-xl shadow-xl whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0 transition-all duration-150 z-50 flex items-center gap-1.5">
+                         class="absolute left-full top-1/2 -translate-y-1/2 ml-3.5 px-3 py-1.5 bg-slate-900/95 text-white text-xs font-semibold rounded-xl shadow-xl whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0 transition-all duration-150 z-50 flex items-center gap-1.5">
                         <span class="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 bg-slate-900/95 rotate-45"></span>
                         <span class="relative z-10">Audit Aktivitas Peminjaman BMN</span>
                     </div>
@@ -508,7 +539,7 @@
 
                 <!-- 2. Log Aktivitas Sistem (Forensik Teknis IT Lengkap) -->
                 <a href="{{ route('admin.activity-logs') }}"
-                   class="flex items-center justify-between rounded-xl h-10 transition-colors group relative select-none {{ request()->routeIs('admin.activity-logs') || request()->routeIs('admin.audit-logs') ? 'bg-blue-50 text-[#0B63B5] font-extrabold border border-blue-200/80 shadow-2xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-bold' }}"
+                   class="flex items-center justify-between rounded-xl h-11 transition-colors group relative select-none {{ request()->routeIs('admin.activity-logs') || request()->routeIs('admin.audit-logs') ? 'bg-blue-50 text-[#0B63B5] font-bold border border-blue-200/80 shadow-2xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium' }}"
                    :class="sidebarCollapsed && !sidebarMobileOpen ? 'justify-center px-0' : 'px-3'">
                     <div class="flex items-center gap-3 truncate">
                         <div class="w-6 h-6 flex items-center justify-center shrink-0">
@@ -521,16 +552,16 @@
                               x-transition:leave="transition-opacity duration-75"
                               x-transition:leave-start="opacity-100"
                               x-transition:leave-end="opacity-0"
-                              class="truncate whitespace-nowrap text-xs">
+                              class="truncate whitespace-nowrap text-sm">
                             Log Aktivitas Sistem
                         </span>
                     </div>
-                    <span x-show="!sidebarCollapsed || sidebarMobileOpen" class="px-1.5 py-0.5 text-[9px] bg-slate-200/80 text-slate-700 rounded-md font-extrabold uppercase">Sistem</span>
+                    <span x-show="!sidebarCollapsed || sidebarMobileOpen" class="px-1.5 py-0.5 text-[9px] bg-slate-200/80 text-slate-700 rounded-md font-bold uppercase">Sistem</span>
 
                     <!-- Floating Tooltip -->
                     <div x-show="sidebarCollapsed && !sidebarMobileOpen"
                          x-cloak
-                         class="absolute left-full top-1/2 -translate-y-1/2 ml-3.5 px-3 py-1.5 bg-slate-900/95 text-white text-xs font-bold rounded-xl shadow-xl whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0 transition-all duration-150 z-50 flex items-center gap-1.5">
+                         class="absolute left-full top-1/2 -translate-y-1/2 ml-3.5 px-3 py-1.5 bg-slate-900/95 text-white text-xs font-semibold rounded-xl shadow-xl whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0 transition-all duration-150 z-50 flex items-center gap-1.5">
                         <span class="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 bg-slate-900/95 rotate-45"></span>
                         <span class="relative z-10">Log Aktivitas Sistem (Forensik IT)</span>
                     </div>
@@ -538,7 +569,7 @@
 
                 <!-- Manajemen Pengguna -->
                 <a href="{{ route('admin.users') }}"
-                   class="flex items-center rounded-xl h-10 transition-colors group relative select-none {{ request()->routeIs('admin.users') ? 'bg-blue-50 text-[#0B63B5] font-extrabold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-bold' }}"
+                   class="flex items-center rounded-xl h-11 transition-colors group relative select-none {{ request()->routeIs('admin.users') ? 'bg-blue-50 text-[#0B63B5] font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium' }}"
                    :class="sidebarCollapsed && !sidebarMobileOpen ? 'justify-center px-0' : 'px-3 gap-3'">
                     <div class="w-6 h-6 flex items-center justify-center shrink-0">
                         <i data-lucide="users" class="w-5 h-5 {{ request()->routeIs('admin.users') ? 'text-[#0B63B5]' : 'text-slate-500 group-hover:text-slate-800' }}"></i>
@@ -550,14 +581,14 @@
                           x-transition:leave="transition-opacity duration-75"
                           x-transition:leave-start="opacity-100"
                           x-transition:leave-end="opacity-0"
-                          class="truncate whitespace-nowrap text-xs">
+                          class="truncate whitespace-nowrap text-sm">
                         Manajemen Pengguna
                     </span>
 
                     <!-- Floating Tooltip -->
                     <div x-show="sidebarCollapsed && !sidebarMobileOpen"
                          x-cloak
-                         class="absolute left-full top-1/2 -translate-y-1/2 ml-3.5 px-3 py-1.5 bg-slate-900/95 text-white text-xs font-bold rounded-xl shadow-xl whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0 transition-all duration-150 z-50 flex items-center gap-1.5">
+                         class="absolute left-full top-1/2 -translate-y-1/2 ml-3.5 px-3 py-1.5 bg-slate-900/95 text-white text-xs font-semibold rounded-xl shadow-xl whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0 transition-all duration-150 z-50 flex items-center gap-1.5">
                         <span class="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 bg-slate-900/95 rotate-45"></span>
                         <span class="relative z-10">Manajemen Pengguna</span>
                     </div>
@@ -565,7 +596,7 @@
 
                 <!-- Pejabat Penandatangan -->
                 <a href="{{ route('admin.signatories') }}"
-                   class="flex items-center rounded-xl h-10 transition-colors group relative select-none {{ request()->routeIs('admin.signatories') ? 'bg-blue-50 text-[#0B63B5] font-extrabold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-bold' }}"
+                   class="flex items-center rounded-xl h-11 transition-colors group relative select-none {{ request()->routeIs('admin.signatories') ? 'bg-blue-50 text-[#0B63B5] font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium' }}"
                    :class="sidebarCollapsed && !sidebarMobileOpen ? 'justify-center px-0' : 'px-3 gap-3'">
                     <div class="w-6 h-6 flex items-center justify-center shrink-0">
                         <i data-lucide="feather" class="w-5 h-5 {{ request()->routeIs('admin.signatories') ? 'text-[#0B63B5]' : 'text-slate-500 group-hover:text-slate-800' }}"></i>
@@ -577,14 +608,14 @@
                           x-transition:leave="transition-opacity duration-75"
                           x-transition:leave-start="opacity-100"
                           x-transition:leave-end="opacity-0"
-                          class="truncate whitespace-nowrap text-xs">
+                          class="truncate whitespace-nowrap text-sm">
                         Pejabat Penandatangan
                     </span>
 
                     <!-- Floating Tooltip -->
                     <div x-show="sidebarCollapsed && !sidebarMobileOpen"
                          x-cloak
-                         class="absolute left-full top-1/2 -translate-y-1/2 ml-3.5 px-3 py-1.5 bg-slate-900/95 text-white text-xs font-bold rounded-xl shadow-xl whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0 transition-all duration-150 z-50 flex items-center gap-1.5">
+                         class="absolute left-full top-1/2 -translate-y-1/2 ml-3.5 px-3 py-1.5 bg-slate-900/95 text-white text-xs font-semibold rounded-xl shadow-xl whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0 transition-all duration-150 z-50 flex items-center gap-1.5">
                         <span class="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 bg-slate-900/95 rotate-45"></span>
                         <span class="relative z-10">Pejabat Penandatangan</span>
                     </div>
@@ -592,7 +623,7 @@
 
                 <!-- Pengaturan Satker -->
                 <a href="{{ route('admin.settings') }}"
-                   class="flex items-center rounded-xl h-10 transition-colors group relative select-none {{ request()->routeIs('admin.settings') ? 'bg-blue-50 text-[#0B63B5] font-extrabold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-bold' }}"
+                   class="flex items-center rounded-xl h-11 transition-colors group relative select-none {{ request()->routeIs('admin.settings') ? 'bg-blue-50 text-[#0B63B5] font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium' }}"
                    :class="sidebarCollapsed && !sidebarMobileOpen ? 'justify-center px-0' : 'px-3 gap-3'">
                     <div class="w-6 h-6 flex items-center justify-center shrink-0">
                         <i data-lucide="settings" class="w-5 h-5 {{ request()->routeIs('admin.settings') ? 'text-[#0B63B5]' : 'text-slate-500 group-hover:text-slate-800' }}"></i>
@@ -604,14 +635,14 @@
                           x-transition:leave="transition-opacity duration-75"
                           x-transition:leave-start="opacity-100"
                           x-transition:leave-end="opacity-0"
-                          class="truncate whitespace-nowrap text-xs">
+                          class="truncate whitespace-nowrap text-sm">
                         Pengaturan Satker
                     </span>
 
                     <!-- Floating Tooltip -->
                     <div x-show="sidebarCollapsed && !sidebarMobileOpen"
                          x-cloak
-                         class="absolute left-full top-1/2 -translate-y-1/2 ml-3.5 px-3 py-1.5 bg-slate-900/95 text-white text-xs font-bold rounded-xl shadow-xl whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0 transition-all duration-150 z-50 flex items-center gap-1.5">
+                         class="absolute left-full top-1/2 -translate-y-1/2 ml-3.5 px-3 py-1.5 bg-slate-900/95 text-white text-xs font-semibold rounded-xl shadow-xl whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0 transition-all duration-150 z-50 flex items-center gap-1.5">
                         <span class="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 bg-slate-900/95 rotate-45"></span>
                         <span class="relative z-10">Pengaturan Satker</span>
                     </div>
@@ -622,12 +653,12 @@
         </nav>
 
         <!-- Sidebar Footer (User Info) -->
-        <div class="p-3 border-t border-slate-100 shrink-0 bg-slate-50/50">
+        <div class="p-3 border-t border-slate-100 dark:border-slate-800 shrink-0 bg-slate-50/50 dark:bg-slate-900/40">
             <!-- User Mini Profile -->
             <a href="{{ route('profile.show') }}"
-               class="flex items-center gap-2.5 p-2 rounded-xl bg-white border border-slate-200/80 shadow-2xs group relative select-none hover:border-[#0B63B5]/50 hover:bg-blue-50/30 transition cursor-pointer"
+               class="flex items-center gap-2.5 p-2 rounded-xl bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700 shadow-2xs group relative select-none hover:border-[#0B63B5]/50 dark:hover:border-blue-500/50 hover:bg-blue-50/30 dark:hover:bg-slate-700/50 transition cursor-pointer"
                  :class="sidebarCollapsed && !sidebarMobileOpen ? 'justify-center' : ''">
-                <div class="w-8 h-8 rounded-lg bg-blue-100 text-[#0B63B5] font-black flex items-center justify-center text-xs shrink-0 border border-blue-200">
+                <div class="w-9 h-9 rounded-full bg-blue-100 dark:bg-blue-950/80 text-[#0B63B5] dark:text-blue-400 font-black flex items-center justify-center text-sm shrink-0 border border-blue-200 dark:border-blue-800">
                     {{ substr(auth()->user()->name, 0, 1) }}
                 </div>
                 <div x-show="!sidebarCollapsed || sidebarMobileOpen"
@@ -638,8 +669,8 @@
                      x-transition:leave-start="opacity-100"
                      x-transition:leave-end="opacity-0"
                      class="truncate min-w-0 flex-1 whitespace-nowrap">
-                    <span class="font-bold text-slate-800 text-xs block truncate">{{ auth()->user()->name }}</span>
-                    <span class="text-[10px] font-semibold text-[#0B63B5] uppercase block truncate">{{ str_replace('_', ' ', auth()->user()->role) }}</span>
+                    <span class="font-bold text-slate-800 dark:text-slate-200 text-sm block truncate">{{ auth()->user()->name }}</span>
+                    <span class="text-xs font-semibold text-[#0B63B5] dark:text-blue-400 uppercase block truncate">{{ str_replace('_', ' ', auth()->user()->role) }}</span>
                 </div>
 
                 <!-- Floating Tooltip for User Profile -->
@@ -655,123 +686,139 @@
     </aside>
 
     <!-- CONTENT AREA WRAPPER (Offsets fixed sidebar) -->
-    <div class="flex-1 flex flex-col min-h-screen transition-all duration-300 ease-in-out"
+    <div class="flex-1 flex flex-col min-h-screen lg:transition-[padding] lg:duration-300 lg:ease-in-out"
          :class="sidebarCollapsed ? 'lg:pl-20' : 'lg:pl-64'">
 
         <!-- TOP HEADER BAR -->
-        <header class="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 h-16 w-full transition-all duration-300 ease-in-out shrink-0">
-            <div class="max-w-7xl mx-auto h-full px-4 sm:px-6 lg:px-10 xl:px-12 flex items-center justify-between gap-4">
+        <header class="sticky top-0 z-30 bg-white/95 dark:bg-[#0F172A]/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 h-16 w-full transition-colors duration-200 shrink-0">
+            <div class="w-full h-full px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
 
-                <!-- Left: Satker Context Title (Tanpa burger menu) -->
+                <!-- Left: Breadcrumb Navigation (Rapi, Hirarkis, & Menggantikan Redundansi Judul) -->
                 <div class="flex items-center gap-3 sm:gap-4 min-w-0">
-                    <!-- Mobile Toggle with Arrow Icon (Bukan Burger Menu) -->
+                    <!-- Mobile Toggle with Arrow Icon -->
                     <button type="button"
                             @click="sidebarMobileOpen = !sidebarMobileOpen"
-                            class="lg:hidden p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition focus:outline-none flex items-center gap-1.5 shrink-0"
+                            class="lg:hidden p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition focus:outline-none flex items-center gap-1.5 shrink-0"
                             title="Buka Menu Navigasi">
-                        <i data-lucide="chevron-right" class="w-4 h-4 text-[#0B63B5]"></i>
-                        <span class="text-xs font-bold text-slate-700">Menu</span>
+                        <i data-lucide="chevron-right" class="w-4 h-4 text-[#0B63B5] dark:text-blue-400"></i>
+                        <span class="text-xs font-bold text-slate-700 dark:text-slate-200">Menu</span>
                     </button>
 
-                    <!-- Dynamic Page Title (Deskripsi Halaman Aktif) -->
-                    <div class="flex items-center min-w-0 py-1">
-                        <span class="text-xs sm:text-sm lg:text-base font-extrabold text-slate-900 tracking-tight truncate">
-                            @hasSection('header_title')
-                                @yield('header_title')
-                            @else
-                                @if(request()->routeIs('dashboard'))
-                                    Beranda
-                                @elseif(request()->routeIs('loans.index'))
-                                    Pengajuan Saya
-                                @elseif(request()->routeIs('loans.create'))
-                                    Formulir Pengajuan BMN
-                                @elseif(request()->routeIs('loans.show'))
-                                    Detail Pengajuan BMN
-                                @elseif(request()->routeIs('assets.index'))
-                                    Katalog Barang Milik Negara
-                                @elseif(request()->routeIs('assets.show'))
-                                    Detail Barang Milik Negara
-                                @elseif(request()->routeIs('profile.*'))
-                                    Data Diri Peminjaman
-                                @elseif(request()->routeIs('kelola.queue'))
-                                    Antrean Pengelola BMN
-                                @elseif(request()->routeIs('kelola.import.*'))
-                                    Unggah Data Excel BMN
-                                @elseif(request()->routeIs('approval.index'))
-                                    Persetujuan Ketua Tim
-                                @elseif(request()->routeIs('approval.show'))
-                                    Telaah & Persetujuan BMN
-                                @elseif(request()->routeIs('audit.loans'))
-                                    Audit Peminjaman BMN
-                                @elseif(request()->routeIs('admin.users'))
-                                    Manajemen Pengguna
-                                @elseif(request()->routeIs('admin.signatories'))
-                                    Pejabat Penandatangan
-                                @elseif(request()->routeIs('admin.settings'))
-                                    Pengaturan Satker
-                                @elseif(request()->routeIs('admin.activity-logs') || request()->routeIs('admin.audit-logs'))
-                                    Log Aktivitas Sistem
+                    <!-- Breadcrumbs -->
+                    <nav aria-label="Breadcrumb" class="flex items-center gap-2 text-xs sm:text-sm text-slate-500 dark:text-slate-400 min-w-0 py-1">
+                        <a href="{{ route('dashboard') }}" class="flex items-center gap-1.5 font-medium text-slate-500 hover:text-[#0B63B5] dark:text-slate-400 dark:hover:text-blue-400 transition shrink-0">
+                            <i data-lucide="home" class="w-4 h-4"></i>
+                            <span class="hidden sm:inline">Beranda</span>
+                        </a>
+
+                        @if(!request()->routeIs('dashboard'))
+                            <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-400 dark:text-slate-600 shrink-0"></i>
+                            <span class="font-bold text-slate-800 dark:text-slate-200 truncate">
+                                @hasSection('header_title')
+                                    @yield('header_title')
                                 @else
-                                    {{ trim(explode('—', View::getSection('title', 'Layanan Peminjaman BMN'))[0]) }}
+                                    @if(request()->routeIs('loans.index'))
+                                        Pengajuan Saya
+                                    @elseif(request()->routeIs('loans.create'))
+                                        Formulir Pengajuan
+                                    @elseif(request()->routeIs('loans.show'))
+                                        Detail Pengajuan
+                                    @elseif(request()->routeIs('assets.index'))
+                                        Katalog BMN
+                                    @elseif(request()->routeIs('assets.show'))
+                                        Detail Barang BMN
+                                    @elseif(request()->routeIs('profile.*'))
+                                        Profil & TTD
+                                    @elseif(request()->routeIs('kelola.queue'))
+                                        Antrean Pengelola
+                                    @elseif(request()->routeIs('kelola.import.*'))
+                                        Unggah Excel
+                                    @elseif(request()->routeIs('persetujuan.index') || request()->routeIs('approval.index'))
+                                        Persetujuan Ketua Tim
+                                    @elseif(request()->routeIs('persetujuan.show') || request()->routeIs('approval.show'))
+                                        Telaah Pengajuan
+                                    @elseif(request()->routeIs('audit.loans'))
+                                        Audit Peminjaman
+                                    @elseif(request()->routeIs('admin.users'))
+                                        Manajemen Pengguna
+                                    @elseif(request()->routeIs('admin.signatories'))
+                                        Pejabat Penandatangan
+                                    @elseif(request()->routeIs('admin.settings'))
+                                        Pengaturan Satker
+                                    @elseif(request()->routeIs('admin.activity-logs') || request()->routeIs('admin.audit-logs'))
+                                        Log Sistem
+                                    @else
+                                        {{ trim(explode('—', View::getSection('title', 'Layanan BMN'))[0]) }}
+                                    @endif
                                 @endif
-                            @endif
-                        </span>
-                    </div>
+                            </span>
+                        @endif
+                    </nav>
                 </div>
 
-                <!-- Right: Actions, Demo Switcher, & User Menu -->
-                <div class="flex items-center gap-3 shrink-0">
-                    <a href="{{ route('loans.create') }}" class="hidden sm:inline-flex items-center gap-2 bg-[#0B63B5] hover:bg-[#0B4F8A] text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-sm transition shrink-0">
+                <!-- Right: Actions, Night Mode Toggle, & User Menu -->
+                <div class="flex items-center gap-2.5 sm:gap-4 shrink-0">
+                    <a href="{{ route('loans.create') }}" class="hidden sm:inline-flex items-center gap-2 bg-[#0B63B5] hover:bg-[#0B4F8A] text-white text-sm font-semibold px-4 py-2 rounded-xl shadow-sm btn-tactile-press shrink-0">
                         <i data-lucide="plus" class="w-4 h-4"></i>
                         <span>Ajukan BMN</span>
                     </a>
 
-                    <!-- Profile Dropdown (Alpine.js) -->
+                    <!-- Night Mode Toggle Button -->
+                    <button type="button"
+                            @click="toggleDarkMode()"
+                            class="p-2 sm:p-2.5 rounded-xl text-slate-500 dark:text-slate-300 hover:text-slate-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700/60 transition focus:outline-none cursor-pointer flex items-center justify-center shrink-0"
+                            :title="darkMode ? 'Beralih ke Mode Terang (Light Mode)' : 'Beralih ke Mode Gelap (Night Mode)'"
+                            aria-label="Toggle Night Mode">
+                        <i data-lucide="moon" x-show="!darkMode" class="w-4.5 h-4.5 text-slate-600"></i>
+                        <i data-lucide="sun" x-show="darkMode" x-cloak class="w-4.5 h-4.5 text-amber-400"></i>
+                    </button>
+
+                    <!-- Profile Dropdown (Alpine.js) Sesuai Referensi Sispen -->
                     <div x-data="{ open: false }" class="relative">
-                        <button @click="open = !open" type="button" class="flex items-center gap-2.5 p-1.5 rounded-xl hover:bg-slate-100 transition text-left">
-                            <div class="w-8 h-8 rounded-lg bg-blue-100 text-[#0B63B5] font-black flex items-center justify-center text-xs border border-blue-200 shrink-0">
+                        <button @click="open = !open" type="button" class="flex items-center gap-3 p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/80 transition text-left cursor-pointer group">
+                            <div class="hidden md:block text-right leading-tight">
+                                <span class="font-bold text-slate-800 dark:text-slate-200 text-sm block truncate max-w-[140px] lg:max-w-[200px] xl:max-w-[260px]">{{ auth()->user()->name }}</span>
+                                <span class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase block truncate mt-0.5">{{ str_replace('_', ' ', auth()->user()->role) }}</span>
+                            </div>
+                            <div class="w-9 h-9 rounded-full bg-[#0B63B5] text-white font-bold flex items-center justify-center text-sm shadow-sm shrink-0 border border-blue-200 dark:border-blue-900">
                                 {{ substr(auth()->user()->name, 0, 1) }}
                             </div>
-                            <div class="hidden md:block text-xs">
-                                <span class="font-bold text-slate-800 block truncate max-w-[120px] lg:max-w-[160px] xl:max-w-[220px]">{{ auth()->user()->name }}</span>
-                                <span class="text-[10px] font-bold text-[#0B63B5] uppercase block truncate">{{ str_replace('_', ' ', auth()->user()->role) }}</span>
-                            </div>
-                            <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 shrink-0"></i>
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 group-hover:text-slate-600 dark:text-slate-500 dark:group-hover:text-slate-300 transition shrink-0"></i>
                         </button>
 
                         <div x-show="open" @click.outside="open = false" x-cloak
-                             class="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-slate-200 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
-                            <div class="px-4 py-2.5 border-b border-slate-100">
-                                <p class="text-[11px] text-slate-400 font-medium">Masuk sebagai:</p>
-                                <p class="text-sm font-bold text-slate-900 truncate">{{ auth()->user()->name }}</p>
-                                <p class="text-xs text-slate-500 truncate">{{ auth()->user()->email }}</p>
-                                <span class="mt-1.5 inline-block px-2 py-0.5 text-[10px] font-bold tracking-wide rounded-md bg-blue-50 text-[#0B63B5] border border-blue-200">
+                             class="absolute right-0 mt-2 w-64 bg-white dark:bg-[#1E293B] rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                            <div class="px-4 py-2.5 border-b border-slate-100 dark:border-slate-800">
+                                <p class="text-[11px] text-slate-400 dark:text-slate-500 font-medium">Masuk sebagai:</p>
+                                <p class="text-sm font-bold text-slate-900 dark:text-white truncate">{{ auth()->user()->name }}</p>
+                                <p class="text-xs text-slate-500 dark:text-slate-400 truncate">{{ auth()->user()->email }}</p>
+                                <span class="mt-1.5 inline-block px-2 py-0.5 text-[10px] font-bold tracking-wide rounded-md bg-blue-50 dark:bg-blue-950/70 text-[#0B63B5] dark:text-blue-400 border border-blue-200 dark:border-blue-800">
                                     Peran: {{ auth()->user()->role }}
                                 </span>
                             </div>
 
                             <!-- Link ke Profil & Tanda Tangan -->
-                            <div class="p-1 border-b border-slate-100">
-                                <a href="{{ route('profile.show') }}" class="w-full text-left px-3 py-2 text-xs text-slate-700 hover:text-[#0B63B5] hover:bg-blue-50/80 rounded-xl font-bold transition flex items-center gap-2 group">
-                                    <i data-lucide="signature" class="w-4 h-4 text-[#0B63B5]"></i>
+                            <div class="p-1 border-b border-slate-100 dark:border-slate-800">
+                                <a href="{{ route('profile.show') }}" class="w-full text-left px-3 py-2 text-xs text-slate-700 dark:text-slate-300 hover:text-[#0B63B5] dark:hover:text-blue-400 hover:bg-blue-50/80 dark:hover:bg-slate-800 rounded-xl font-bold transition flex items-center gap-2 group">
+                                    <i data-lucide="signature" class="w-4 h-4 text-[#0B63B5] dark:text-blue-400"></i>
                                     <span>Profil & Tanda Tangan Saya</span>
                                 </a>
                             </div>
 
                             <!-- Demo Role Quick Switcher -->
-                            <div class="px-3 py-2 bg-slate-50/80 border-b border-slate-100">
-                                <span class="text-[10px] font-bold tracking-wider text-slate-400 uppercase block mb-1.5">Ganti Akun Demo (Uji Alur SOP):</span>
+                            <div class="px-3 py-2 bg-slate-50/80 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-800">
+                                <span class="text-[10px] font-bold tracking-wider text-slate-400 dark:text-slate-500 uppercase block mb-1.5">Ganti Akun Demo (Uji Alur SOP):</span>
                                 <div class="grid grid-cols-2 gap-1.5" hx-boost="false">
-                                    <a href="{{ route('login.quick', 'PEMINJAM') }}" class="text-[11px] font-semibold p-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 hover:border-blue-500 hover:text-blue-600 text-center transition">
+                                    <a href="{{ route('login.quick', 'PEMINJAM') }}" class="text-[11px] font-semibold p-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400 text-center transition">
                                         Peminjam
                                     </a>
-                                    <a href="{{ route('login.quick', 'PENGELOLA_BMN') }}" class="text-[11px] font-semibold p-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 hover:border-blue-500 hover:text-blue-600 text-center transition">
+                                    <a href="{{ route('login.quick', 'PENGELOLA_BMN') }}" class="text-[11px] font-semibold p-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400 text-center transition">
                                         Pengelola
                                     </a>
-                                    <a href="{{ route('login.quick', 'KETUA_TIM_ASET') }}" class="text-[11px] font-semibold p-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 hover:border-blue-500 hover:text-blue-600 text-center transition">
+                                    <a href="{{ route('login.quick', 'KETUA_TIM_ASET') }}" class="text-[11px] font-semibold p-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400 text-center transition">
                                         Ketua Tim
                                     </a>
-                                    <a href="{{ route('login.quick', 'ADMIN') }}" class="text-[11px] font-semibold p-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 hover:border-blue-500 hover:text-blue-600 text-center transition">
+                                    <a href="{{ route('login.quick', 'ADMIN') }}" class="text-[11px] font-semibold p-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400 text-center transition">
                                         Admin
                                     </a>
                                 </div>
@@ -779,7 +826,7 @@
 
                             <form method="POST" action="{{ route('logout') }}" class="p-1" hx-boost="false">
                                 @csrf
-                                <button type="submit" class="w-full text-left px-3 py-2 text-xs text-red-600 hover:bg-red-50 rounded-xl font-bold transition flex items-center gap-2">
+                                <button type="submit" class="w-full text-left px-3 py-2 text-xs text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-xl font-bold transition flex items-center gap-2">
                                     <i data-lucide="log-out" class="w-4 h-4"></i>
                                     <span>Keluar Sistem</span>
                                 </button>
@@ -792,7 +839,7 @@
 
         <!-- FLASH MESSAGES -->
         <div class="w-full mt-4">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">
+            <div class="w-full px-4 sm:px-6 lg:px-8">
                 @if(session('success'))
                     <div class="p-4 mb-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-start gap-3 shadow-sm animate-in fade-in">
                         <i data-lucide="check-circle" class="w-5 h-5 text-emerald-600 shrink-0 mt-0.5"></i>
@@ -832,54 +879,71 @@
 
         <!-- MAIN CONTENT -->
         <main class="flex-1 py-4 sm:py-6 pb-20 lg:pb-8 flex flex-col w-full">
-            <div class="max-w-7xl mx-auto w-full flex-1 px-4 sm:px-6 lg:px-10 xl:px-12">
+            <div class="w-full flex-1 px-4 sm:px-6 lg:px-8">
                 @yield('content')
             </div>
         </main>
     </div>
 
-    <!-- MOBILE BOTTOM NAVIGATION (Zone jempol mobile) -->
-    <div class="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-t border-slate-200 px-2 py-2 flex items-center justify-around shadow-lg">
-        <a href="{{ route('dashboard') }}" class="flex flex-col items-center gap-1 py-1 px-3 rounded-lg text-xs font-semibold {{ request()->routeIs('dashboard') ? 'text-[#0B63B5]' : 'text-slate-500' }}">
-            <i data-lucide="home" class="w-5 h-5"></i>
-            <span class="text-[10px]">Beranda</span>
-        </a>
+    <!-- MOBILE BOTTOM NAVIGATION (3 Menu Utama Simetris: Katalog | Ajukan | Riwayat/Tugas) -->
+    <nav class="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-[#0F172A]/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 h-16 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] dark:shadow-[0_-4px_20px_rgba(0,0,0,0.3)]">
+        <div class="max-w-md mx-auto h-full grid grid-cols-3 items-center px-3">
+            <!-- 1. Kiri: Katalog BMN -->
+            <a href="{{ route('assets.index') }}"
+               class="flex flex-col items-center justify-center h-full transition active:scale-95 group select-none {{ request()->routeIs('assets.*') ? 'text-[#0B63B5] dark:text-blue-400 font-extrabold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 font-semibold' }}">
+                <div class="p-1 rounded-xl transition {{ request()->routeIs('assets.*') ? 'bg-blue-50 dark:bg-blue-950/60' : '' }}">
+                    <i data-lucide="package" class="w-5 h-5"></i>
+                </div>
+                <span class="text-[10px] tracking-tight mt-0.5">Katalog</span>
+            </a>
 
-        <a href="{{ route('assets.index') }}" class="flex flex-col items-center gap-1 py-1 px-3 rounded-lg text-xs font-semibold {{ request()->routeIs('assets.*') ? 'text-[#0B63B5]' : 'text-slate-500' }}">
-            <i data-lucide="grid" class="w-5 h-5"></i>
-            <span class="text-[10px]">Katalog</span>
-        </a>
+            <!-- 2. Tengah: Ajukan BMN (Hero Center CTA - Pas di Dalam Baris Navigasi) -->
+            <a href="{{ route('loans.create') }}"
+               class="flex flex-col items-center justify-center h-full transition active:scale-90 group select-none">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#0B63B5] to-[#12A8E0] text-white flex items-center justify-center shadow-md shadow-blue-500/25 group-hover:shadow-blue-500/40 group-hover:scale-105 transition-all duration-150">
+                    <i data-lucide="plus" class="w-5 h-5 stroke-[2.5]"></i>
+                </div>
+                <span class="text-[10px] font-extrabold {{ request()->routeIs('loans.create') ? 'text-[#0B63B5] dark:text-blue-400' : 'text-slate-700 dark:text-slate-300' }} tracking-tight mt-0.5">
+                    Ajukan
+                </span>
+            </a>
 
-        <!-- Highlighted Action Button -->
-        <a href="{{ route('loans.create') }}" class="flex flex-col items-center justify-center -mt-5">
-            <div class="w-12 h-12 rounded-full bg-[#0B63B5] text-white flex items-center justify-center shadow-lg shadow-blue-500/30 border-2 border-white">
-                <i data-lucide="plus" class="w-6 h-6"></i>
-            </div>
-            <span class="text-[10px] font-bold text-[#0B63B5] mt-0.5">Ajukan</span>
-        </a>
-
-        @if(auth()->user()->isPengelola())
-        <a href="{{ route('kelola.queue') }}" class="flex flex-col items-center gap-1 py-1 px-3 rounded-lg text-xs font-semibold relative {{ request()->routeIs('kelola.*') ? 'text-[#0B63B5]' : 'text-slate-500' }}">
-            <i data-lucide="inbox" class="w-5 h-5"></i>
-            <span class="text-[10px]">Antrean</span>
-        </a>
-        @elseif(auth()->user()->isKetuaTim())
-        <a href="{{ route('approval.index') }}" class="flex flex-col items-center gap-1 py-1 px-3 rounded-lg text-xs font-semibold relative {{ request()->routeIs('approval.*') ? 'text-[#0B63B5]' : 'text-slate-500' }}">
-            <i data-lucide="check-square" class="w-5 h-5"></i>
-            <span class="text-[10px]">Persetujuan</span>
-        </a>
-        @elseif(auth()->user()->isAdmin())
-        <a href="{{ route('audit.loans') }}" class="flex flex-col items-center gap-1 py-1 px-3 rounded-lg text-xs font-semibold relative {{ request()->routeIs('audit.*') ? 'text-[#0B63B5]' : 'text-slate-500' }}">
-            <i data-lucide="clipboard-check" class="w-5 h-5"></i>
-            <span class="text-[10px]">Audit BMN</span>
-        </a>
-        @else
-        <a href="{{ route('loans.index') }}" class="flex flex-col items-center gap-1 py-1 px-3 rounded-lg text-xs font-semibold {{ request()->routeIs('loans.index') ? 'text-[#0B63B5]' : 'text-slate-500' }}">
-            <i data-lucide="file-text" class="w-5 h-5"></i>
-            <span class="text-[10px]">Riwayat</span>
-        </a>
-        @endif
-    </div>
+            <!-- 3. Kanan: Riwayat / Tugas Sesuai Role -->
+            @if(auth()->user()->isPengelola())
+            <a href="{{ route('kelola.queue') }}"
+               class="flex flex-col items-center justify-center h-full transition active:scale-95 group select-none {{ (request()->routeIs('kelola.*') && !request()->routeIs('kelola.import.*')) ? 'text-[#0B63B5] dark:text-blue-400 font-extrabold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 font-semibold' }}">
+                <div class="p-1 rounded-xl transition {{ (request()->routeIs('kelola.*') && !request()->routeIs('kelola.import.*')) ? 'bg-blue-50 dark:bg-blue-950/60' : '' }}">
+                    <i data-lucide="inbox" class="w-5 h-5"></i>
+                </div>
+                <span class="text-[10px] tracking-tight mt-0.5">Antrean</span>
+            </a>
+            @elseif(auth()->user()->isKetuaTim())
+            <a href="{{ route('persetujuan.index') }}"
+               class="flex flex-col items-center justify-center h-full transition active:scale-95 group select-none {{ (request()->routeIs('persetujuan.*') || request()->routeIs('approval.*')) ? 'text-[#0B63B5] dark:text-blue-400 font-extrabold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 font-semibold' }}">
+                <div class="p-1 rounded-xl transition {{ (request()->routeIs('persetujuan.*') || request()->routeIs('approval.*')) ? 'bg-blue-50 dark:bg-blue-950/60' : '' }}">
+                    <i data-lucide="check-square" class="w-5 h-5"></i>
+                </div>
+                <span class="text-[10px] tracking-tight mt-0.5">Persetujuan</span>
+            </a>
+            @elseif(auth()->user()->isAdmin())
+            <a href="{{ route('audit.loans') }}"
+               class="flex flex-col items-center justify-center h-full transition active:scale-95 group select-none {{ request()->routeIs('audit.*') ? 'text-[#0B63B5] dark:text-blue-400 font-extrabold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 font-semibold' }}">
+                <div class="p-1 rounded-xl transition {{ request()->routeIs('audit.*') ? 'bg-blue-50 dark:bg-blue-950/60' : '' }}">
+                    <i data-lucide="clipboard-check" class="w-5 h-5"></i>
+                </div>
+                <span class="text-[10px] tracking-tight mt-0.5">Audit BMN</span>
+            </a>
+            @else
+            <a href="{{ route('loans.index') }}"
+               class="flex flex-col items-center justify-center h-full transition active:scale-95 group select-none {{ request()->routeIs('loans.index') ? 'text-[#0B63B5] dark:text-blue-400 font-extrabold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 font-semibold' }}">
+                <div class="p-1 rounded-xl transition {{ request()->routeIs('loans.index') ? 'bg-blue-50 dark:bg-blue-950/60' : '' }}">
+                    <i data-lucide="file-text" class="w-5 h-5"></i>
+                </div>
+                <span class="text-[10px] tracking-tight mt-0.5">Riwayat</span>
+            </a>
+            @endif
+        </div>
+    </nav>
 
     <!-- FLOATING TOAST POPUP NOTIFICATIONS -->
     <div x-data="toastManager()"

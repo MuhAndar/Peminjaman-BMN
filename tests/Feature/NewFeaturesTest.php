@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Asset;
 use App\Models\AuditLog;
+use App\Models\Document;
 use App\Models\Employee;
 use App\Models\LoanItem;
 use App\Models\LoanPhoto;
@@ -251,14 +252,31 @@ class NewFeaturesTest extends TestCase
     public function test_excel_upload_and_template_download(): void
     {
         $pengelola = User::where('role', 'PENGELOLA_BMN')->first();
-        $this->actingAs($pengelola);
+        $ketuaTim = User::where('role', 'KETUA_TIM_ASET')->first();
+        $peminjam = User::where('role', 'PEMINJAM')->first();
 
-        // 1. Unduh template starter .xlsx
+        // 1. Pengelola & Ketua Tim dapat mengunduh rekapan katalog BMN .xlsx
+        $this->actingAs($ketuaTim);
+        $resKetuaExport = $this->get(route('assets.export'));
+        $resKetuaExport->assertStatus(200);
+        $this->assertTrue(str_contains($resKetuaExport->headers->get('content-disposition'), 'Katalog_Inventaris_BMN_Makassar'));
+
+        $this->actingAs($pengelola);
         $resTemplate = $this->get(route('kelola.import.template'));
         $resTemplate->assertStatus(200);
         $this->assertTrue(str_contains($resTemplate->headers->get('content-disposition'), '.xlsx'));
 
-        // 2. Unggah file .xlsx untuk pratinjau parser
+        $resExport = $this->get(route('kelola.import.export'));
+        $resExport->assertStatus(200);
+        $this->assertTrue(str_contains($resExport->headers->get('content-disposition'), 'Katalog_Inventaris_BMN_Makassar'));
+
+        // 2. Peminjam dilarang mengakses modul impor (403)
+        $this->actingAs($peminjam);
+        $resForbidden = $this->get(route('kelola.import.index'));
+        $resForbidden->assertStatus(403);
+
+        // 3. Pengelola mengunggah berkas Excel untuk diurai ke antrean
+        $this->actingAs($pengelola);
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Data_BMN');
@@ -276,14 +294,32 @@ class NewFeaturesTest extends TestCase
 
         $resUpload = $this->post(route('kelola.import.upload'), [
             'file' => $uploadedFile,
-            'data_type' => 'assets',
+            'data_type' => 'ASSETS',
         ]);
 
         $resUpload->assertStatus(200);
         $resUpload->assertSee('Data_BMN_Test.xlsx');
         $resUpload->assertSee('Laptop ASUS Zenbook');
         $resUpload->assertSee('Printer Epson L3210');
-        $resUpload->assertSee('Kode Barang');
+        $resUpload->assertSessionHas('bmn_import_pending');
+
+        // 4. Eksekusi commit import ke basis data
+        $resCommit = $this->post(route('kelola.import.commit'));
+        $resCommit->assertRedirect(route('kelola.import.index'));
+        $resCommit->assertSessionHas('import_success');
+
+        // Verifikasi aset tersimpan di tabel database
+        $this->assertDatabaseHas('assets', [
+            'item_name' => 'Laptop ASUS Zenbook',
+            'bmn_code' => '3.05.01.05.002',
+            'nup' => 12,
+        ]);
+
+        $this->assertDatabaseHas('assets', [
+            'item_name' => 'Printer Epson L3210',
+            'bmn_code' => '3.05.01.05.003',
+            'nup' => 4,
+        ]);
 
         if (file_exists($tempFilePath)) {
             unlink($tempFilePath);
@@ -553,4 +589,261 @@ class NewFeaturesTest extends TestCase
         $response->assertSee('Catatan Hasil Telaah Pengelola BMN:');
         $response->assertSee('Catatan Disposisi / Persetujuan Ketua Tim:');
     }
+
+    /**
+     * Verifikasi Ketua Tim dapat login, mengakses dashboard, dan render menu persetujuan tanpa route exception.
+     */
+    public function test_ketua_tim_login_and_navigation_renders_cleanly(): void
+    {
+        $ketuaUser = User::where('role', 'KETUA_TIM_ASET')->first();
+        $this->actingAs($ketuaUser);
+
+        // Dashboard Ketua Tim
+        $response = $this->get(route('dashboard'));
+        $response->assertOk();
+        $response->assertSee('Persetujuan');
+
+        // Halaman Daftar Persetujuan (via nama resmi maupun alias)
+        $resOfficial = $this->get(route('persetujuan.index'));
+        $resOfficial->assertOk();
+
+        $resAlias = $this->get(route('approval.index'));
+        $resAlias->assertOk();
+    }
+
+    /**
+     * Uji Keamanan Cybersecurity: Proteksi Broken Access Control, URL tampering, dan IDOR dokumen.
+     */
+    public function test_cybersecurity_access_control_and_url_authorization(): void
+    {
+        $peminjamA = User::where('role', 'PEMINJAM')->first();
+        $pengelola = User::where('role', 'PENGELOLA_BMN')->first();
+        $ketua = User::where('role', 'KETUA_TIM_ASET')->first();
+
+        // Buat peminjam B
+        $peminjamB = User::factory()->create([
+            'role' => 'PEMINJAM',
+            'email' => 'peminjam.b@test.id',
+        ]);
+
+        $asset = Asset::where('status', 'AVAILABLE')->first();
+        $loanA = LoanRequest::create([
+            'borrower_id' => $peminjamA->employee_id,
+            'loan_type' => 'SHORT_TERM',
+            'start_date' => Carbon::now()->toDateString(),
+            'end_date' => Carbon::now()->addDays(2)->toDateString(),
+            'status' => 'APPROVED',
+            'snap_full_name' => $peminjamA->name,
+            'snap_nip' => $peminjamA->employee->nip,
+        ]);
+
+        // Buat dokumen untuk loan A
+        $doc = Document::create([
+            'loan_request_id' => $loanA->id,
+            'doc_type' => 'SURAT_PEMINJAMAN',
+            'doc_number' => '099/BMN-PJM/BBLSDM.73/X/2026',
+            'doc_date' => Carbon::now()->toDateString(),
+            'status' => 'ISSUED',
+        ]);
+
+        // 1. Peminjam B login dan mencoba akses URL antrean telaah pengelola -> harus 403
+        $this->actingAs($peminjamB);
+        $resQueue = $this->get(route('kelola.queue'));
+        $resQueue->assertStatus(403);
+
+        // 2. Peminjam B mencoba akses URL antrean persetujuan ketua tim -> harus 403
+        $resApproval = $this->get(route('persetujuan.index'));
+        $resApproval->assertStatus(403);
+
+        // 3. IDOR Check: Peminjam B mencoba mengunduh PDF dokumen peminjaman milik peminjam A via URL -> harus 403
+        $resDocOther = $this->get(route('document.pdf', [$loanA->id, 'SURAT_PEMINJAMAN']));
+        $resDocOther->assertStatus(403);
+
+        // 4. Peminjam A mengunduh dokumen miliknya sendiri -> harus 200
+        $this->actingAs($peminjamA);
+        $resDocSelf = $this->get(route('document.pdf', [$loanA->id, 'SURAT_PEMINJAMAN']));
+        $resDocSelf->assertStatus(200);
+
+        // 5. Pengelola dan Ketua Tim berhak mengakses antrean tugasnya
+        $this->actingAs($pengelola);
+        $this->get(route('kelola.queue'))->assertOk();
+
+        $this->actingAs($ketua);
+        $this->get(route('persetujuan.index'))->assertOk();
+    }
+
+    /**
+     * Uji Ketua Tim dapat menandatangani digital saat menyetujui telaah dan tersimpan di data pengajuan.
+     */
+    public function test_ketua_tim_can_sign_digitally_during_approval(): void
+    {
+        $peminjam = User::where('role', 'PEMINJAM')->first();
+        $pengelola = User::where('role', 'PENGELOLA_BMN')->first();
+        $ketua = User::where('role', 'KETUA_TIM_ASET')->first();
+        $asset = Asset::where('status', 'AVAILABLE')->first();
+
+        $loan = LoanRequest::create([
+            'borrower_id' => $peminjam->employee_id,
+            'loan_type' => 'SHORT_TERM',
+            'start_date' => Carbon::now()->toDateString(),
+            'end_date' => Carbon::now()->addDays(2)->toDateString(),
+            'status' => 'UNDER_APPROVAL',
+            'snap_full_name' => $peminjam->name,
+            'snap_nip' => $peminjam->employee->nip,
+        ]);
+
+        LoanItem::create([
+            'loan_request_id' => $loan->id,
+            'asset_id' => $asset->id,
+            'purpose' => 'Dinas',
+            'snap_item_name' => $asset->item_name,
+            'snap_brand_model' => $asset->brand_model_combined,
+            'snap_value' => 1000000,
+        ]);
+
+        $this->actingAs($ketua);
+
+        // Halaman telaah persetujuan memuat modal tanda tangan popup resmi
+        $showRes = $this->get(route('persetujuan.show', $loan->id));
+        $showRes->assertOk();
+        $showRes->assertSee('Bubuhkan Tanda Tangan Digital');
+        $showRes->assertSee('Ketua Tim Keuangan & Aset', false);
+
+        // Dummy canvas Base64 signature
+        $dummyBase64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+
+        $response = $this->post(route('persetujuan.approve', $loan->id), [
+            'note' => 'Disetujui untuk dinas luar kota',
+            'signature_source' => 'pad',
+            'signature_data' => $dummyBase64,
+            'save_to_profile' => 1,
+        ]);
+
+        $response->assertRedirect(route('persetujuan.index'));
+        $response->assertSessionHas('success');
+
+        $loan->refresh();
+        $this->assertEquals('APPROVED', $loan->status);
+        $this->assertNotNull($loan->approver_signature);
+        $this->assertStringContainsString('signatures/approver_', $loan->approver_signature);
+
+        // Verifikasi dokumen Surat Peminjaman terbit dengan tanda tangan Ketua Tim
+        $pdfRes = $this->get(route('document.pdf', [$loan->id, 'SURAT_PEMINJAMAN']));
+        $pdfRes->assertOk();
+    }
+
+    /**
+     * Uji pencegahan terbitnya dokumen resmi Surat Peminjaman jika tanda tangan Ketua Tim kosong.
+     */
+    public function test_ketua_tim_cannot_approve_without_signature(): void
+    {
+        $peminjam = User::where('role', 'PEMINJAM')->first();
+        $ketua = User::where('role', 'KETUA_TIM_ASET')->first();
+        $ketua->signature_path = null;
+        $ketua->save();
+
+        $asset = Asset::where('status', 'AVAILABLE')->first();
+
+        $loan = LoanRequest::create([
+            'borrower_id' => $peminjam->employee_id,
+            'loan_type' => 'SHORT_TERM',
+            'start_date' => Carbon::now()->toDateString(),
+            'end_date' => Carbon::now()->addDays(2)->toDateString(),
+            'status' => 'UNDER_APPROVAL',
+            'snap_full_name' => $peminjam->name,
+            'snap_nip' => $peminjam->employee->nip,
+        ]);
+
+        $this->actingAs($ketua);
+
+        // Percobaan persetujuan tanpa tanda tangan (source kosong / null)
+        $response = $this->from(route('persetujuan.show', $loan->id))
+            ->post(route('persetujuan.approve', $loan->id), [
+                'note' => 'Disetujui tanpa ttd',
+                'signature_source' => 'profile',
+            ]);
+
+        $response->assertRedirect(route('persetujuan.show', $loan->id));
+        $response->assertSessionHas('error');
+
+        $loan->refresh();
+        // Status harus tetap UNDER_APPROVAL dan Surat Peminjaman tidak boleh terbit
+        $this->assertEquals('UNDER_APPROVAL', $loan->status);
+        $this->assertNull($loan->approver_signature);
+        $this->assertDatabaseMissing('documents', [
+            'loan_request_id' => $loan->id,
+            'doc_type' => 'SURAT_PEMINJAMAN',
+        ]);
+    }
+
+    /**
+     * Uji riwayat telaah Ketua Tim (tab waiting, approved, rejected, all) dan data tetap ada.
+     */
+    public function test_ketua_tim_history_tabs_and_data_retention(): void
+    {
+        $ketua = User::where('role', 'KETUA_TIM_ASET')->first();
+        $this->actingAs($ketua);
+
+        // Akses tab waiting
+        $resWaiting = $this->get(route('persetujuan.index', ['tab' => 'waiting']));
+        $resWaiting->assertOk();
+        $resWaiting->assertSee('Perlu Keputusan');
+
+        // Akses tab approved (riwayat disetujui)
+        $resApproved = $this->get(route('persetujuan.index', ['tab' => 'approved']));
+        $resApproved->assertOk();
+        $resApproved->assertSee('Riwayat Disetujui');
+
+        // Akses tab rejected (riwayat ditolak/revisi)
+        $resRejected = $this->get(route('persetujuan.index', ['tab' => 'rejected']));
+        $resRejected->assertOk();
+        $resRejected->assertSee('Riwayat Ditolak');
+
+        // Akses tab all
+        $resAll = $this->get(route('persetujuan.index', ['tab' => 'all']));
+        $resAll->assertOk();
+        $resAll->assertSee('Semua Pengajuan');
+    }
+
+    /**
+     * Uji ekspor seluruh inventaris di /kelola/import-data/export berhasil tanpa error 500.
+     */
+    public function test_inventory_export_success_without_500_error(): void
+    {
+        $pengelola = User::where('role', 'PENGELOLA_BMN')->first();
+        $this->actingAs($pengelola);
+
+        $resExport = $this->get(route('kelola.import.export'));
+        $resExport->assertOk();
+        $resExport->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    }
+
+    /**
+     * Uji halaman riwayat pengajuan peminjam dan antrean pengelola dengan filter status.
+     */
+    public function test_user_and_pengelola_history_views_and_filters(): void
+    {
+        $peminjam = User::where('role', 'PEMINJAM')->first();
+        $this->actingAs($peminjam);
+
+        $resUserAll = $this->get(route('loans.index', ['status' => 'all']));
+        $resUserAll->assertOk();
+        $resUserAll->assertSee('Riwayat Pengajuan Saya');
+
+        $resUserReturned = $this->get(route('loans.index', ['status' => 'returned']));
+        $resUserReturned->assertOk();
+        $resUserReturned->assertSee('Selesai / Dikembalikan');
+
+        $pengelola = User::where('role', 'PENGELOLA_BMN')->first();
+        $this->actingAs($pengelola);
+
+        $resQueueAll = $this->get(route('kelola.queue'));
+        $resQueueAll->assertOk();
+        $resQueueAll->assertSee('Antrean &amp; Riwayat Pengelolaan BMN', false);
+
+        $resQueueReturned = $this->get(route('kelola.queue', ['status' => 'RETURNED']));
+        $resQueueReturned->assertOk();
+        $resQueueReturned->assertSee('Selesai / Riwayat Arsip');
+    }
 }
+

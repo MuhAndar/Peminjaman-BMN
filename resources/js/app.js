@@ -8,6 +8,22 @@ window.Alpine = Alpine;
 // Konfigurasi HTMX
 htmx.config.historyEnabled = true;
 
+// Cegah HTMX boost mencegat tautan berkas unduhan biner (Excel, CSV, PDF, dsb.)
+document.addEventListener('click', (event) => {
+    const link = event.target.closest('a');
+    if (!link) return;
+
+    const href = link.getAttribute('href') || '';
+    const hasDownloadAttr = link.hasAttribute('download');
+    const isTargetBlank = link.getAttribute('target') === '_blank';
+    const isFileExtension = /\.(xlsx|xls|csv|pdf|zip|docx|doc)($|\?)/i.test(href);
+    const isDownloadRoute = href.includes('/template') || href.includes('/export') || href.includes('/download') || href.includes('/pdf');
+
+    if (hasDownloadAttr || isTargetBlank || isFileExtension || isDownloadRoute) {
+        link.setAttribute('hx-boost', 'false');
+    }
+}, true);
+
 // 1. Kirim CSRF Token Laravel pada setiap request HTMX
 document.addEventListener('htmx:configRequest', (event) => {
     const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');

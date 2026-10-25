@@ -22,3 +22,6 @@ yarn-error.log
 /database/*.sqlite
 /database/*.sqlite-journal
 /scratch/
+*.xlsx
+*.xls
+Starter Kit/

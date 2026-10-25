@@ -23,29 +23,29 @@
     <div class="flex items-center justify-between gap-3">
         <a href="{{ url()->previous() !== url()->current() ? url()->previous() : route('dashboard') }}"
            onclick="if (document.referrer && document.referrer.indexOf(window.location.host) !== -1) { history.back(); return false; }"
-           class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:text-slate-900 hover:bg-slate-50 transition shadow-2xs">
-            <i data-lucide="arrow-left" class="w-4 h-4 text-slate-500"></i>
+           class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-700/60 transition shadow-2xs">
+            <i data-lucide="arrow-left" class="w-4 h-4 text-slate-500 dark:text-slate-400"></i>
             <span>Kembali</span>
         </a>
     </div>
 
     <!-- PAGE HEADER -->
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-200/80 shadow-sm">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-white dark:bg-[#151D2F] p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
         <div>
             <div class="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
-                <a href="{{ route('dashboard') }}" class="hover:text-blue-600 transition">Beranda</a>
+                <a href="{{ route('dashboard') }}" class="hover:text-blue-600 dark:hover:text-blue-400 transition">Beranda</a>
                 <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
-                <span class="text-slate-600">Administrasi Sistem</span>
+                <span class="text-slate-600 dark:text-slate-400">Administrasi Sistem</span>
                 <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
-                <span class="text-[#0B63B5]">Log Aktivitas Sistem</span>
+                <span class="text-[#0B63B5] dark:text-blue-400">Log Aktivitas Sistem</span>
             </div>
-            <h1 class="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
-                <div class="w-10 h-10 rounded-2xl bg-blue-100 text-[#0B63B5] flex items-center justify-center shrink-0">
+            <h1 class="text-2xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2.5">
+                <div class="w-10 h-10 rounded-2xl bg-blue-100 dark:bg-blue-900/40 text-[#0B63B5] dark:text-blue-400 flex items-center justify-center shrink-0">
                     <i data-lucide="activity" class="w-5 h-5"></i>
                 </div>
                 <span>Log Aktivitas Sistem (Forensik IT)</span>
             </h1>
-            <p class="text-xs sm:text-sm text-slate-500 mt-1 font-medium">
+            <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium">
                 Jejak forensik teknis komprehensif seluruh peristiwa sistem (autentikasi pengguna, perubahan tanda tangan, impor berkas, mutasi status, dan audit trail).
             </p>
         </div>
@@ -58,11 +58,11 @@
                 <span>Ekspor Log Sistem</span>
             </button>
 
-            <a href="{{ route('admin.activity-logs') }}" class="px-4 py-2.5 rounded-xl border border-slate-200/80 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center gap-2 transition shadow-2xs hover:shadow-xs active:scale-95">
-                <i data-lucide="refresh-cw" class="w-4 h-4 text-slate-500"></i>
+            <a href="{{ route('admin.activity-logs') }}" class="px-4 py-2.5 rounded-xl border border-slate-200/80 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/60 text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center gap-2 transition shadow-2xs hover:shadow-xs active:scale-95">
+                <i data-lucide="refresh-cw" class="w-4 h-4 text-slate-500 dark:text-slate-400"></i>
                 <span>Muat Ulang</span>
             </a>
-            <div class="px-3.5 py-2 rounded-xl bg-emerald-50/80 border border-emerald-200/80 text-emerald-800 text-xs font-bold flex items-center gap-2 shadow-2xs">
+            <div class="px-3.5 py-2 rounded-xl bg-emerald-50/80 dark:bg-emerald-950/50 border border-emerald-200/80 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs font-bold flex items-center gap-2 shadow-2xs">
                 <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                 <span>Forensik Aktif</span>
             </div>
@@ -70,18 +70,18 @@
     </div>
 
     <!-- NOTICE: LINK KE AUDIT PEMINJAMAN BMN -->
-    <div class="p-4 rounded-2xl bg-amber-50/70 border border-amber-200/80 flex items-start justify-between gap-4">
+    <div class="p-4 rounded-2xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-800/60 text-amber-900 dark:text-amber-200 flex items-start justify-between gap-4">
         <div class="flex items-start gap-3">
-            <div class="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0 mt-0.5">
+            <div class="w-8 h-8 rounded-xl bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300 flex items-center justify-center shrink-0 mt-0.5">
                 <i data-lucide="info" class="w-4 h-4"></i>
             </div>
-            <div class="text-xs text-slate-700 leading-relaxed">
-                <span class="font-extrabold text-amber-900">Perbedaan Menu:</span>
-                Halaman ini memuat seluruh jejak teknis sistem termasuk IP address dan perubahan non-peminjaman. Untuk audit resmi peminjaman BMN (bersih tanpa informasi sensitif/teknis), silakan buka menu <a href="{{ route('audit.loans') }}" class="font-black text-[#0B63B5] hover:underline">Audit Aktivitas Peminjaman BMN</a>.
+            <div class="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
+                <span class="font-extrabold text-amber-900 dark:text-amber-200">Perbedaan Menu:</span>
+                Halaman ini memuat seluruh jejak teknis sistem termasuk IP address dan perubahan non-peminjaman. Untuk audit resmi peminjaman BMN (bersih tanpa informasi sensitif/teknis), silakan buka menu <a href="{{ route('audit.loans') }}" class="font-black text-[#0B63B5] dark:text-blue-400 hover:underline">Audit Aktivitas Peminjaman BMN</a>.
             </div>
         </div>
-        <a href="{{ route('audit.loans') }}" class="shrink-0 px-3 py-1.5 rounded-xl bg-white border border-amber-300 hover:bg-amber-100 text-amber-900 font-extrabold text-xs transition shadow-2xs flex items-center gap-1.5">
-            <i data-lucide="clipboard-check" class="w-3.5 h-3.5 text-[#0B63B5]"></i>
+        <a href="{{ route('audit.loans') }}" class="shrink-0 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-amber-300 dark:border-amber-700 hover:bg-amber-100 dark:hover:bg-slate-700 text-amber-900 dark:text-amber-200 font-extrabold text-xs transition shadow-2xs flex items-center gap-1.5">
+            <i data-lucide="clipboard-check" class="w-3.5 h-3.5 text-[#0B63B5] dark:text-blue-400"></i>
             <span>Buka Audit Peminjaman</span>
         </a>
     </div>
@@ -89,72 +89,72 @@
     <!-- STATS KPI CARDS -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <!-- Total Log -->
-        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
-            <div class="w-12 h-12 rounded-xl bg-blue-50 text-[#0B63B5] flex items-center justify-center shrink-0">
+        <div class="bg-white dark:bg-[#151D2F] p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-900/40 text-[#0B63B5] dark:text-blue-400 flex items-center justify-center shrink-0">
                 <i data-lucide="file-text" class="w-6 h-6"></i>
             </div>
             <div>
-                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">Total Aktivitas</span>
-                <span class="text-2xl font-black text-slate-900 tabular-nums">{{ number_format($totalLogs, 0, ',', '.') }}</span>
-                <span class="text-[11px] text-slate-500 block font-medium">Peristiwa tercatat di sistem</span>
+                <span class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Total Aktivitas</span>
+                <span class="text-2xl font-black text-slate-900 dark:text-white tabular-nums">{{ number_format($totalLogs, 0, ',', '.') }}</span>
+                <span class="text-[11px] text-slate-500 dark:text-slate-400 block font-medium">Peristiwa tercatat di sistem</span>
             </div>
         </div>
 
         <!-- Hari Ini -->
-        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
-            <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+        <div class="bg-white dark:bg-[#151D2F] p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-amber-50 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
                 <i data-lucide="calendar" class="w-6 h-6"></i>
             </div>
             <div>
-                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">Aktivitas Hari Ini</span>
-                <span class="text-2xl font-black text-slate-900 tabular-nums">{{ number_format($todayLogs, 0, ',', '.') }}</span>
-                <span class="text-[11px] text-slate-500 block font-medium">Peristiwa dalam 24 jam terakhir</span>
+                <span class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Aktivitas Hari Ini</span>
+                <span class="text-2xl font-black text-slate-900 dark:text-white tabular-nums">{{ number_format($todayLogs, 0, ',', '.') }}</span>
+                <span class="text-[11px] text-slate-500 dark:text-slate-400 block font-medium">Peristiwa dalam 24 jam terakhir</span>
             </div>
         </div>
 
         <!-- Aktor Aktif -->
-        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
-            <div class="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
+        <div class="bg-white dark:bg-[#151D2F] p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-purple-50 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
                 <i data-lucide="users" class="w-6 h-6"></i>
             </div>
             <div>
-                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">Pengguna Terlibat</span>
-                <span class="text-2xl font-black text-slate-900 tabular-nums">{{ $activeUsers }}</span>
-                <span class="text-[11px] text-slate-500 block font-medium">Aktor yang memiliki jejak aksi</span>
+                <span class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Pengguna Terlibat</span>
+                <span class="text-2xl font-black text-slate-900 dark:text-white tabular-nums">{{ $activeUsers }}</span>
+                <span class="text-[11px] text-slate-500 dark:text-slate-400 block font-medium">Aktor yang memiliki jejak aksi</span>
             </div>
         </div>
 
         <!-- Transisi Siklus SOP -->
-        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
-            <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+        <div class="bg-white dark:bg-[#151D2F] p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
                 <i data-lucide="git-branch" class="w-6 h-6"></i>
             </div>
             <div>
-                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">Transisi Status BMN</span>
-                <span class="text-2xl font-black text-slate-900 tabular-nums">{{ number_format($statusTransitions, 0, ',', '.') }}</span>
-                <span class="text-[11px] text-slate-500 block font-medium">Langkah SOP dieksekusi</span>
+                <span class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Transisi Status BMN</span>
+                <span class="text-2xl font-black text-slate-900 dark:text-white tabular-nums">{{ number_format($statusTransitions, 0, ',', '.') }}</span>
+                <span class="text-[11px] text-slate-500 dark:text-slate-400 block font-medium">Langkah SOP dieksekusi</span>
             </div>
         </div>
     </div>
 
     <!-- FILTER & SEARCH BAR -->
-    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+    <div class="bg-white dark:bg-[#151D2F] p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
         <form method="GET" action="{{ route('admin.audit-logs') }}" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
             <!-- Search Text -->
             <div class="lg:col-span-2">
-                <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Cari Kata Kunci</label>
+                <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Cari Kata Kunci</label>
                 <div class="relative">
                     <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-3"></i>
                     <input type="text" name="search" value="{{ request('search') }}"
                            placeholder="Cari aksi, pengguna, ID, atau IP..."
-                           class="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#0B63B5]/20 focus:border-[#0B63B5] font-medium">
+                           class="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#0B63B5]/20 focus:border-[#0B63B5] font-medium">
                 </div>
             </div>
 
             <!-- Filter Aksi -->
             <div>
-                <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Tipe Aksi</label>
-                <select name="action" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#0B63B5]/20 focus:border-[#0B63B5] font-medium bg-white">
+                <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Tipe Aksi</label>
+                <select name="action" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-[#0B63B5]/20 focus:border-[#0B63B5] font-medium bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100">
                     <option value="">Semua Aksi</option>
                     @foreach($actions as $act)
                         <option value="{{ $act }}" {{ request('action') === $act ? 'selected' : '' }}>{{ $act }}</option>
@@ -164,8 +164,8 @@
 
             <!-- Filter Pengguna -->
             <div>
-                <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Pengguna / Aktor</label>
-                <select name="actor_id" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#0B63B5]/20 focus:border-[#0B63B5] font-medium bg-white">
+                <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Pengguna / Aktor</label>
+                <select name="actor_id" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-[#0B63B5]/20 focus:border-[#0B63B5] font-medium bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100">
                     <option value="">Semua Pengguna</option>
                     @foreach($users as $u)
                         <option value="{{ $u->id }}" {{ request('actor_id') == $u->id ? 'selected' : '' }}>
@@ -182,7 +182,7 @@
                     <span>Terapkan</span>
                 </button>
                 @if(request()->hasAny(['search', 'action', 'actor_id', 'entity', 'date']))
-                <a href="{{ route('admin.audit-logs') }}" class="p-2 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-100 transition shadow-2xs active:scale-95" title="Reset Filter">
+                <a href="{{ route('admin.audit-logs') }}" class="p-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition shadow-2xs active:scale-95" title="Reset Filter">
                     <i data-lucide="x" class="w-4 h-4"></i>
                 </a>
                 @endif
@@ -191,13 +191,13 @@
     </div>
 
     <!-- LOG ACTIVITY TABLE -->
-    <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-            <h2 class="text-sm font-bold text-slate-900 flex items-center gap-2">
-                <i data-lucide="list" class="w-4 h-4 text-[#0B63B5]"></i>
+    <div class="bg-white dark:bg-[#151D2F] rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+            <h2 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <i data-lucide="list" class="w-4 h-4 text-[#0B63B5] dark:text-blue-400"></i>
                 <span>Daftar Riwayat Perubahan & Log Aktivitas</span>
             </h2>
-            <span class="text-xs text-slate-500 font-medium">
+            <span class="text-xs text-slate-500 dark:text-slate-400 font-medium">
                 Menampilkan {{ $logs->firstItem() ?? 0 }} - {{ $logs->lastItem() ?? 0 }} dari {{ $logs->total() }} catatan
             </span>
         </div>
@@ -205,7 +205,7 @@
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse text-xs">
                 <thead>
-                    <tr class="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider text-[11px]">
+                    <tr class="bg-slate-50/80 dark:bg-slate-900/60 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider text-[11px]">
                         <th class="py-3 px-4">Waktu (WITA)</th>
                         <th class="py-3 px-4">Pengguna / Aktor</th>
                         <th class="py-3 px-4">Aksi / Tindakan</th>
@@ -215,15 +215,15 @@
                         <th class="py-3 px-4 text-center">Rincian</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800 font-medium text-slate-700 dark:text-slate-300">
                     @forelse($logs as $log)
-                    <tr class="hover:bg-blue-50/40 transition">
+                    <tr class="hover:bg-blue-50/40 dark:hover:bg-slate-900/40 transition">
                         <!-- Waktu -->
                         <td class="py-3.5 px-4 whitespace-nowrap">
-                            <span class="font-bold text-slate-900 block tabular-nums">
+                            <span class="font-bold text-slate-900 dark:text-white block tabular-nums">
                                 {{ \App\Helpers\FormatHelper::indonesianDate($log->created_at, true) }}
                             </span>
-                            <span class="text-[11px] text-slate-400 block mt-0.5">
+                            <span class="text-[11px] text-slate-400 dark:text-slate-500 block mt-0.5">
                                 {{ $log->created_at->diffForHumans() }}
                             </span>
                         </td>
@@ -232,11 +232,11 @@
                         <td class="py-3.5 px-4 whitespace-nowrap">
                             @if($log->actor)
                                 <div class="flex items-center gap-2.5">
-                                    <div class="w-7 h-7 rounded-lg bg-blue-100 text-[#0B63B5] font-black flex items-center justify-center text-xs shrink-0">
+                                    <div class="w-7 h-7 rounded-lg bg-blue-100 dark:bg-blue-900/40 text-[#0B63B5] dark:text-blue-400 font-black flex items-center justify-center text-xs shrink-0">
                                         {{ substr($log->actor->name, 0, 1) }}
                                     </div>
                                     <div>
-                                        <span class="font-bold text-slate-900 block">{{ $log->actor->name }}</span>
+                                        <span class="font-bold text-slate-900 dark:text-white block">{{ $log->actor->name }}</span>
                                         <div class="flex items-center gap-1.5 mt-0.5">
                                             <span class="text-[10px] font-bold px-1.5 py-0.2 rounded
                                                 @if($log->actor->role === 'ADMIN') bg-purple-50 text-purple-700 border border-purple-200
@@ -397,25 +397,23 @@
                  x-transition:enter="ease-out duration-200"
                  x-transition:enter-start="opacity-0 scale-95"
                  x-transition:enter-end="opacity-100 scale-100"
-                 x-transition:leave="ease-in duration-150"
-                 x-transition:leave-start="opacity-100 scale-100"
                  x-transition:leave-end="opacity-0 scale-95"
-                 class="relative transform overflow-hidden rounded-3xl bg-white text-left shadow-2xl transition-all w-full max-w-3xl border border-slate-100">
+                 class="relative transform overflow-hidden rounded-3xl bg-white dark:bg-[#151D2F] text-left shadow-2xl transition-all w-full max-w-3xl border border-slate-100 dark:border-slate-800">
 
                 <!-- Header Modal -->
-                <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+                <div class="px-6 py-4 bg-slate-50 dark:bg-slate-900/60 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
                     <div class="flex items-center gap-2.5">
-                        <div class="w-9 h-9 rounded-xl bg-blue-100 text-[#0B63B5] flex items-center justify-center">
+                        <div class="w-9 h-9 rounded-xl bg-blue-100 dark:bg-blue-900/40 text-[#0B63B5] dark:text-blue-400 flex items-center justify-center">
                             <i data-lucide="file-diff" class="w-5 h-5"></i>
                         </div>
                         <div>
-                            <h3 class="text-sm font-black text-slate-900" id="modal-detail-title">
+                            <h3 class="text-sm font-black text-slate-900 dark:text-white" id="modal-detail-title">
                                 Detail Jejak Audit & Perubahan Data
                             </h3>
-                            <p class="text-[11px] text-slate-500" x-text="'Peristiwa ID #' + (selectedLog ? selectedLog.id : '')"></p>
+                            <p class="text-[11px] text-slate-500 dark:text-slate-400" x-text="'Peristiwa ID #' + (selectedLog ? selectedLog.id : '')"></p>
                         </div>
                     </div>
-                    <button type="button" @click="detailModalOpen = false" class="p-1.5 rounded-xl hover:bg-slate-200 text-slate-400 hover:text-slate-700 transition">
+                    <button type="button" @click="detailModalOpen = false" class="p-1.5 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-400 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition cursor-pointer">
                         <i data-lucide="x" class="w-5 h-5"></i>
                     </button>
                 </div>
@@ -423,62 +421,62 @@
                 <!-- Body Modal -->
                 <div class="p-6 space-y-5" x-if="selectedLog">
                     <!-- Meta Grid -->
-                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 bg-slate-50/80 rounded-2xl border border-slate-200 text-xs">
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 bg-slate-50/80 dark:bg-slate-900/40 rounded-2xl border border-slate-200 dark:border-slate-800 text-xs">
                         <div>
-                            <span class="text-[10px] uppercase font-bold text-slate-400 block">Tindakan / Aksi:</span>
-                            <span class="font-bold text-slate-900 font-mono block mt-0.5" x-text="selectedLog ? selectedLog.action : ''"></span>
+                            <span class="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 block">Tindakan / Aksi:</span>
+                            <span class="font-bold text-slate-900 dark:text-white font-mono block mt-0.5" x-text="selectedLog ? selectedLog.action : ''"></span>
                         </div>
                         <div>
-                            <span class="text-[10px] uppercase font-bold text-slate-400 block">Entitas Terkait:</span>
-                            <span class="font-bold text-slate-900 block mt-0.5" x-text="(selectedLog ? selectedLog.entity : '') + ' #' + (selectedLog && selectedLog.entity_id ? selectedLog.entity_id.substring(0, 8) : '-')"></span>
+                            <span class="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 block">Entitas Terkait:</span>
+                            <span class="font-bold text-slate-900 dark:text-white block mt-0.5" x-text="(selectedLog ? selectedLog.entity : '') + ' #' + (selectedLog && selectedLog.entity_id ? selectedLog.entity_id.substring(0, 8) : '-')"></span>
                         </div>
                         <div>
-                            <span class="text-[10px] uppercase font-bold text-slate-400 block">Aktor:</span>
-                            <span class="font-bold text-slate-900 block mt-0.5" x-text="selectedLog && selectedLog.actor ? selectedLog.actor.name : 'Sistem'"></span>
+                            <span class="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 block">Aktor:</span>
+                            <span class="font-bold text-slate-900 dark:text-white block mt-0.5" x-text="selectedLog && selectedLog.actor ? selectedLog.actor.name : 'Sistem'"></span>
                         </div>
                         <div>
-                            <span class="text-[10px] uppercase font-bold text-slate-400 block">Alamat IP:</span>
-                            <span class="font-mono text-slate-700 block mt-0.5" x-text="selectedLog ? selectedLog.ip : '-'"></span>
+                            <span class="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 block">Alamat IP:</span>
+                            <span class="font-mono text-slate-700 dark:text-slate-300 block mt-0.5" x-text="selectedLog ? selectedLog.ip : '-'"></span>
                         </div>
                     </div>
 
                     <!-- Side by Side Diff: Before vs After -->
                     <div>
-                        <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                            <i data-lucide="git-commit" class="w-4 h-4 text-[#0B63B5]"></i>
+                        <h4 class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                            <i data-lucide="git-commit" class="w-4 h-4 text-[#0B63B5] dark:text-blue-400"></i>
                             <span>Perbandingan Data (Sebelum vs Sesudah)</span>
                         </h4>
 
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <!-- SEBELUM (BEFORE) -->
-                            <div class="p-4 rounded-2xl bg-red-50/50 border border-red-200">
-                                <div class="flex items-center justify-between mb-2 pb-1 border-b border-red-200/60">
-                                    <span class="text-xs font-bold text-red-800 flex items-center gap-1.5">
-                                        <i data-lucide="minus-circle" class="w-3.5 h-3.5 text-red-600"></i>
+                            <div class="p-4 rounded-2xl bg-red-50/50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/40">
+                                <div class="flex items-center justify-between mb-2 pb-1 border-b border-red-200/60 dark:border-red-900/40">
+                                    <span class="text-xs font-bold text-red-800 dark:text-red-300 flex items-center gap-1.5">
+                                        <i data-lucide="minus-circle" class="w-3.5 h-3.5 text-red-600 dark:text-red-400"></i>
                                         <span>Data Sebelum (Before)</span>
                                     </span>
                                 </div>
                                 <template x-if="selectedLog && selectedLog.before">
-                                    <pre class="text-[11px] font-mono text-red-900 whitespace-pre-wrap overflow-x-auto leading-relaxed bg-white p-3 rounded-xl border border-red-200/60" x-text="JSON.stringify(selectedLog.before, null, 2)"></pre>
+                                    <pre class="text-[11px] font-mono text-red-900 dark:text-red-200 whitespace-pre-wrap overflow-x-auto leading-relaxed bg-white dark:bg-slate-900/70 p-3 rounded-xl border border-red-200/60 dark:border-red-900/40" x-text="JSON.stringify(selectedLog.before, null, 2)"></pre>
                                 </template>
                                 <template x-if="!selectedLog || !selectedLog.before">
-                                    <p class="text-xs text-slate-400 italic p-3">Tidak ada data sebelumnya (Entitas baru dibuat).</p>
+                                    <p class="text-xs text-slate-400 dark:text-slate-500 italic p-3">Tidak ada data sebelumnya (Entitas baru dibuat).</p>
                                 </template>
                             </div>
 
                             <!-- SESUDAH (AFTER) -->
-                            <div class="p-4 rounded-2xl bg-emerald-50/50 border border-emerald-200">
-                                <div class="flex items-center justify-between mb-2 pb-1 border-b border-emerald-200/60">
-                                    <span class="text-xs font-bold text-emerald-800 flex items-center gap-1.5">
-                                        <i data-lucide="plus-circle" class="w-3.5 h-3.5 text-emerald-600"></i>
+                            <div class="p-4 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/40">
+                                <div class="flex items-center justify-between mb-2 pb-1 border-b border-emerald-200/60 dark:border-emerald-900/40">
+                                    <span class="text-xs font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
+                                        <i data-lucide="plus-circle" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400"></i>
                                         <span>Data Sesudah (After)</span>
                                     </span>
                                 </div>
                                 <template x-if="selectedLog && selectedLog.after">
-                                    <pre class="text-[11px] font-mono text-emerald-900 whitespace-pre-wrap overflow-x-auto leading-relaxed bg-white p-3 rounded-xl border border-emerald-200/60" x-text="JSON.stringify(selectedLog.after, null, 2)"></pre>
+                                    <pre class="text-[11px] font-mono text-emerald-900 dark:text-emerald-200 whitespace-pre-wrap overflow-x-auto leading-relaxed bg-white dark:bg-slate-900/70 p-3 rounded-xl border border-emerald-200/60 dark:border-emerald-900/40" x-text="JSON.stringify(selectedLog.after, null, 2)"></pre>
                                 </template>
                                 <template x-if="!selectedLog || !selectedLog.after">
-                                    <p class="text-xs text-slate-400 italic p-3">Tidak ada data sesudah (Entitas dihapus).</p>
+                                    <p class="text-xs text-slate-400 dark:text-slate-500 italic p-3">Tidak ada data sesudah (Entitas dihapus).</p>
                                 </template>
                             </div>
                         </div>
@@ -486,9 +484,9 @@
                 </div>
 
                 <!-- Footer Modal -->
-                <div class="px-6 py-4 bg-slate-50/80 border-t border-slate-200 flex justify-end">
+                <div class="px-6 py-4 bg-slate-50/80 dark:bg-slate-900/60 border-t border-slate-200 dark:border-slate-800 flex justify-end">
                     <button type="button" @click="detailModalOpen = false"
-                            class="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition border border-slate-200/80 shadow-2xs hover:shadow-xs active:scale-95 cursor-pointer">
+                            class="px-5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs transition border border-slate-200/80 dark:border-slate-700 shadow-2xs hover:shadow-xs active:scale-95 cursor-pointer">
                         Tutup
                     </button>
                 </div>
@@ -512,9 +510,9 @@
             <div x-show="exportModalOpen"
                  x-transition:enter="ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
                  x-transition:leave="ease-in duration-150" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95"
-                 class="relative bg-white rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:max-w-lg w-full border border-slate-200">
+                 class="relative bg-white dark:bg-[#151D2F] rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:max-w-lg w-full border border-slate-200 dark:border-slate-800">
 
-                <form method="GET" action="{{ route('admin.audit-logs.export') }}" target="_blank" @submit="setTimeout(() => exportModalOpen = false, 500)">
+                <form method="GET" action="{{ route('admin.audit-logs.export') }}" hx-boost="false" @submit="setTimeout(() => exportModalOpen = false, 500)">
                     <!-- Modal Header -->
                     <div class="px-6 py-5 bg-gradient-to-r from-emerald-600 to-teal-700 text-white flex items-center justify-between">
                         <div class="flex items-center gap-3">
@@ -526,7 +524,7 @@
                                 <p class="text-xs text-emerald-100 mt-0.5">Pilih filter waktu dan format unduhan berkas.</p>
                             </div>
                         </div>
-                        <button type="button" @click="exportModalOpen = false" class="text-white/80 hover:text-white transition">
+                        <button type="button" @click="exportModalOpen = false" class="text-white/80 hover:text-white transition cursor-pointer">
                             <i data-lucide="x" class="w-5 h-5"></i>
                         </button>
                     </div>
@@ -535,26 +533,26 @@
                     <div class="p-6 space-y-5 text-xs">
                         <!-- 1. Tipe Filter Periode -->
                         <div>
-                            <label class="block font-bold text-slate-700 uppercase tracking-wider text-[11px] mb-2">
+                            <label class="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[11px] mb-2">
                                 Filter Rentang Waktu (Periode)
                             </label>
                             <div class="grid grid-cols-3 gap-2">
                                 <label class="flex items-center justify-center gap-2 p-2.5 rounded-xl border cursor-pointer transition text-center select-none"
-                                       :class="exportPeriodType === 'month' ? 'border-[#0B63B5] bg-blue-50 text-[#0B63B5] font-extrabold shadow-2xs' : 'border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold'">
+                                       :class="exportPeriodType === 'month' ? 'border-[#0B63B5] dark:border-blue-400 bg-blue-50 dark:bg-blue-950/40 text-[#0B63B5] dark:text-blue-300 font-extrabold shadow-2xs' : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold'">
                                     <input type="radio" name="period_type" value="month" x-model="exportPeriodType" class="sr-only">
                                     <i data-lucide="calendar" class="w-3.5 h-3.5"></i>
                                     <span>Per Bulan</span>
                                 </label>
 
                                 <label class="flex items-center justify-center gap-2 p-2.5 rounded-xl border cursor-pointer transition text-center select-none"
-                                       :class="exportPeriodType === 'year' ? 'border-[#0B63B5] bg-blue-50 text-[#0B63B5] font-extrabold shadow-2xs' : 'border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold'">
+                                       :class="exportPeriodType === 'year' ? 'border-[#0B63B5] dark:border-blue-400 bg-blue-50 dark:bg-blue-950/40 text-[#0B63B5] dark:text-blue-300 font-extrabold shadow-2xs' : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold'">
                                     <input type="radio" name="period_type" value="year" x-model="exportPeriodType" class="sr-only">
                                     <i data-lucide="calendar-days" class="w-3.5 h-3.5"></i>
                                     <span>Per Tahun</span>
                                 </label>
 
                                 <label class="flex items-center justify-center gap-2 p-2.5 rounded-xl border cursor-pointer transition text-center select-none"
-                                       :class="exportPeriodType === 'custom' ? 'border-[#0B63B5] bg-blue-50 text-[#0B63B5] font-extrabold shadow-2xs' : 'border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold'">
+                                       :class="exportPeriodType === 'custom' ? 'border-[#0B63B5] dark:border-blue-400 bg-blue-50 dark:bg-blue-950/40 text-[#0B63B5] dark:text-blue-300 font-extrabold shadow-2xs' : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold'">
                                     <input type="radio" name="period_type" value="custom" x-model="exportPeriodType" class="sr-only">
                                     <i data-lucide="clock" class="w-3.5 h-3.5"></i>
                                     <span>Spesifik Tgl</span>
@@ -564,11 +562,11 @@
 
                         <!-- 2. Parameter Sesuai Tipe Periode -->
                         <!-- Opsi A: Per Bulan -->
-                        <div x-show="exportPeriodType === 'month'" class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+                        <div x-show="exportPeriodType === 'month'" class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 space-y-3">
                             <div class="grid grid-cols-2 gap-3">
                                 <div>
-                                    <label class="block text-[11px] font-bold text-slate-600 mb-1">Pilih Bulan</label>
-                                    <select name="month" x-model="exportMonth" class="w-full p-2 bg-white rounded-xl border border-slate-300 text-xs font-semibold">
+                                    <label class="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">Pilih Bulan</label>
+                                    <select name="month" x-model="exportMonth" class="w-full p-2 bg-white dark:bg-slate-800 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-100 text-xs font-semibold">
                                         <option value="1">Januari</option>
                                         <option value="2">Februari</option>
                                         <option value="3">Maret</option>
@@ -584,34 +582,34 @@
                                     </select>
                                 </div>
                                 <div>
-                                    <label class="block text-[11px] font-bold text-slate-600 mb-1">Tahun</label>
+                                    <label class="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">Tahun</label>
                                     <input type="number" name="year" x-model="exportYear" min="2020" max="2035"
-                                           class="w-full p-2 bg-white rounded-xl border border-slate-300 text-xs font-semibold tabular-nums">
+                                           class="w-full p-2 bg-white dark:bg-slate-800 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-100 text-xs font-semibold tabular-nums">
                                 </div>
                             </div>
                         </div>
 
                         <!-- Opsi B: Per Tahun -->
-                        <div x-show="exportPeriodType === 'year'" x-cloak class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+                        <div x-show="exportPeriodType === 'year'" x-cloak class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 space-y-3">
                             <div>
-                                <label class="block text-[11px] font-bold text-slate-600 mb-1">Pilih Tahun Anggaran</label>
+                                <label class="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">Pilih Tahun Anggaran</label>
                                 <input type="number" name="year" x-model="exportYear" min="2020" max="2035"
-                                       class="w-full p-2 bg-white rounded-xl border border-slate-300 text-xs font-semibold tabular-nums">
+                                       class="w-full p-2 bg-white dark:bg-slate-800 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-100 text-xs font-semibold tabular-nums">
                             </div>
                         </div>
 
                         <!-- Opsi C: Specific Date / Rentang Tanggal -->
-                        <div x-show="exportPeriodType === 'custom'" x-cloak class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+                        <div x-show="exportPeriodType === 'custom'" x-cloak class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 space-y-3">
                             <div class="grid grid-cols-2 gap-3">
                                 <div>
-                                    <label class="block text-[11px] font-bold text-slate-600 mb-1">Tanggal Mulai</label>
+                                    <label class="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">Tanggal Mulai</label>
                                     <input type="date" name="start_date" x-model="exportStartDate"
-                                           class="w-full p-2 bg-white rounded-xl border border-slate-300 text-xs font-semibold">
+                                           class="w-full p-2 bg-white dark:bg-slate-800 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-100 text-xs font-semibold">
                                 </div>
                                 <div>
-                                    <label class="block text-[11px] font-bold text-slate-600 mb-1">Tanggal Selesai</label>
+                                    <label class="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">Tanggal Selesai</label>
                                     <input type="date" name="end_date" x-model="exportEndDate"
-                                           class="w-full p-2 bg-white rounded-xl border border-slate-300 text-xs font-semibold">
+                                           class="w-full p-2 bg-white dark:bg-slate-800 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-100 text-xs font-semibold">
                                 </div>
                             </div>
                         </div>
@@ -619,8 +617,8 @@
                         <!-- 3. Filter Tambahan (Opsional) -->
                         <div class="grid grid-cols-2 gap-3">
                             <div>
-                                <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Tipe Aksi (Opsional)</label>
-                                <select name="action" class="w-full p-2 bg-white rounded-xl border border-slate-300 text-xs font-medium">
+                                <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Tipe Aksi (Opsional)</label>
+                                <select name="action" class="w-full p-2 bg-white dark:bg-slate-800 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-100 text-xs font-medium">
                                     <option value="">Semua Tipe Aksi</option>
                                     @foreach($actions as $act)
                                         <option value="{{ $act }}">{{ $act }}</option>
@@ -628,8 +626,8 @@
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Aktor (Opsional)</label>
-                                <select name="actor_id" class="w-full p-2 bg-white rounded-xl border border-slate-300 text-xs font-medium">
+                                <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Aktor (Opsional)</label>
+                                <select name="actor_id" class="w-full p-2 bg-white dark:bg-slate-800 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-100 text-xs font-medium">
                                     <option value="">Semua Pengguna</option>
                                     @foreach($users as $u)
                                         <option value="{{ $u->id }}">{{ $u->name }}</option>
@@ -640,31 +638,31 @@
 
                         <!-- 4. Pilihan Format Berkas -->
                         <div>
-                            <label class="block font-bold text-slate-700 uppercase tracking-wider text-[11px] mb-2">
+                            <label class="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[11px] mb-2">
                                 Format Berkas Unduhan
                             </label>
                             <div class="grid grid-cols-2 gap-3">
                                 <label class="flex items-center gap-3 p-3 rounded-2xl border cursor-pointer transition select-none"
-                                       :class="exportFormat === 'xlsx' ? 'border-emerald-500 bg-emerald-50/60 ring-2 ring-emerald-500/20' : 'border-slate-200 hover:bg-slate-50'">
+                                       :class="exportFormat === 'xlsx' ? 'border-emerald-500 bg-emerald-50/60 dark:bg-emerald-950/40 ring-2 ring-emerald-500/20 text-slate-900 dark:text-white' : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'">
                                     <input type="radio" name="format" value="xlsx" x-model="exportFormat" class="sr-only">
-                                    <div class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                                    <div class="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 flex items-center justify-center shrink-0">
                                         <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
                                     </div>
                                     <div>
-                                        <span class="font-extrabold text-slate-900 block">Excel (.xlsx)</span>
-                                        <span class="text-[10px] text-slate-500">Direkomendasikan</span>
+                                        <span class="font-extrabold text-slate-900 dark:text-white block">Excel (.xlsx)</span>
+                                        <span class="text-[10px] text-slate-500 dark:text-slate-400">Direkomendasikan</span>
                                     </div>
                                 </label>
 
                                 <label class="flex items-center gap-3 p-3 rounded-2xl border cursor-pointer transition select-none"
-                                       :class="exportFormat === 'csv' ? 'border-blue-500 bg-blue-50/60 ring-2 ring-blue-500/20' : 'border-slate-200 hover:bg-slate-50'">
+                                       :class="exportFormat === 'csv' ? 'border-blue-500 bg-blue-50/60 dark:bg-blue-950/40 ring-2 ring-blue-500/20 text-slate-900 dark:text-white' : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'">
                                     <input type="radio" name="format" value="csv" x-model="exportFormat" class="sr-only">
-                                    <div class="w-8 h-8 rounded-xl bg-blue-100 text-[#0B63B5] flex items-center justify-center shrink-0">
+                                    <div class="w-8 h-8 rounded-xl bg-blue-100 dark:bg-blue-900/40 text-[#0B63B5] dark:text-blue-400 flex items-center justify-center shrink-0">
                                         <i data-lucide="file-text" class="w-4 h-4"></i>
                                     </div>
                                     <div>
-                                        <span class="font-extrabold text-slate-900 block">CSV (.csv)</span>
-                                        <span class="text-[10px] text-slate-500">Universal UTF-8</span>
+                                        <span class="font-extrabold text-slate-900 dark:text-white block">CSV (.csv)</span>
+                                        <span class="text-[10px] text-slate-500 dark:text-slate-400">Universal UTF-8</span>
                                     </div>
                                 </label>
                             </div>
@@ -672,12 +670,12 @@
                     </div>
 
                     <!-- Modal Footer -->
-                    <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+                    <div class="px-6 py-4 bg-slate-50 dark:bg-slate-900/60 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
                         <button type="button" @click="exportModalOpen = false"
-                                class="px-4 py-2.5 rounded-xl border border-slate-200/80 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold transition shadow-2xs hover:shadow-xs active:scale-95 cursor-pointer">
+                                class="px-4 py-2.5 rounded-xl border border-slate-200/80 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition shadow-2xs hover:shadow-xs active:scale-95 cursor-pointer">
                             Batal
                         </button>
-                        <button type="submit"
+                        <button type="submit" download hx-boost="false"
                                 class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs font-extrabold shadow-sm hover:shadow-md transition-all active:scale-95 flex items-center gap-2 cursor-pointer">
                             <i data-lucide="download" class="w-4 h-4"></i>
                             <span>Unduh Berkas Rekapan</span>

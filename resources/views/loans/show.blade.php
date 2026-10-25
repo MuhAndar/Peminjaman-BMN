@@ -329,80 +329,80 @@
         <!-- LEFT COLUMN: Details, Items, Actions -->
         <div class="lg:col-span-8 space-y-6">
             <!-- Summary Card -->
-            <div class="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-sm space-y-5">
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+            <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-6 shadow-sm space-y-5">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
                     <div>
-                        <h2 class="text-lg font-black text-slate-900">Peminjaman Barang Inventaris Kantor</h2>
-                        <p class="text-xs text-slate-500">ID Pengajuan: <span class="font-mono">{{ $loan->id }}</span></p>
+                        <h2 class="text-lg font-black text-slate-900 dark:text-white">Peminjaman Barang Inventaris Kantor</h2>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">ID Pengajuan: <span class="font-mono">{{ $loan->id }}</span></p>
                     </div>
-                    <div class="text-xs text-slate-500 font-medium">
-                        Diajukan: <strong class="text-slate-800 tabular-nums">{{ $loan->created_at->format('d/m/Y H:i') }} WITA</strong>
+                    <div class="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                        Diajukan: <strong class="text-slate-800 dark:text-slate-200 tabular-nums">{{ $loan->created_at->format('d/m/Y H:i') }} WITA</strong>
                     </div>
                 </div>
 
                 <!-- Borrower Snapshot Details -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                     <div>
-                        <span class="text-slate-400 font-medium block mb-0.5">Nama Peminjam (Pihak Kedua):</span>
-                        <span class="font-bold text-slate-900 text-sm">{{ $loan->snap_full_name }}</span>
+                        <span class="text-slate-400 dark:text-slate-400 font-medium block mb-0.5">Nama Peminjam (Pihak Kedua):</span>
+                        <span class="font-bold text-slate-900 dark:text-white text-sm">{{ $loan->snap_full_name }}</span>
                     </div>
                     <div>
-                        <span class="text-slate-400 font-medium block mb-0.5">NIP:</span>
-                        <span class="font-semibold text-slate-800 tabular-nums">{{ \App\Helpers\FormatHelper::formatNip($loan->snap_nip) }}</span>
+                        <span class="text-slate-400 dark:text-slate-400 font-medium block mb-0.5">NIP:</span>
+                        <span class="font-semibold text-slate-800 dark:text-slate-200 tabular-nums">{{ \App\Helpers\FormatHelper::formatNip($loan->snap_nip) }}</span>
                     </div>
                     <div>
-                        <span class="text-slate-400 font-medium block mb-0.5">Pangkat / Golongan:</span>
-                        <span class="font-medium text-slate-800">{{ $loan->snap_rank_grade ?? '-' }}</span>
+                        <span class="text-slate-400 dark:text-slate-400 font-medium block mb-0.5">Pangkat / Golongan:</span>
+                        <span class="font-medium text-slate-800 dark:text-slate-200">{{ $loan->snap_rank_grade ?? '-' }}</span>
                     </div>
                     <div>
-                        <span class="text-slate-400 font-medium block mb-0.5">Jabatan:</span>
-                        <span class="font-medium text-slate-800">{{ $loan->snap_position ?? '-' }}</span>
+                        <span class="text-slate-400 dark:text-slate-400 font-medium block mb-0.5">Jabatan:</span>
+                        <span class="font-medium text-slate-800 dark:text-slate-200">{{ $loan->snap_position ?? '-' }}</span>
                     </div>
                     <div class="sm:col-span-2">
-                        <span class="text-slate-400 font-medium block mb-0.5">Alamat Rumah Tercetak:</span>
-                        <span class="font-medium text-slate-800">{{ $loan->snap_home_address ?? '-' }}</span>
+                        <span class="text-slate-400 dark:text-slate-400 font-medium block mb-0.5">Alamat Rumah Tercetak:</span>
+                        <span class="font-medium text-slate-800 dark:text-slate-200">{{ $loan->snap_home_address ?? '-' }}</span>
                     </div>
                 </div>
 
                 <!-- Period Details -->
-                <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
                     <div>
-                        <span class="text-slate-400 font-medium block">Periode Peminjaman:</span>
-                        <span class="font-bold text-slate-900 tabular-nums">
+                        <span class="text-slate-400 dark:text-slate-400 font-medium block">Periode Peminjaman:</span>
+                        <span class="font-bold text-slate-900 dark:text-white tabular-nums">
                             {{ \App\Helpers\FormatHelper::formatDateIndo($loan->start_date) }} s.d. {{ \App\Helpers\FormatHelper::formatDateIndo($loan->end_date) }}
                         </span>
                     </div>
                     <div>
-                        <span class="text-slate-400 font-medium block">Jenis Penugasan:</span>
-                        <span class="font-bold text-[#0B63B5]">
+                        <span class="text-slate-400 dark:text-slate-400 font-medium block">Jenis Penugasan:</span>
+                        <span class="font-bold text-[#0B63B5] dark:text-blue-400">
                             {{ $loan->loan_type === 'ANNUAL' ? 'Penugasan Tahunan (ANNUAL)' : 'Sementara (SHORT_TERM)' }}
                         </span>
                     </div>
                 </div>
 
                 @if($loan->review_note)
-                    <div class="p-3.5 rounded-2xl bg-blue-50/70 border border-blue-200 text-xs">
-                        <strong class="text-[#0B63B5] block mb-0.5">Catatan Telaah Pengelola BMN:</strong>
-                        <p class="text-slate-700 leading-relaxed">{{ $loan->review_note }}</p>
+                    <div class="p-3.5 rounded-2xl bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60 text-xs leading-relaxed">
+                        <strong class="text-[#0B63B5] dark:text-blue-400 block mb-0.5">Catatan Telaah Pengelola BMN:</strong>
+                        <p class="text-slate-700 dark:text-slate-200">{{ $loan->review_note }}</p>
                     </div>
                 @endif
 
                 @if($loan->decision_note)
-                    <div class="p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-200 text-xs">
-                        <strong class="text-emerald-700 block mb-0.5">Catatan Keputusan Ketua Tim:</strong>
-                        <p class="text-slate-700 leading-relaxed">{{ $loan->decision_note }}</p>
+                    <div class="p-3.5 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-xs leading-relaxed">
+                        <strong class="text-emerald-700 dark:text-emerald-400 block mb-0.5">Catatan Keputusan Ketua Tim:</strong>
+                        <p class="text-slate-700 dark:text-slate-200">{{ $loan->decision_note }}</p>
                     </div>
                 @endif
             </div>
 
             <!-- Items Table Card -->
-            <div class="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-sm space-y-4">
-                <h3 class="text-base font-bold text-slate-900">Daftar Barang BMN yang Dipinjam</h3>
+            <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-6 shadow-sm space-y-4">
+                <h3 class="text-base font-bold text-slate-900 dark:text-white">Daftar Barang BMN yang Dipinjam</h3>
 
-                <div class="overflow-x-auto">
+                <div class="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800">
                     <table class="w-full text-left text-xs">
                         <thead>
-                            <tr class="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase">
+                            <tr class="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-bold uppercase">
                                 <th class="py-3 px-3">No</th>
                                 <th class="py-3 px-3">Nama Barang</th>
                                 <th class="py-3 px-3">Merk / Tipe</th>
@@ -412,22 +412,22 @@
                                 <th class="py-3 px-3 text-center">Kondisi Keluar / Masuk</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-slate-100">
+                        <tbody class="divide-y divide-slate-100 dark:divide-slate-800/60">
                             @foreach($loan->items as $idx => $item)
-                            <tr class="hover:bg-slate-50/50">
-                                <td class="py-3 px-3 font-bold text-slate-400 tabular-nums">{{ $idx + 1 }}</td>
-                                <td class="py-3 px-3 font-bold text-slate-900">{{ $item->snap_item_name }}</td>
-                                <td class="py-3 px-3 text-slate-700">{{ $item->snap_brand_model ?? '-' }}</td>
-                                <td class="py-3 px-3 font-semibold text-slate-800 tabular-nums">{{ $item->snap_nup ?? '-' }}</td>
-                                <td class="py-3 px-3 tabular-nums text-slate-700">{{ $item->snap_year }} &bull; {{ $item->formatted_snap_value }}</td>
-                                <td class="py-3 px-3 italic text-slate-600">{{ $item->purpose }}</td>
+                            <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
+                                <td class="py-3 px-3 font-bold text-slate-400 dark:text-slate-500 tabular-nums">{{ $idx + 1 }}</td>
+                                <td class="py-3 px-3 font-bold text-slate-900 dark:text-white">{{ $item->snap_item_name }}</td>
+                                <td class="py-3 px-3 text-slate-700 dark:text-slate-300">{{ $item->snap_brand_model ?? '-' }}</td>
+                                <td class="py-3 px-3 font-semibold text-slate-800 dark:text-slate-200 tabular-nums">{{ $item->snap_nup ?? '-' }}</td>
+                                <td class="py-3 px-3 tabular-nums text-slate-700 dark:text-slate-300">{{ $item->snap_year }} &bull; {{ $item->formatted_snap_value }}</td>
+                                <td class="py-3 px-3 italic text-slate-600 dark:text-slate-400">{{ $item->purpose }}</td>
                                 <td class="py-3 px-3 text-center">
-                                    <span class="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-semibold text-[10px]">
+                                    <span class="px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-semibold text-[10px] border border-emerald-200 dark:border-emerald-800">
                                         {{ $item->condition_out ?? 'Baik' }}
                                     </span>
                                     @if($item->condition_in)
-                                        <div class="mt-1 text-[10px] font-bold text-slate-600">
-                                            Kembali: <span class="{{ in_array($item->condition_in, ['Rusak', 'Hilang']) ? 'text-red-600' : 'text-emerald-700' }}">{{ $item->condition_in }}</span>
+                                        <div class="mt-1 text-[10px] font-bold text-slate-600 dark:text-slate-400">
+                                            Kembali: <span class="{{ in_array($item->condition_in, ['Rusak', 'Hilang', 'RUSAK', 'TIDAK_LENGKAP_HILANG']) ? 'text-red-600 dark:text-red-400' : 'text-emerald-700 dark:text-emerald-300' }}">{{ $item->condition_in }}</span>
                                         </div>
                                     @endif
                                 </td>
@@ -439,80 +439,95 @@
             </div>
 
             <!-- Official Documents Card -->
-            <div class="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-sm space-y-4">
+            <div class="bg-white dark:bg-[#1E293B] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-6 shadow-sm space-y-4">
                 <div class="flex items-center justify-between">
                     <div>
-                        <h3 class="text-base font-bold text-slate-900">Dokumen Resmi BMN (Template Baku PDF)</h3>
-                        <p class="text-xs text-slate-500">Tiga dokumen resmi sesuai format sah Balai Besar Komdigi Makassar</p>
+                        <h3 class="text-base font-bold text-slate-900 dark:text-white">Dokumen Resmi BMN (Template Baku PDF)</h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Tiga dokumen resmi sesuai format sah Balai Besar Komdigi Makassar</p>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
                     <!-- 1. Surat Peminjaman -->
                     @php $docSurat = $loan->documents()->where('doc_type', 'SURAT_PEMINJAMAN')->where('status', 'ISSUED')->first(); @endphp
-                    <div class="p-4 rounded-2xl border {{ $docSurat ? 'border-blue-200 bg-blue-50/40' : 'border-slate-200 bg-slate-50/60' }} flex flex-col justify-between">
+                    <div class="p-4 rounded-2xl border {{ $docSurat ? 'border-blue-200 dark:border-blue-800/80 bg-blue-50/50 dark:bg-blue-950/40' : 'border-slate-200 dark:border-slate-700/80 bg-slate-50/80 dark:bg-slate-800/60' }} flex flex-col justify-between transition-colors">
                         <div>
-                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Dokumen 1</span>
-                            <h4 class="font-bold text-xs text-slate-900">Surat Peminjaman</h4>
-                            <p class="text-[11px] text-slate-500 mt-0.5">
+                            <span class="text-[10px] font-bold uppercase tracking-wider {{ $docSurat ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-400' }} block mb-1">Dokumen 1</span>
+                            <h4 class="font-bold text-xs text-slate-900 dark:text-white">Surat Peminjaman</h4>
+                            <p class="text-[11px] {{ $docSurat ? 'text-blue-800 dark:text-blue-200 font-semibold' : 'text-slate-500 dark:text-slate-300' }} mt-0.5">
                                 {{ $docSurat ? $docSurat->doc_number : 'Terbit saat disetujui Ketua Tim' }}
                             </p>
                         </div>
                         <div class="mt-4">
                             @if($docSurat)
                                 <a href="{{ route('document.pdf', [$loan->id, 'SURAT_PEMINJAMAN']) }}" target="_blank"
-                                   class="w-full py-2 bg-[#0B63B5] hover:bg-[#0B4F8A] text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm">
+                                   class="w-full py-2 bg-[#0B63B5] hover:bg-[#0B4F8A] text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm active:scale-95">
                                     <i data-lucide="printer" class="w-3.5 h-3.5"></i>
                                     <span>Cetak PDF</span>
                                 </a>
                             @else
-                                <span class="text-xs text-slate-400 font-medium block text-center py-2 bg-slate-100 rounded-xl">Belum Diterbitkan</span>
+                                <span class="text-xs text-slate-600 dark:text-slate-300 font-semibold block text-center py-2 bg-slate-100 dark:bg-slate-800/90 rounded-xl border border-slate-200/70 dark:border-slate-700/70 shadow-2xs">
+                                    <span class="inline-flex items-center gap-1.5 justify-center">
+                                        <i data-lucide="clock" class="w-3.5 h-3.5 text-slate-400"></i>
+                                        <span>Belum Diterbitkan</span>
+                                    </span>
+                                </span>
                             @endif
                         </div>
                     </div>
 
                     <!-- 2. BAST Peminjaman -->
                     @php $docBastPjm = $loan->documents()->where('doc_type', 'BAST_PEMINJAMAN')->where('status', 'ISSUED')->first(); @endphp
-                    <div class="p-4 rounded-2xl border {{ $docBastPjm ? 'border-cyan-200 bg-cyan-50/40' : 'border-slate-200 bg-slate-50/60' }} flex flex-col justify-between">
+                    <div class="p-4 rounded-2xl border {{ $docBastPjm ? 'border-cyan-200 dark:border-cyan-800/80 bg-cyan-50/50 dark:bg-cyan-950/40' : 'border-slate-200 dark:border-slate-700/80 bg-slate-50/80 dark:bg-slate-800/60' }} flex flex-col justify-between transition-colors">
                         <div>
-                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Dokumen 2</span>
-                            <h4 class="font-bold text-xs text-slate-900">BAST Peminjaman</h4>
-                            <p class="text-[11px] text-slate-500 mt-0.5">
+                            <span class="text-[10px] font-bold uppercase tracking-wider {{ $docBastPjm ? 'text-cyan-600 dark:text-cyan-400' : 'text-slate-400 dark:text-slate-400' }} block mb-1">Dokumen 2</span>
+                            <h4 class="font-bold text-xs text-slate-900 dark:text-white">BAST Peminjaman</h4>
+                            <p class="text-[11px] {{ $docBastPjm ? 'text-cyan-800 dark:text-cyan-200 font-semibold' : 'text-slate-500 dark:text-slate-300' }} mt-0.5">
                                 {{ $docBastPjm ? $docBastPjm->doc_number : 'Diterbitkan oleh Pengelola BMN' }}
                             </p>
                         </div>
                         <div class="mt-4">
                             @if($docBastPjm)
                                 <a href="{{ route('document.pdf', [$loan->id, 'BAST_PEMINJAMAN']) }}" target="_blank"
-                                   class="w-full py-2 bg-[#0B63B5] hover:bg-[#0B4F8A] text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm">
+                                   class="w-full py-2 bg-[#0B63B5] hover:bg-[#0B4F8A] text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm active:scale-95">
                                     <i data-lucide="printer" class="w-3.5 h-3.5"></i>
                                     <span>Cetak PDF</span>
                                 </a>
                             @else
-                                <span class="text-xs text-slate-400 font-medium block text-center py-2 bg-slate-100 rounded-xl">Belum Diterbitkan</span>
+                                <span class="text-xs text-slate-600 dark:text-slate-300 font-semibold block text-center py-2 bg-slate-100 dark:bg-slate-800/90 rounded-xl border border-slate-200/70 dark:border-slate-700/70 shadow-2xs">
+                                    <span class="inline-flex items-center gap-1.5 justify-center">
+                                        <i data-lucide="clock" class="w-3.5 h-3.5 text-slate-400"></i>
+                                        <span>Belum Diterbitkan</span>
+                                    </span>
+                                </span>
                             @endif
                         </div>
                     </div>
 
                     <!-- 3. BAST Pengembalian -->
                     @php $docBastKbl = $loan->documents()->where('doc_type', 'BAST_PENGEMBALIAN')->where('status', 'ISSUED')->first(); @endphp
-                    <div class="p-4 rounded-2xl border {{ $docBastKbl ? 'border-emerald-200 bg-emerald-50/40' : 'border-slate-200 bg-slate-50/60' }} flex flex-col justify-between">
+                    <div class="p-4 rounded-2xl border {{ $docBastKbl ? 'border-emerald-200 dark:border-emerald-800/80 bg-emerald-50/50 dark:bg-emerald-950/40' : 'border-slate-200 dark:border-slate-700/80 bg-slate-50/80 dark:bg-slate-800/60' }} flex flex-col justify-between transition-colors">
                         <div>
-                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Dokumen 3</span>
-                            <h4 class="font-bold text-xs text-slate-900">BAST Pengembalian</h4>
-                            <p class="text-[11px] text-slate-500 mt-0.5">
+                            <span class="text-[10px] font-bold uppercase tracking-wider {{ $docBastKbl ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-400' }} block mb-1">Dokumen 3</span>
+                            <h4 class="font-bold text-xs text-slate-900 dark:text-white">BAST Pengembalian</h4>
+                            <p class="text-[11px] {{ $docBastKbl ? 'text-emerald-800 dark:text-emerald-200 font-semibold' : 'text-slate-500 dark:text-slate-300' }} mt-0.5">
                                 {{ $docBastKbl ? $docBastKbl->doc_number : 'Terbit saat fisik BMN diperiksa' }}
                             </p>
                         </div>
                         <div class="mt-4">
                             @if($docBastKbl)
                                 <a href="{{ route('document.pdf', [$loan->id, 'BAST_PENGEMBALIAN']) }}" target="_blank"
-                                   class="w-full py-2 bg-[#0B63B5] hover:bg-[#0B4F8A] text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm">
+                                   class="w-full py-2 bg-[#0B63B5] hover:bg-[#0B4F8A] text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm active:scale-95">
                                     <i data-lucide="printer" class="w-3.5 h-3.5"></i>
                                     <span>Cetak PDF</span>
                                 </a>
                             @else
-                                <span class="text-xs text-slate-400 font-medium block text-center py-2 bg-slate-100 rounded-xl">Belum Diterbitkan</span>
+                                <span class="text-xs text-slate-600 dark:text-slate-300 font-semibold block text-center py-2 bg-slate-100 dark:bg-slate-800/90 rounded-xl border border-slate-200/70 dark:border-slate-700/70 shadow-2xs">
+                                    <span class="inline-flex items-center gap-1.5 justify-center">
+                                        <i data-lucide="clock" class="w-3.5 h-3.5 text-slate-400"></i>
+                                        <span>Belum Diterbitkan</span>
+                                    </span>
+                                </span>
                             @endif
                         </div>
                     </div>
@@ -541,32 +556,32 @@
                         </div>
 
                         <!-- Segmented Tab Pills -->
-                        <div class="flex items-center bg-slate-100 p-1 rounded-xl self-start sm:self-auto shrink-0 border border-slate-200/80">
+                        <div class="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl self-start sm:self-auto shrink-0 border border-slate-200/80 dark:border-slate-700/80">
                             <button type="button" @click="bastTab = 'return'"
-                                    :class="bastTab === 'return' ? 'bg-white text-[#0B63B5] font-extrabold shadow-2xs' : 'text-slate-600 font-semibold hover:text-slate-900'"
+                                    :class="bastTab === 'return' ? 'bg-white dark:bg-[#0B63B5] text-[#0B63B5] dark:text-white font-extrabold shadow-2xs' : 'text-slate-600 dark:text-slate-300 font-semibold hover:text-slate-900 dark:hover:text-white'"
                                     class="px-3 py-1.5 rounded-lg text-xs transition flex items-center gap-1.5 cursor-pointer">
                                 <span class="w-2 h-2 rounded-full bg-blue-600" x-show="bastTab === 'return'"></span>
                                 <span>BAST Pengembalian</span>
-                                <span class="px-1.5 py-0.2 text-[9px] font-extrabold rounded-md bg-blue-50 text-blue-700 border border-blue-200 uppercase">Aktif</span>
+                                <span class="px-1.5 py-0.2 text-[9px] font-extrabold rounded-md bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800 uppercase">Aktif</span>
                             </button>
                             <button type="button" @click="bastTab = 'loan'"
-                                    :class="bastTab === 'loan' ? 'bg-white text-slate-900 font-extrabold shadow-2xs' : 'text-slate-600 font-semibold hover:text-slate-900'"
+                                    :class="bastTab === 'loan' ? 'bg-white dark:bg-[#0B63B5] text-slate-900 dark:text-white font-extrabold shadow-2xs' : 'text-slate-600 dark:text-slate-300 font-semibold hover:text-slate-900 dark:hover:text-white'"
                                     class="px-3 py-1.5 rounded-lg text-xs transition flex items-center gap-1.5 cursor-pointer">
                                 <i data-lucide="archive" class="w-3.5 h-3.5 text-slate-400"></i>
                                 <span>BAST Peminjaman</span>
-                                <span class="px-1.5 py-0.2 text-[9px] font-extrabold rounded-md bg-slate-200/70 text-slate-600 uppercase">Arsip</span>
+                                <span class="px-1.5 py-0.2 text-[9px] font-extrabold rounded-md bg-slate-200/70 dark:bg-slate-700 text-slate-600 dark:text-slate-300 uppercase">Arsip</span>
                             </button>
                         </div>
                     </div>
                 @else
                     <!-- Header Tunggal Terfokus (Masa Peminjaman Aktif / Belum Masuk Pengembalian) -->
-                    <div class="flex items-center gap-2.5 border-b border-slate-100 pb-3">
+                    <div class="flex items-center gap-2.5 border-b border-slate-100 dark:border-slate-800 pb-3">
                         <div class="w-8 h-8 rounded-xl bg-blue-50 text-[#0B63B5] flex items-center justify-center shrink-0">
                             <i data-lucide="signature" class="w-4 h-4"></i>
                         </div>
                         <div>
-                            <h3 class="font-extrabold text-sm text-slate-900">Tanda Tangan Digital BAST Peminjaman</h3>
-                            <p class="text-[11px] text-slate-500">Tanda tangan digital resmi untuk pengesahan lembar dokumen Berita Acara Serah Terima (BAST).</p>
+                            <h3 class="font-extrabold text-sm text-slate-900 dark:text-white">Tanda Tangan Digital BAST Peminjaman</h3>
+                            <p class="text-[11px] text-slate-500 dark:text-slate-400">Tanda tangan digital resmi untuk pengesahan lembar dokumen Berita Acara Serah Terima (BAST).</p>
                         </div>
                     </div>
                 @endif
@@ -591,7 +606,7 @@
                                     <span class="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 border border-emerald-200">Lengkap</span>
                                 </div>
                             @else
-                                <div class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-600 text-xs font-medium shadow-2xs">
+                                <div class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-xs font-medium shadow-2xs">
                                     <div class="flex items-center gap-2">
                                         <i data-lucide="clock" class="w-4 h-4 text-slate-400 shrink-0"></i>
                                         <span>Pihak I (Petugas): Belum Ditandatangani</span>
@@ -631,36 +646,36 @@
 
                         <!-- Kartu Tindakan User TTD Pengembalian -->
                         @if($isOwner)
-                            <div class="p-4 rounded-2xl border {{ $loan->borrower_signature ? 'border-emerald-200 bg-emerald-50/25' : 'border-blue-200 bg-blue-50/25' }} flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div class="p-4 rounded-2xl border {{ $loan->borrower_signature ? 'border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/25 dark:bg-emerald-950/20' : 'border-blue-200 dark:border-blue-800/60 bg-blue-50/25 dark:bg-blue-950/20' }} flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                 <div class="flex items-center gap-3.5 min-w-0">
                                     @if($loan->borrower_signature)
-                                        <div class="p-2 bg-white rounded-xl border border-emerald-200 shadow-2xs flex items-center justify-center shrink-0 w-28 h-14">
+                                        <div class="p-2 bg-white signature-paper rounded-xl border border-emerald-200 dark:border-emerald-700 shadow-2xs flex items-center justify-center shrink-0 w-28 h-14">
                                             <img src="{{ asset('storage/' . $loan->borrower_signature) }}" class="max-h-11 max-w-full object-contain" alt="Tanda Tangan Peminjam">
                                         </div>
                                         <div class="min-w-0">
                                             <div class="flex items-center gap-2">
-                                                <span class="text-xs font-bold text-slate-800">Tanda Tangan Pengembalian Anda (Pihak Kedua)</span>
+                                                <span class="text-xs font-bold text-slate-800 dark:text-white">Tanda Tangan Pengembalian Anda (Pihak Kedua)</span>
                                                 <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 shrink-0">Sudah Ditandatangani</span>
                                             </div>
-                                            <p class="text-[11px] text-slate-500 truncate mt-0.5">Atas nama: <strong class="text-slate-800">{{ $loan->snap_full_name }}</strong></p>
+                                            <p class="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">Atas nama: <strong class="text-slate-800 dark:text-white">{{ $loan->snap_full_name }}</strong></p>
                                         </div>
                                     @else
-                                        <div class="w-12 h-12 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-400 shrink-0 shadow-2xs">
-                                            <i data-lucide="signature" class="w-6 h-6 text-slate-300"></i>
+                                        <div class="w-12 h-12 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-400 shrink-0 shadow-2xs">
+                                            <i data-lucide="signature" class="w-6 h-6 text-slate-300 dark:text-slate-600"></i>
                                         </div>
                                         <div class="min-w-0">
                                             <div class="flex items-center gap-2">
-                                                <span class="text-xs font-bold text-slate-800">Tanda Tangan Pengembalian Anda (Pihak Kedua)</span>
+                                                <span class="text-xs font-bold text-slate-800 dark:text-white">Tanda Tangan Pengembalian Anda (Pihak Kedua)</span>
                                                 <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200 shrink-0">Belum Ditandatangani</span>
                                             </div>
-                                            <p class="text-[11px] text-slate-500 mt-0.5">Bubuhkan tanda tangan untuk lembar BAST pengembalian barang.</p>
+                                            <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Bubuhkan tanda tangan untuk lembar BAST pengembalian barang.</p>
                                         </div>
                                     @endif
                                 </div>
 
                                 <div class="shrink-0 flex items-center gap-2">
                                     <button type="button" @click="openSigModal('borrower')"
-                                            class="w-full sm:w-auto px-4 py-2 {{ $loan->borrower_signature ? 'bg-white hover:bg-slate-50 text-[#0B63B5] border border-blue-200' : 'bg-[#0B63B5] hover:bg-[#0B4F8A] text-white' }} rounded-xl text-xs font-bold shadow-2xs transition flex items-center justify-center gap-1.5">
+                                            class="w-full sm:w-auto px-4 py-2 {{ $loan->borrower_signature ? 'bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-[#0B63B5] dark:text-blue-400 border border-blue-200 dark:border-slate-700' : 'bg-[#0B63B5] hover:bg-[#0B4F8A] text-white' }} rounded-xl text-xs font-bold shadow-2xs transition flex items-center justify-center gap-1.5 cursor-pointer">
                                         <i data-lucide="{{ $loan->borrower_signature ? 'edit-3' : 'pen-tool' }}" class="w-3.5 h-3.5"></i>
                                         <span>{{ $loan->borrower_signature ? 'Ubah Tanda Tangan' : 'Tanda Tangani BAST Pengembalian' }}</span>
                                     </button>
@@ -823,12 +838,12 @@
                                 <span class="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 border border-emerald-200">Lengkap</span>
                             </div>
                         @else
-                            <div class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-600 text-xs font-medium shadow-2xs">
+                            <div class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-xs font-medium shadow-2xs">
                                 <div class="flex items-center gap-2">
-                                    <i data-lucide="clock" class="w-4 h-4 text-slate-400 shrink-0"></i>
+                                    <i data-lucide="clock" class="w-4 h-4 text-slate-400 dark:text-slate-400 shrink-0"></i>
                                     <span>Pihak I (Petugas): Belum Ditandatangani</span>
                                 </div>
-                                <span class="text-[10px] font-semibold text-slate-400">Menunggu</span>
+                                <span class="text-[10px] font-semibold text-slate-400 dark:text-slate-400">Menunggu</span>
                             </div>
                         @endif
 
@@ -861,12 +876,12 @@
                                 <span class="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-blue-100 text-[#0B63B5] border border-blue-200">Disahkan</span>
                             </div>
                         @else
-                            <div class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-500 text-xs font-medium shadow-2xs">
+                            <div class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 text-xs font-medium shadow-2xs">
                                 <div class="flex items-center gap-2">
                                     <i data-lucide="clock" class="w-4 h-4 text-slate-400 shrink-0"></i>
                                     <span>Mengetahui: Menunggu Disposisi</span>
                                 </div>
-                                <span class="text-[10px] font-semibold text-slate-400">Menunggu</span>
+                                <span class="text-[10px] font-semibold text-slate-400 dark:text-slate-400">Menunggu</span>
                             </div>
                         @endif
                     </div>
@@ -874,29 +889,29 @@
                     <!-- Kartu Informasi & Tindakan Tanda Tangan Anda (Versi Simpel & Ringkas) -->
                     @if($isOwner)
                         <!-- Tanda Tangan Peminjam (Pihak Kedua) -->
-                        <div class="p-4 rounded-2xl border {{ $loan->borrower_signature ? 'border-emerald-200 bg-emerald-50/25' : 'border-blue-200 bg-blue-50/25' }} flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div class="p-4 rounded-2xl border {{ $loan->borrower_signature ? 'border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/25 dark:bg-emerald-950/20' : 'border-blue-200 dark:border-blue-800/60 bg-blue-50/25 dark:bg-blue-950/20' }} flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                             <div class="flex items-center gap-3.5 min-w-0">
                                 @if($loan->borrower_signature)
-                                    <div class="p-2 bg-white rounded-xl border border-emerald-200 shadow-2xs flex items-center justify-center shrink-0 w-28 h-14">
+                                    <div class="p-2 bg-white signature-paper rounded-xl border border-emerald-200 dark:border-emerald-700 shadow-2xs flex items-center justify-center shrink-0 w-28 h-14">
                                         <img src="{{ asset('storage/' . $loan->borrower_signature) }}" class="max-h-11 max-w-full object-contain" alt="Tanda Tangan Peminjam">
                                     </div>
                                     <div class="min-w-0">
                                         <div class="flex items-center gap-2">
-                                            <span class="text-xs font-bold text-slate-800">Tanda Tangan Anda (Pihak Kedua)</span>
+                                            <span class="text-xs font-bold text-slate-800 dark:text-white">Tanda Tangan Anda (Pihak Kedua)</span>
                                             <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 shrink-0">Sudah Ditandatangani</span>
                                         </div>
-                                        <p class="text-[11px] text-slate-500 truncate mt-0.5">Atas nama: <strong class="text-slate-800">{{ $loan->snap_full_name }}</strong></p>
+                                        <p class="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">Atas nama: <strong class="text-slate-800 dark:text-white">{{ $loan->snap_full_name }}</strong></p>
                                     </div>
                                 @else
-                                    <div class="w-12 h-12 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-400 shrink-0 shadow-2xs">
-                                        <i data-lucide="signature" class="w-6 h-6 text-slate-300"></i>
+                                    <div class="w-12 h-12 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-400 shrink-0 shadow-2xs">
+                                        <i data-lucide="signature" class="w-6 h-6 text-slate-300 dark:text-slate-600"></i>
                                     </div>
                                     <div class="min-w-0">
                                         <div class="flex items-center gap-2">
-                                            <span class="text-xs font-bold text-slate-800">Tanda Tangan Anda (Pihak Kedua)</span>
+                                            <span class="text-xs font-bold text-slate-800 dark:text-white">Tanda Tangan Anda (Pihak Kedua)</span>
                                             <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200 shrink-0">Belum Ditandatangani</span>
                                         </div>
-                                        <p class="text-[11px] text-slate-500 mt-0.5">Silakan bubuhkan tanda tangan untuk dokumen BAST peminjaman.</p>
+                                        <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Silakan bubuhkan tanda tangan untuk dokumen BAST peminjaman.</p>
                                     </div>
                                 @endif
                             </div>
@@ -904,13 +919,13 @@
                             <div class="shrink-0 flex items-center">
                                 @if($loan->borrower_signature)
                                     <button type="button" @click="openSigModal('borrower')"
-                                            class="w-full sm:w-auto px-4 py-2 bg-white hover:bg-slate-50 text-[#0B63B5] border border-blue-200 rounded-xl text-xs font-bold shadow-2xs transition flex items-center justify-center gap-1.5">
+                                            class="w-full sm:w-auto px-4 py-2 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-[#0B63B5] dark:text-blue-400 border border-blue-200 dark:border-slate-700 rounded-xl text-xs font-bold shadow-2xs transition flex items-center justify-center gap-1.5 cursor-pointer">
                                         <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
                                         <span>Ubah Tanda Tangan</span>
                                     </button>
                                 @else
                                     <button type="button" @click="openSigModal('borrower')"
-                                            class="w-full sm:w-auto px-4 py-2 bg-[#0B63B5] hover:bg-[#0B4F8A] text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center justify-center gap-1.5">
+                                            class="w-full sm:w-auto px-4 py-2 bg-[#0B63B5] hover:bg-[#0B4F8A] text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center justify-center gap-1.5 cursor-pointer">
                                         <i data-lucide="pen-tool" class="w-3.5 h-3.5"></i>
                                         <span>Tanda Tangani BAST Sekarang</span>
                                     </button>
@@ -919,29 +934,29 @@
                         </div>
                     @elseif($isPengelola)
                         <!-- Tanda Tangan Petugas Pengelola BMN (Pihak Pertama) -->
-                        <div class="p-4 rounded-2xl border {{ $loan->officer_signature ? 'border-emerald-200 bg-emerald-50/25' : 'border-indigo-200 bg-indigo-50/25' }} flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div class="p-4 rounded-2xl border {{ $loan->officer_signature ? 'border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/25 dark:bg-emerald-950/20' : 'border-indigo-200 dark:border-indigo-800/60 bg-indigo-50/25 dark:bg-indigo-950/20' }} flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                             <div class="flex items-center gap-3.5 min-w-0">
                                 @if($loan->officer_signature)
-                                    <div class="p-2 bg-white rounded-xl border border-emerald-200 shadow-2xs flex items-center justify-center shrink-0 w-28 h-14">
+                                    <div class="p-2 bg-white signature-paper rounded-xl border border-emerald-200 dark:border-emerald-700 shadow-2xs flex items-center justify-center shrink-0 w-28 h-14">
                                         <img src="{{ asset('storage/' . $loan->officer_signature) }}" class="max-h-11 max-w-full object-contain" alt="Tanda Tangan Petugas">
                                     </div>
                                     <div class="min-w-0">
                                         <div class="flex items-center gap-2">
-                                            <span class="text-xs font-bold text-slate-800">Tanda Tangan Anda (Pihak Pertama)</span>
+                                            <span class="text-xs font-bold text-slate-800 dark:text-white">Tanda Tangan Anda (Pihak Pertama)</span>
                                             <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 shrink-0">Sudah Ditandatangani</span>
                                         </div>
-                                        <p class="text-[11px] text-slate-500 truncate mt-0.5">Petugas: <strong class="text-slate-800">{{ auth()->user()->name }}</strong></p>
+                                        <p class="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">Petugas: <strong class="text-slate-800 dark:text-white">{{ auth()->user()->name }}</strong></p>
                                     </div>
                                 @else
-                                    <div class="w-12 h-12 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-400 shrink-0 shadow-2xs">
-                                        <i data-lucide="signature" class="w-6 h-6 text-slate-300"></i>
+                                    <div class="w-12 h-12 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-400 shrink-0 shadow-2xs">
+                                        <i data-lucide="signature" class="w-6 h-6 text-slate-300 dark:text-slate-600"></i>
                                     </div>
                                     <div class="min-w-0">
                                         <div class="flex items-center gap-2">
-                                            <span class="text-xs font-bold text-slate-800">Tanda Tangan Anda (Pihak Pertama)</span>
+                                            <span class="text-xs font-bold text-slate-800 dark:text-white">Tanda Tangan Anda (Pihak Pertama)</span>
                                             <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200 shrink-0">Belum Ditandatangani</span>
                                         </div>
-                                        <p class="text-[11px] text-slate-500 mt-0.5">Silakan bubuhkan tanda tangan petugas penyerah barang.</p>
+                                        <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Silakan bubuhkan tanda tangan petugas penyerah barang.</p>
                                     </div>
                                 @endif
                             </div>
@@ -949,13 +964,13 @@
                             <div class="shrink-0 flex items-center">
                                 @if($loan->officer_signature)
                                     <button type="button" @click="openSigModal('officer')"
-                                            class="w-full sm:w-auto px-4 py-2 bg-white hover:bg-slate-50 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold shadow-2xs transition flex items-center justify-center gap-1.5">
+                                            class="w-full sm:w-auto px-4 py-2 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-slate-700 rounded-xl text-xs font-bold shadow-2xs transition flex items-center justify-center gap-1.5 cursor-pointer">
                                         <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
                                         <span>Ubah Tanda Tangan</span>
                                     </button>
                                 @else
                                     <button type="button" @click="openSigModal('officer')"
-                                            class="w-full sm:w-auto px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center justify-center gap-1.5">
+                                            class="w-full sm:w-auto px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center justify-center gap-1.5 cursor-pointer">
                                         <i data-lucide="pen-tool" class="w-3.5 h-3.5"></i>
                                         <span>Tanda Tangani BAST Sekarang</span>
                                     </button>
@@ -1185,21 +1200,38 @@
 
                     <form method="POST" action="{{ route('kelola.issue-bast', $loan->id) }}" enctype="multipart/form-data" class="space-y-4">
                         @csrf
-                        <div class="p-4 rounded-2xl bg-cyan-50/70 border border-cyan-200 space-y-2">
-                            <label class="block text-xs font-bold text-cyan-950">Foto Fisik BMN untuk Lembar Lampiran Dokumen BAST (Opsional):</label>
-                            <p class="text-[11px] text-cyan-800">Foto barang yang dilampirkan di sini otomatis dicetak pada halaman terakhir dokumen PDF BAST Peminjaman.</p>
+                        @php
+                            $bastPjmPhotos = $loan->photos()->where('stage', 'BAST_PEMINJAMAN')->get();
+                        @endphp
+                        <div class="p-4 rounded-2xl bg-cyan-50/70 dark:bg-cyan-950/40 border border-cyan-200 dark:border-cyan-800/60 space-y-2">
+                            <div class="flex items-center justify-between">
+                                <label class="block text-xs font-bold text-cyan-950 dark:text-cyan-200">Foto Fisik BMN Bukti Dukung BAST (Wajib Dilampirkan):</label>
+                                @if($bastPjmPhotos->isNotEmpty())
+                                    <span class="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold border border-emerald-300 dark:border-emerald-800 flex items-center gap-1">
+                                        <i data-lucide="check" class="w-3 h-3"></i>
+                                        {{ $bastPjmPhotos->count() }} Foto Terlampir
+                                    </span>
+                                @endif
+                            </div>
+                            <p class="text-[11px] text-cyan-800 dark:text-cyan-300">
+                                @if($bastPjmPhotos->isNotEmpty())
+                                    Sistem telah memiliki {{ $bastPjmPhotos->count() }} foto fisik untuk pengajuan ini. Anda dapat menambah foto baru di bawah ini.
+                                @else
+                                    Sesuai tata kelola akuntabilitas BMN, wajib melampirkan minimal 1 foto fisik barang sebagai bukti sah kondisi awal sebelum BAST Peminjaman resmi diterbitkan.
+                                @endif
+                            </p>
                             <div class="flex flex-wrap items-center gap-2 pt-1">
-                                <label class="cursor-pointer px-3.5 py-1.5 bg-white border border-cyan-300 hover:bg-cyan-50 text-cyan-800 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs">
-                                    <i data-lucide="camera" class="w-3.5 h-3.5 text-cyan-600"></i>
+                                <label class="cursor-pointer px-3.5 py-1.5 bg-white dark:bg-slate-900 border border-cyan-300 dark:border-cyan-700 hover:bg-cyan-50 dark:hover:bg-cyan-900/40 text-cyan-800 dark:text-cyan-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs">
+                                    <i data-lucide="camera" class="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400"></i>
                                     <span>Jepret Kamera</span>
                                     <input type="file" name="photos[]" accept="image/*" capture="environment" class="hidden" onchange="updateFileCount(this, 'issue_bast_photo_count')">
                                 </label>
-                                <label class="cursor-pointer px-3.5 py-1.5 bg-white border border-cyan-300 hover:bg-cyan-50 text-cyan-800 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs">
-                                    <i data-lucide="images" class="w-3.5 h-3.5 text-cyan-600"></i>
+                                <label class="cursor-pointer px-3.5 py-1.5 bg-white dark:bg-slate-900 border border-cyan-300 dark:border-cyan-700 hover:bg-cyan-50 dark:hover:bg-cyan-900/40 text-cyan-800 dark:text-cyan-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs">
+                                    <i data-lucide="images" class="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400"></i>
                                     <span>Pilih dari Galeri</span>
                                     <input type="file" name="photos[]" accept="image/*" multiple class="hidden" onchange="updateFileCount(this, 'issue_bast_photo_count')">
                                 </label>
-                                <span id="issue_bast_photo_count" class="text-xs text-slate-500 italic">Belum ada foto dipilih</span>
+                                <span id="issue_bast_photo_count" class="text-xs text-slate-500 dark:text-slate-400 italic">Belum ada foto dipilih</span>
                             </div>
                         </div>
 
@@ -1287,21 +1319,38 @@
                             </div>
                         @endforeach
 
-                        <div class="p-4 rounded-2xl bg-amber-50/70 border border-amber-200 space-y-2">
-                            <label class="block text-xs font-bold text-amber-950">Foto Dokumentasi Kondisi Fisik Pengembalian (Opsional):</label>
-                            <p class="text-[11px] text-amber-800">Lampirkan foto fisik barang saat dikembalikan (sangat dianjurkan terutama bila terdapat lecet/rusak).</p>
+                        @php
+                            $bastKblPhotos = $loan->photos()->where('stage', 'BAST_PENGEMBALIAN')->get();
+                        @endphp
+                        <div class="p-4 rounded-2xl bg-amber-50/70 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 space-y-2">
+                            <div class="flex items-center justify-between">
+                                <label class="block text-xs font-bold text-amber-950 dark:text-amber-200">Foto Dokumentasi Kondisi Fisik Pengembalian (Wajib Dilampirkan):</label>
+                                @if($bastKblPhotos->isNotEmpty())
+                                    <span class="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold border border-emerald-300 dark:border-emerald-800 flex items-center gap-1">
+                                        <i data-lucide="check" class="w-3 h-3"></i>
+                                        {{ $bastKblPhotos->count() }} Foto Terlampir
+                                    </span>
+                                @endif
+                            </div>
+                            <p class="text-[11px] text-amber-800 dark:text-amber-300">
+                                @if($bastKblPhotos->isNotEmpty())
+                                    Sistem telah memiliki {{ $bastKblPhotos->count() }} foto fisik saat pengembalian. Anda dapat menambah foto baru di bawah ini.
+                                @else
+                                    Lampirkan foto fisik barang saat dikembalikan sebagai bukti sah kondisi akhir fisik BMN pada lembar lampiran BAST Pengembalian.
+                                @endif
+                            </p>
                             <div class="flex flex-wrap items-center gap-2 pt-1">
-                                <label class="cursor-pointer px-3.5 py-1.5 bg-white border border-amber-300 hover:bg-amber-50 text-amber-800 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs">
-                                    <i data-lucide="camera" class="w-3.5 h-3.5 text-amber-600"></i>
+                                <label class="cursor-pointer px-3.5 py-1.5 bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/40 text-amber-800 dark:text-amber-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs">
+                                    <i data-lucide="camera" class="w-3.5 h-3.5 text-amber-600 dark:text-amber-400"></i>
                                     <span>Jepret Kamera</span>
                                     <input type="file" name="photos[]" accept="image/*" capture="environment" class="hidden" onchange="updateFileCount(this, 'return_photo_count')">
                                 </label>
-                                <label class="cursor-pointer px-3.5 py-1.5 bg-white border border-amber-300 hover:bg-amber-50 text-amber-800 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs">
-                                    <i data-lucide="images" class="w-3.5 h-3.5 text-amber-600"></i>
+                                <label class="cursor-pointer px-3.5 py-1.5 bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/40 text-amber-800 dark:text-amber-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs">
+                                    <i data-lucide="images" class="w-3.5 h-3.5 text-amber-600 dark:text-amber-400"></i>
                                     <span>Pilih dari Galeri</span>
                                     <input type="file" name="photos[]" accept="image/*" multiple class="hidden" onchange="updateFileCount(this, 'return_photo_count')">
                                 </label>
-                                <span id="return_photo_count" class="text-xs text-slate-500 italic">Belum ada foto dipilih</span>
+                                <span id="return_photo_count" class="text-xs text-slate-500 dark:text-slate-400 italic">Belum ada foto dipilih</span>
                             </div>
                         </div>
 
@@ -1339,17 +1388,15 @@
                     </form>
                 </div>
             @endif
-        </div>
-
-        <!-- RIGHT COLUMN: SOP TIMELINES -->
+        </div>        <!-- RIGHT COLUMN: SOP TIMELINES -->
         <div class="lg:col-span-4 space-y-6">
             <!-- 1. ALUR SOP PEMINJAMAN (7 LANGKAH) -->
-            <div class="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-sm">
-                <div class="flex items-center gap-2 border-b border-slate-100 pb-3 mb-4">
-                    <i data-lucide="git-commit" class="w-5 h-5 text-[#0B63B5]"></i>
+            <div class="bg-white dark:bg-[#151D2F] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-6 shadow-sm">
+                <div class="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3 mb-4">
+                    <i data-lucide="git-commit" class="w-5 h-5 text-[#0B63B5] dark:text-blue-400"></i>
                     <div>
-                        <h3 class="font-black text-sm text-slate-900">Alur SOP Peminjaman BMN</h3>
-                        <span class="text-[10px] text-slate-400 font-semibold">SK SOP B-489 BBLSDM • 7 Tahap</span>
+                        <h3 class="font-black text-sm text-slate-900 dark:text-white">Alur SOP Peminjaman BMN</h3>
+                        <span class="text-[10px] text-slate-400 dark:text-slate-400 font-semibold">SK SOP B-489 BBLSDM • 7 Tahap</span>
                     </div>
                 </div>
 
@@ -1367,7 +1414,7 @@
                 @endphp
 
                 <!-- Vertical Timeline Peminjaman -->
-                <div class="relative pl-6 space-y-5 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
+                <div class="relative pl-6 space-y-5 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200 dark:before:bg-slate-700">
                     @foreach($sopSteps as $sNum => $sInfo)
                         @php
                             $isDone = ($stepIndex > $sNum) || ($stepIndex === 7 && $sNum === 7 && in_array($loan->status, ['ACTIVE', 'RETURN_REQUESTED', 'RETURN_CHECKED', 'RETURNED']));
@@ -1376,18 +1423,18 @@
                         <div class="relative">
                             <!-- Bullet Icon -->
                             <div class="absolute -left-6 top-0.5 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold
-                                        {{ $isDone ? 'bg-emerald-500 text-white ring-4 ring-emerald-50' : ($isCurrent ? 'bg-[#0B63B5] text-white ring-4 ring-blue-100 animate-pulse' : 'bg-slate-200 text-slate-500') }}">
+                                        {{ $isDone ? 'bg-emerald-500 text-white ring-4 ring-emerald-50 dark:ring-emerald-950/60' : ($isCurrent ? 'bg-[#0B63B5] dark:bg-blue-600 text-white ring-4 ring-blue-100 dark:ring-blue-950/70 animate-pulse' : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-300/50 dark:border-slate-700') }}">
                                 @if($isDone) &check; @else {{ $sNum }} @endif
                             </div>
 
                             <div>
                                 <div class="flex items-center justify-between gap-1">
-                                    <h4 class="text-xs font-bold {{ $isCurrent ? 'text-[#0B63B5]' : ($isDone ? 'text-slate-800' : 'text-slate-400') }}">
+                                    <h4 class="text-xs font-bold {{ $isCurrent ? 'text-[#0B63B5] dark:text-blue-400 font-extrabold' : ($isDone ? 'text-slate-800 dark:text-slate-200' : 'text-slate-600 dark:text-slate-300 font-medium') }}">
                                         {{ $sInfo['title'] }}
                                     </h4>
-                                    <span class="text-[9px] font-semibold text-slate-400 tabular-nums">{{ $sInfo['sla'] }}</span>
+                                    <span class="text-[9px] font-semibold text-slate-400 dark:text-slate-400 tabular-nums">{{ $sInfo['sla'] }}</span>
                                 </div>
-                                <span class="text-[11px] block mt-0.5 {{ $isCurrent ? 'text-slate-700 font-semibold' : 'text-slate-400' }}">
+                                <span class="text-[11px] block mt-0.5 {{ $isCurrent ? 'text-slate-700 dark:text-slate-200 font-semibold' : 'text-slate-500 dark:text-slate-400' }}">
                                     Pelaksana: {{ $sInfo['actor'] }}
                                 </span>
                             </div>
@@ -1396,12 +1443,12 @@
                 </div>
 
                 <!-- 2. ALUR SOP PENGEMBALIAN BMN (4 TAHAP) -->
-                <div class="mt-8 pt-6 border-t border-slate-100">
+                <div class="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800">
                     <div class="flex items-center gap-2 pb-3 mb-4">
-                        <i data-lucide="corner-down-left" class="w-4 h-4 text-purple-600"></i>
+                        <i data-lucide="corner-down-left" class="w-4 h-4 text-purple-600 dark:text-purple-400"></i>
                         <div>
-                            <h3 class="font-black text-sm text-slate-900">Alur SOP Pengembalian BMN</h3>
-                            <span class="text-[10px] text-slate-400 font-semibold">SK SOP B-489 BBLSDM • Tahap Pengembalian</span>
+                            <h3 class="font-black text-sm text-slate-900 dark:text-white">Alur SOP Pengembalian BMN</h3>
+                            <span class="text-[10px] text-slate-400 dark:text-slate-400 font-semibold">SK SOP B-489 BBLSDM • Tahap Pengembalian</span>
                         </div>
                     </div>
 
@@ -1415,7 +1462,7 @@
                         ];
                     @endphp
 
-                    <div class="relative pl-6 space-y-5 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
+                    <div class="relative pl-6 space-y-5 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200 dark:before:bg-slate-700">
                         @foreach($sopReturnSteps as $rNum => $rInfo)
                             @php
                                 $rDone = ($returnStepIndex > $rNum) || ($returnStepIndex === 4 && $rNum === 4);
@@ -1423,18 +1470,18 @@
                             @endphp
                             <div class="relative">
                                 <div class="absolute -left-6 top-0.5 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold
-                                            {{ $rDone ? 'bg-emerald-500 text-white ring-4 ring-emerald-50' : ($rCurrent ? 'bg-purple-600 text-white ring-4 ring-purple-100 animate-pulse' : 'bg-slate-200 text-slate-500') }}">
+                                            {{ $rDone ? 'bg-emerald-500 text-white ring-4 ring-emerald-50 dark:ring-emerald-950/60' : ($rCurrent ? 'bg-purple-600 dark:bg-purple-500 text-white ring-4 ring-purple-100 dark:ring-purple-950/70 animate-pulse' : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-300/50 dark:border-slate-700') }}">
                                     @if($rDone) &check; @else {{ $rNum }} @endif
                                 </div>
 
                                 <div>
                                     <div class="flex items-center justify-between gap-1">
-                                        <h4 class="text-xs font-bold {{ $rCurrent ? 'text-purple-700' : ($rDone ? 'text-slate-800' : 'text-slate-400') }}">
+                                        <h4 class="text-xs font-bold {{ $rCurrent ? 'text-purple-700 dark:text-purple-400 font-extrabold' : ($rDone ? 'text-slate-800 dark:text-slate-200' : 'text-slate-600 dark:text-slate-300 font-medium') }}">
                                             {{ $rInfo['title'] }}
                                         </h4>
-                                        <span class="text-[9px] font-semibold text-slate-400 tabular-nums">{{ $rInfo['sla'] }}</span>
+                                        <span class="text-[9px] font-semibold text-slate-400 dark:text-slate-400 tabular-nums">{{ $rInfo['sla'] }}</span>
                                     </div>
-                                    <span class="text-[11px] block mt-0.5 {{ $rCurrent ? 'text-slate-700 font-semibold' : 'text-slate-400' }}">
+                                    <span class="text-[11px] block mt-0.5 {{ $rCurrent ? 'text-slate-700 dark:text-slate-200 font-semibold' : 'text-slate-500 dark:text-slate-400' }}">
                                         Pelaksana: {{ $rInfo['actor'] }}
                                     </span>
                                 </div>
@@ -1444,35 +1491,35 @@
                 </div>
 
                 <!-- 3. STATUS PEMINJAMAN (RIWAYAT PROGRES) -->
-                <div class="mt-8 pt-5 border-t border-slate-100">
+                <div class="mt-8 pt-5 border-t border-slate-100 dark:border-slate-800">
                     <div class="flex items-center justify-between mb-3">
-                        <h4 class="text-xs font-bold text-slate-900">Status Peminjaman</h4>
-                        <span class="text-[10px] text-slate-400 font-semibold">Riwayat Progres</span>
+                        <h4 class="text-xs font-bold text-slate-900 dark:text-white">Status Peminjaman</h4>
+                        <span class="text-[10px] text-slate-400 dark:text-slate-400 font-semibold">Riwayat Progres</span>
                     </div>
                     <div class="space-y-3 text-xs">
                         @foreach($loan->history as $h)
-                            <div class="p-3 rounded-2xl bg-slate-50/80 border border-slate-200/70 hover:bg-white hover:shadow-2xs transition space-y-1.5">
+                            <div class="p-3 rounded-2xl bg-slate-50/80 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/80 hover:bg-white dark:hover:bg-slate-800 hover:shadow-2xs transition space-y-1.5">
                                 <div class="flex items-center justify-between text-[11px] text-slate-400">
                                     <div class="flex items-center gap-1.5 truncate">
-                                        <div class="w-4 h-4 rounded-full bg-blue-100 text-[#0B63B5] flex items-center justify-center text-[9px] font-black shrink-0">
+                                        <div class="w-4 h-4 rounded-full bg-blue-100 dark:bg-blue-900/80 text-[#0B63B5] dark:text-blue-300 flex items-center justify-center text-[9px] font-black shrink-0">
                                             {{ substr($h->actor->name ?? 'S', 0, 1) }}
                                         </div>
-                                        <span class="font-bold text-slate-700 truncate">{{ $h->actor->name ?? 'Sistem BMN' }}</span>
+                                        <span class="font-bold text-slate-700 dark:text-slate-200 truncate">{{ $h->actor->name ?? 'Sistem BMN' }}</span>
                                     </div>
-                                    <span class="tabular-nums text-slate-400 text-[10px] shrink-0 font-medium">{{ $h->created_at->format('d/m/Y H:i') }}</span>
+                                    <span class="tabular-nums text-slate-400 dark:text-slate-400 text-[10px] shrink-0 font-medium">{{ $h->created_at->format('d/m/Y H:i') }}</span>
                                 </div>
                                 <div class="flex flex-wrap items-center gap-1.5 text-xs leading-normal">
-                                    <span class="font-medium text-slate-500 text-[11px]">{{ $h->from_status_label }}</span>
-                                    <span class="text-slate-400 font-normal text-xs">&rarr;</span>
-                                    <span class="font-extrabold text-[#0B63B5] bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100 text-[11px]">{{ $h->to_status_label }}</span>
+                                    <span class="font-medium text-slate-500 dark:text-slate-400 text-[11px]">{{ $h->from_status_label }}</span>
+                                    <span class="text-slate-400 dark:text-slate-500 font-normal text-xs">&rarr;</span>
+                                    <span class="font-extrabold text-[#0B63B5] dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 rounded-md border border-blue-100 dark:border-blue-900/60 text-[11px]">{{ $h->to_status_label }}</span>
                                 </div>
                                 @if($h->note)
-                                    <div class="mt-1.5 bg-white p-2.5 rounded-xl border border-slate-200/80 shadow-2xs space-y-1">
-                                        <div class="flex items-center gap-1.5 text-[10px] font-bold text-slate-600 uppercase tracking-wider">
-                                            <i data-lucide="message-square-text" class="w-3.5 h-3.5 text-[#0B63B5]"></i>
+                                    <div class="mt-1.5 bg-white dark:bg-slate-900/70 p-2.5 rounded-xl border border-slate-200/80 dark:border-slate-700/80 shadow-2xs space-y-1">
+                                        <div class="flex items-center gap-1.5 text-[10px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                                            <i data-lucide="message-square-text" class="w-3.5 h-3.5 text-[#0B63B5] dark:text-blue-400"></i>
                                             <span>{{ $h->note_context_label }}:</span>
                                         </div>
-                                        <p class="text-[11px] text-slate-700 italic leading-relaxed pl-5">
+                                        <p class="text-[11px] text-slate-700 dark:text-slate-300 italic leading-relaxed pl-5">
                                             "{{ $h->note }}"
                                         </p>
                                     </div>
@@ -1493,40 +1540,40 @@
         <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity" @click="sigModalOpen = false"></div>
 
         <div class="min-h-full flex items-center justify-center p-4">
-            <div class="relative bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl border border-slate-100 space-y-5"
+            <div class="relative bg-white dark:bg-slate-900 rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl border border-slate-100 dark:border-slate-800 space-y-5"
                  @click.stop>
-                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
                     <div class="flex items-center gap-2.5">
-                        <div class="w-9 h-9 rounded-xl bg-blue-50 text-[#0B63B5] flex items-center justify-center">
+                        <div class="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-[#0B63B5] dark:text-blue-400 flex items-center justify-center">
                             <i data-lucide="signature" class="w-5 h-5"></i>
                         </div>
                         <div>
-                            <h3 class="text-base font-extrabold text-slate-900">Bubuhkan Tanda Tangan Digital</h3>
-                            <p class="text-xs text-slate-500">
-                                Menandatangani sebagai: <strong class="text-[#0B63B5]" x-text="sigAs === 'borrower' ? 'Pihak Kedua (Peminjam)' : 'Pihak Pertama (Pengelola BMN)'"></strong>
+                            <h3 class="text-base font-extrabold text-slate-900 dark:text-white">Bubuhkan Tanda Tangan Digital</h3>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">
+                                Menandatangani sebagai: <strong class="text-[#0B63B5] dark:text-blue-400" x-text="sigAs === 'borrower' ? 'Pihak Kedua (Peminjam)' : 'Pihak Pertama (Pengelola BMN)'"></strong>
                             </p>
                         </div>
                     </div>
-                    <button type="button" @click="sigModalOpen = false" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+                    <button type="button" @click="sigModalOpen = false" class="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 p-1 rounded-lg">
                         <i data-lucide="x" class="w-5 h-5"></i>
                     </button>
                 </div>
 
                 <!-- Tabs -->
-                <div class="grid grid-cols-3 gap-1 p-1 bg-slate-100 rounded-2xl text-xs font-bold text-center">
+                <div class="grid grid-cols-3 gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl text-xs font-bold text-center border border-slate-200/80 dark:border-slate-700/60">
                     <button type="button" @click="sigTab = 'profile'"
-                            :class="sigTab === 'profile' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-700'"
-                            class="py-2 rounded-xl transition">
+                            :class="sigTab === 'profile' ? 'bg-white dark:bg-[#0B63B5] text-slate-900 dark:text-white shadow-xs' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-white'"
+                            class="py-2 rounded-xl transition cursor-pointer">
                         Dari Profil
                     </button>
                     <button type="button" @click="sigTab = 'pad'; initCanvas()"
-                            :class="sigTab === 'pad' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-700'"
-                            class="py-2 rounded-xl transition">
+                            :class="sigTab === 'pad' ? 'bg-white dark:bg-[#0B63B5] text-slate-900 dark:text-white shadow-xs' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-white'"
+                            class="py-2 rounded-xl transition cursor-pointer">
                         Papan Gambar
                     </button>
                     <button type="button" @click="sigTab = 'file'"
-                            :class="sigTab === 'file' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-700'"
-                            class="py-2 rounded-xl transition">
+                            :class="sigTab === 'file' ? 'bg-white dark:bg-[#0B63B5] text-slate-900 dark:text-white shadow-xs' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-white'"
+                            class="py-2 rounded-xl transition cursor-pointer">
                         Unggah Berkas
                     </button>
                 </div>
@@ -1541,19 +1588,19 @@
                     <!-- Tab 1: Dari Profil -->
                     <div x-show="sigTab === 'profile'" class="space-y-3">
                         @if(auth()->user()->signature_path)
-                            <div class="p-4 rounded-2xl border-2 border-dashed border-emerald-200 bg-emerald-50/30 text-center space-y-2">
-                                <span class="text-xs font-bold text-emerald-800 block">Tanda tangan yang tersimpan di profil Anda:</span>
-                                <div class="p-2.5 bg-white rounded-xl border border-dashed border-slate-300 inline-flex flex-col items-center justify-center min-h-[85px] max-w-[240px] shadow-2xs relative">
+                            <div class="p-4 rounded-2xl border-2 border-dashed border-emerald-200 dark:border-emerald-800/80 bg-emerald-50/30 dark:bg-emerald-950/20 text-center space-y-2">
+                                <span class="text-xs font-bold text-emerald-800 dark:text-emerald-400 block">Tanda tangan yang tersimpan di profil Anda:</span>
+                                <div class="p-2.5 bg-white signature-paper rounded-xl border border-dashed border-slate-300 dark:border-slate-400 inline-flex flex-col items-center justify-center min-h-[85px] max-w-[240px] shadow-2xs relative">
                                     <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Ruang Dokumen (± 2,5 cm)</span>
                                     <img src="{{ asset('storage/' . auth()->user()->signature_path) }}" alt="TTD Profil" class="max-h-[60px] max-w-[155px] object-contain mx-auto">
                                 </div>
-                                <p class="text-[11px] text-slate-500">Tanda tangan ini akan otomatis dicetak pada lembar PDF BAST.</p>
+                                <p class="text-[11px] text-slate-500 dark:text-slate-400">Tanda tangan ini akan otomatis dicetak pada lembar PDF BAST.</p>
                             </div>
                         @else
-                            <div class="p-5 rounded-2xl bg-amber-50 border border-amber-200 text-center space-y-2">
-                                <i data-lucide="alert-circle" class="w-7 h-7 text-amber-600 mx-auto"></i>
-                                <h4 class="text-xs font-bold text-amber-900">Belum Ada Tanda Tangan di Profil</h4>
-                                <p class="text-[11px] text-amber-700">
+                            <div class="p-5 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60 text-center space-y-2">
+                                <i data-lucide="alert-circle" class="w-7 h-7 text-amber-600 dark:text-amber-400 mx-auto"></i>
+                                <h4 class="text-xs font-bold text-amber-900 dark:text-amber-300">Belum Ada Tanda Tangan di Profil</h4>
+                                <p class="text-[11px] text-amber-700 dark:text-amber-200/80">
                                     Anda belum mengatur tanda tangan di profil. Silakan pilih tab <strong>"Papan Gambar"</strong> untuk menggambar langsung, atau <strong>"Unggah Berkas"</strong>.
                                 </p>
                             </div>
@@ -1563,20 +1610,20 @@
                     <!-- Tab 2: Papan Gambar Kanvas -->
                     <div x-show="sigTab === 'pad'" class="space-y-3">
                         <div class="flex items-center justify-between text-xs">
-                            <span class="font-bold text-slate-700 flex items-center gap-1.5">
-                                <i data-lucide="edit-3" class="w-3.5 h-3.5 text-[#0B63B5]"></i>
+                            <span class="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
+                                <i data-lucide="edit-3" class="w-3.5 h-3.5 text-[#0B63B5] dark:text-blue-400"></i>
                                 <span>Goreskan Tanda Tangan:</span>
                             </span>
                             <div class="flex items-center gap-2">
-                                <span x-show="justCorrected" x-transition.opacity class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                                <span x-show="justCorrected" x-transition.opacity class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
                                     <i data-lucide="sparkles" class="w-3 h-3 text-emerald-500"></i>
                                     <span>Stroke Dihaluskan</span>
                                 </span>
-                                <button type="button" @click="undo()" class="text-slate-600 hover:text-slate-800 font-bold flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-lg border border-slate-200 bg-white cursor-pointer" title="Batalkan goresan (Ctrl + Z)">
+                                <button type="button" @click="undo()" class="text-slate-600 dark:text-slate-300 hover:text-slate-800 dark:hover:text-white font-bold flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 cursor-pointer" title="Batalkan goresan (Ctrl + Z)">
                                     <i data-lucide="undo" class="w-3 h-3"></i>
-                                    <span>Undo <kbd class="text-[9px] text-slate-400 font-normal border border-slate-200 px-1 rounded">Ctrl+Z</kbd></span>
+                                    <span>Undo <kbd class="text-[9px] text-slate-400 font-normal border border-slate-200 dark:border-slate-700 px-1 rounded">Ctrl+Z</kbd></span>
                                 </button>
-                                <button type="button" @click="clearCanvas()" class="text-red-600 hover:text-red-700 font-bold flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-lg border border-red-200 bg-red-50/50 cursor-pointer">
+                                <button type="button" @click="clearCanvas()" class="text-red-600 dark:text-red-400 hover:text-red-700 font-bold flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-lg border border-red-200 dark:border-red-900/60 bg-red-50/50 dark:bg-red-950/30 cursor-pointer">
                                     <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
                                     <span>Bersihkan</span>
                                 </button>
@@ -1584,18 +1631,18 @@
                         </div>
 
                         <!-- KOTAK TTD DISESUAIKAN DENGAN UKURAN GENERATE DOKUMEN BMN (± 2.5 CM / RASIO 2.5 : 1) -->
-                        <div class="bg-slate-50 border border-slate-200/90 rounded-2xl p-4 space-y-2.5">
-                            <div class="flex items-center justify-between text-[11px] text-slate-500">
-                                <span class="font-bold text-slate-700 flex items-center gap-1.5">
-                                    <i data-lucide="file-check-2" class="w-3.5 h-3.5 text-[#0B63B5]"></i>
+                        <div class="bg-slate-50 dark:bg-slate-800/60 border border-slate-200/90 dark:border-slate-700/80 rounded-2xl p-4 space-y-2.5">
+                            <div class="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
+                                <span class="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
+                                    <i data-lucide="file-check-2" class="w-3.5 h-3.5 text-[#0B63B5] dark:text-blue-400"></i>
                                     <span>Pratinjau Ruang TTD Dokumen BMN</span>
                                 </span>
-                                <span class="text-[10px] font-bold text-[#0B63B5] bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
+                                <span class="text-[10px] font-bold text-[#0B63B5] dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 rounded-full border border-blue-200 dark:border-blue-800/60">
                                     Proporsi 2.5 : 1 (Tinggi ± 2,5 cm)
                                 </span>
                             </div>
 
-                            <div class="w-full max-w-[390px] mx-auto bg-white rounded-xl border-2 border-dashed border-slate-300 p-2.5 shadow-xs">
+                            <div class="w-full max-w-[390px] mx-auto bg-white signature-paper rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-400 p-2.5 shadow-xs">
                                 <div class="relative w-full aspect-[5/2] rounded-lg overflow-hidden bg-slate-50/30">
                                     <canvas id="loan-sig-pad"
                                             class="w-full h-full cursor-crosshair touch-none block bg-transparent"
@@ -1679,19 +1726,19 @@
         <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity" @click="photoModalOpen = false"></div>
 
         <div class="min-h-full flex items-center justify-center p-4">
-            <div class="relative bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl border border-slate-100 space-y-5"
+            <div class="relative bg-white dark:bg-slate-900 rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl border border-slate-100 dark:border-slate-800 space-y-5"
                  @click.stop>
-                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
                     <div class="flex items-center gap-2.5">
-                        <div class="w-9 h-9 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center">
+                        <div class="w-9 h-9 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 flex items-center justify-center">
                             <i data-lucide="camera" class="w-5 h-5"></i>
                         </div>
                         <div>
-                            <h3 class="text-base font-extrabold text-slate-900">Unggah Foto Dokumentasi BAST</h3>
-                            <p class="text-xs text-slate-500">Ambil jepretan kamera langsung atau pilih 1 atau lebih foto dari galeri</p>
+                            <h3 class="text-base font-extrabold text-slate-900 dark:text-white">Unggah Foto Dokumentasi BAST</h3>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">Ambil jepretan kamera langsung atau pilih 1 atau lebih foto dari galeri</p>
                         </div>
                     </div>
-                    <button type="button" @click="photoModalOpen = false" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+                    <button type="button" @click="photoModalOpen = false" class="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 p-1 rounded-lg">
                         <i data-lucide="x" class="w-5 h-5"></i>
                     </button>
                 </div>
@@ -1700,18 +1747,18 @@
                     @csrf
                     <!-- Stage Selector -->
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1.5">Tahap Dokumentasi BAST:</label>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Tahap Dokumentasi BAST:</label>
                         <div class="grid grid-cols-2 gap-2 text-xs">
                             <label class="flex items-center gap-2 p-2.5 rounded-xl border cursor-pointer transition"
-                                   :class="photoStage === 'BAST_PEMINJAMAN' ? 'border-cyan-500 bg-cyan-50/50 text-cyan-900 font-bold' : 'border-slate-200 text-slate-600'">
+                                   :class="photoStage === 'BAST_PEMINJAMAN' ? 'border-cyan-500 dark:border-cyan-600 bg-cyan-50/50 dark:bg-cyan-950/50 text-cyan-900 dark:text-cyan-200 font-bold' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'">
                                 <input type="radio" name="stage" value="BAST_PEMINJAMAN" x-model="photoStage" class="hidden">
-                                <i data-lucide="package-check" class="w-4 h-4 text-cyan-600"></i>
+                                <i data-lucide="package-check" class="w-4 h-4 text-cyan-600 dark:text-cyan-400"></i>
                                 <span>BAST Peminjaman</span>
                             </label>
                             <label class="flex items-center gap-2 p-2.5 rounded-xl border cursor-pointer transition"
-                                   :class="photoStage === 'BAST_PENGEMBALIAN' ? 'border-purple-500 bg-purple-50/50 text-purple-900 font-bold' : 'border-slate-200 text-slate-600'">
+                                   :class="photoStage === 'BAST_PENGEMBALIAN' ? 'border-purple-500 dark:border-purple-600 bg-purple-50/50 dark:bg-purple-950/50 text-purple-900 dark:text-purple-200 font-bold' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'">
                                 <input type="radio" name="stage" value="BAST_PENGEMBALIAN" x-model="photoStage" class="hidden">
-                                <i data-lucide="rotate-ccw" class="w-4 h-4 text-purple-600"></i>
+                                <i data-lucide="rotate-ccw" class="w-4 h-4 text-purple-600 dark:text-purple-400"></i>
                                 <span>BAST Pengembalian</span>
                             </label>
                         </div>
@@ -1719,25 +1766,25 @@
 
                     <!-- Action: Camera or Gallery Picker -->
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-2">Pilih Sumber Foto (Boleh 1 atau lebih foto):</label>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2">Pilih Sumber Foto (Boleh 1 atau lebih foto):</label>
                         <div class="grid grid-cols-2 gap-2.5">
                             <!-- Button 1: Kamera HP / Webcam -->
-                            <label class="flex flex-col items-center justify-center p-4 rounded-2xl border-2 border-dashed border-[#0B63B5]/40 bg-blue-50/30 hover:bg-blue-50 cursor-pointer transition text-center group">
-                                <div class="w-10 h-10 rounded-full bg-blue-100 text-[#0B63B5] flex items-center justify-center mb-2 group-hover:scale-110 transition">
+                            <label class="flex flex-col items-center justify-center p-4 rounded-2xl border-2 border-dashed border-[#0B63B5]/40 dark:border-blue-700/60 bg-blue-50/30 dark:bg-blue-950/30 hover:bg-blue-50 dark:hover:bg-blue-900/30 cursor-pointer transition text-center group">
+                                <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/60 text-[#0B63B5] dark:text-blue-300 flex items-center justify-center mb-2 group-hover:scale-110 transition">
                                     <i data-lucide="camera" class="w-5 h-5"></i>
                                 </div>
-                                <span class="text-xs font-bold text-slate-800">Jepret Kamera</span>
-                                <span class="text-[10px] text-slate-500 mt-0.5">Buka kamera ponsel/laptop</span>
+                                <span class="text-xs font-bold text-slate-800 dark:text-slate-200">Jepret Kamera</span>
+                                <span class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Buka kamera ponsel/laptop</span>
                                 <input type="file" name="photos[]" accept="image/*" capture="environment" class="hidden" @change="handlePhotoSelect($event)">
                             </label>
 
                             <!-- Button 2: Galeri / File (Bisa Multiple) -->
-                            <label class="flex flex-col items-center justify-center p-4 rounded-2xl border-2 border-dashed border-purple-300 bg-purple-50/30 hover:bg-purple-50 cursor-pointer transition text-center group">
-                                <div class="w-10 h-10 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center mb-2 group-hover:scale-110 transition">
+                            <label class="flex flex-col items-center justify-center p-4 rounded-2xl border-2 border-dashed border-purple-300 dark:border-purple-700/60 bg-purple-50/30 dark:bg-purple-950/30 hover:bg-purple-50 dark:hover:bg-purple-900/30 cursor-pointer transition text-center group">
+                                <div class="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/60 text-purple-700 dark:text-purple-300 flex items-center justify-center mb-2 group-hover:scale-110 transition">
                                     <i data-lucide="images" class="w-5 h-5"></i>
                                 </div>
-                                <span class="text-xs font-bold text-slate-800">Pilih dari Galeri</span>
-                                <span class="text-[10px] text-slate-500 mt-0.5">Bisa pilih banyak foto</span>
+                                <span class="text-xs font-bold text-slate-800 dark:text-slate-200">Pilih dari Galeri</span>
+                                <span class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Bisa pilih banyak foto</span>
                                 <input type="file" name="photos[]" accept="image/*" multiple class="hidden" @change="handlePhotoSelect($event)">
                             </label>
                         </div>
@@ -1747,12 +1794,12 @@
                     <template x-if="previewPhotos.length > 0">
                         <div class="space-y-2">
                             <div class="flex items-center justify-between text-xs">
-                                <span class="font-bold text-slate-700" x-text="previewPhotos.length + ' foto siap diunggah:'"></span>
-                                <button type="button" @click="previewPhotos = []" class="text-red-600 font-bold text-[11px] hover:underline">Hapus Semua</button>
+                                <span class="font-bold text-slate-700 dark:text-slate-200" x-text="previewPhotos.length + ' foto siap diunggah:'"></span>
+                                <button type="button" @click="previewPhotos = []" class="text-red-600 dark:text-red-400 font-bold text-[11px] hover:underline">Hapus Semua</button>
                             </div>
-                            <div class="grid grid-cols-3 gap-2 max-h-36 overflow-y-auto p-1 bg-slate-50 rounded-2xl border border-slate-200">
+                            <div class="grid grid-cols-3 gap-2 max-h-36 overflow-y-auto p-1 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-700">
                                 <template x-for="(p, idx) in previewPhotos" :key="idx">
-                                    <div class="relative rounded-xl overflow-hidden aspect-square border border-slate-300 group">
+                                    <div class="relative rounded-xl overflow-hidden aspect-square border border-slate-300 dark:border-slate-600 group">
                                         <img :src="p.url" class="w-full h-full object-cover">
                                         <div class="absolute bottom-0 inset-x-0 bg-slate-900/70 p-1 text-[9px] text-white truncate text-center" x-text="p.size"></div>
                                     </div>
@@ -1763,15 +1810,15 @@
 
                     <!-- Caption -->
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">Keterangan Foto (Opsional):</label>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Keterangan Foto (Opsional):</label>
                         <input type="text" name="caption" placeholder="Contoh: Kondisi fisik barang lengkap dan normal"
-                               class="w-full p-2.5 rounded-xl border border-slate-300 text-xs font-medium focus:border-purple-500 outline-none">
+                               class="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-medium focus:border-purple-500 outline-none">
                     </div>
 
                     <!-- Actions -->
-                    <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+                    <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">
                         <button type="button" @click="photoModalOpen = false"
-                                class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 text-xs font-bold transition">
+                                class="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-bold transition">
                             Batal
                         </button>
                         <button type="submit"

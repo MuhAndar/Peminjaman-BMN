@@ -44,14 +44,26 @@ class BmnDocumentService
 
         $ketuaSignatureBase64 = null;
         if (in_array($loan->status, ['APPROVED', 'BAST_ISSUED', 'ACTIVE', 'RETURN_REQUESTED', 'RETURN_CHECKED', 'RETURNED'])) {
-            $ketuaUser = $signatoryKetua && $signatoryKetua->employee ? $signatoryKetua->employee->user : null;
-            if (!$ketuaUser) {
-                $ketuaUser = \App\Models\User::where('role', 'KETUA_TIM_ASET')->whereNotNull('signature_path')->first();
+            if (!empty($loan->approver_signature)) {
+                if (str_starts_with($loan->approver_signature, 'data:image')) {
+                    $ketuaSignatureBase64 = $loan->approver_signature;
+                } elseif (\Illuminate\Support\Facades\Storage::disk('public')->exists($loan->approver_signature)) {
+                    $content = \Illuminate\Support\Facades\Storage::disk('public')->get($loan->approver_signature);
+                    $mime = \Illuminate\Support\Facades\Storage::disk('public')->mimeType($loan->approver_signature) ?: 'image/png';
+                    $ketuaSignatureBase64 = 'data:' . $mime . ';base64,' . base64_encode($content);
+                }
             }
-            if ($ketuaUser && !empty($ketuaUser->signature_path) && \Illuminate\Support\Facades\Storage::disk('public')->exists($ketuaUser->signature_path)) {
-                $content = \Illuminate\Support\Facades\Storage::disk('public')->get($ketuaUser->signature_path);
-                $mime = \Illuminate\Support\Facades\Storage::disk('public')->mimeType($ketuaUser->signature_path) ?: 'image/png';
-                $ketuaSignatureBase64 = 'data:' . $mime . ';base64,' . base64_encode($content);
+
+            if (!$ketuaSignatureBase64) {
+                $ketuaUser = $signatoryKetua && $signatoryKetua->employee ? $signatoryKetua->employee->user : null;
+                if (!$ketuaUser) {
+                    $ketuaUser = \App\Models\User::where('role', 'KETUA_TIM_ASET')->whereNotNull('signature_path')->first();
+                }
+                if ($ketuaUser && !empty($ketuaUser->signature_path) && \Illuminate\Support\Facades\Storage::disk('public')->exists($ketuaUser->signature_path)) {
+                    $content = \Illuminate\Support\Facades\Storage::disk('public')->get($ketuaUser->signature_path);
+                    $mime = \Illuminate\Support\Facades\Storage::disk('public')->mimeType($ketuaUser->signature_path) ?: 'image/png';
+                    $ketuaSignatureBase64 = 'data:' . $mime . ';base64,' . base64_encode($content);
+                }
             }
         }
 

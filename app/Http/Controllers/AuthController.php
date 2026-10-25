@@ -45,6 +45,9 @@ class AuthController extends Controller
      */
     public function quickLogin(Request $request, string $role)
     {
+        // Proteksi Keamanan: Akses Quick Login hanya diizinkan di lingkungan lokal atau pengujian
+        abort_unless(app()->environment('local', 'testing'), 404);
+
         $user = User::where('role', $role)->first();
         if ($user) {
             Auth::login($user);

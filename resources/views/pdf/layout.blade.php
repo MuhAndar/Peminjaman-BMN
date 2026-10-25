@@ -165,13 +165,15 @@
             width: 50%;
             font-size: 11pt;
             line-height: 1.25;
+            text-align: center;
         }
         .signature-space {
             height: 70px; /* Ruang kosong standar ± 2,5 cm di atas nama penandatangan */
             min-height: 70px;
             max-height: 70px;
             line-height: 70px;
-            margin: 2px 0 4px 0;
+            margin: 2px auto 4px auto;
+            text-align: center;
             overflow: hidden;
         }
         .signature-space img {
@@ -181,6 +183,7 @@
             width: auto;
             display: inline-block;
             vertical-align: middle;
+            margin: 0 auto;
         }
 
         /* ===================== CHECKBOX & TINDAK LANJUT ===================== */

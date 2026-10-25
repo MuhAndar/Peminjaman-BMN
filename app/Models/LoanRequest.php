@@ -26,6 +26,7 @@ class LoanRequest extends Model
         'decision_note',
         'borrower_signature',
         'officer_signature',
+        'approver_signature',
         'is_legacy',
         'legacy_seq',
         'submitted_at',

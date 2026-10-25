@@ -287,13 +287,14 @@ class LoanAuditController extends Controller
 
         $filename = 'Audit_Peminjaman_BMN_' . Carbon::now('Asia/Makassar')->format('Ymd_His') . '.xlsx';
 
-        return new StreamedResponse(function () use ($spreadsheet) {
+        return response()->streamDownload(function () use ($spreadsheet) {
             $writer = new Xlsx($spreadsheet);
             $writer->save('php://output');
-        }, 200, [
+        }, $filename, [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             'Content-Disposition' => 'attachment; filename="' . $filename . '"',
-            'Cache-Control' => 'max-age=0',
+            'Cache-Control' => 'max-age=0, no-cache, no-store, must-revalidate',
+            'Pragma' => 'public',
         ]);
     }
 
@@ -304,7 +305,7 @@ class LoanAuditController extends Controller
     {
         $filename = 'Audit_Peminjaman_BMN_' . Carbon::now('Asia/Makassar')->format('Ymd_His') . '.csv';
 
-        return new StreamedResponse(function () use ($logs, $periodeLabel) {
+        return response()->streamDownload(function () use ($logs, $periodeLabel) {
             $handle = fopen('php://output', 'w');
             fputs($handle, "\xEF\xBB\xBF"); // BOM UTF-8
 
@@ -356,9 +357,11 @@ class LoanAuditController extends Controller
             }
 
             fclose($handle);
-        }, 200, [
+        }, $filename, [
             'Content-Type' => 'text/csv; charset=UTF-8',
             'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Cache-Control' => 'max-age=0, no-cache, no-store, must-revalidate',
+            'Pragma' => 'public',
         ]);
     }
 }

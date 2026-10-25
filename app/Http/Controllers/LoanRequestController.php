@@ -23,15 +23,40 @@ class LoanRequestController extends Controller
     /**
      * List user's own loan requests (Peminjam).
      */
-    public function index()
+    public function index(Request $request)
     {
         $user = Auth::user();
-        $loans = LoanRequest::where('borrower_id', $user->employee_id)
-            ->with(['items.asset', 'documents'])
-            ->orderBy('created_at', 'desc')
-            ->paginate(10);
+        $employeeId = $user->employee_id;
 
-        return view('loans.index', compact('loans'));
+        $baseQuery = LoanRequest::where('borrower_id', $employeeId);
+
+        $statusFilter = $request->query('status', 'all');
+
+        $counts = [
+            'all' => (clone $baseQuery)->count(),
+            'active' => (clone $baseQuery)->where('status', 'ACTIVE')->count(),
+            'process' => (clone $baseQuery)->whereIn('status', ['SUBMITTED', 'UNDER_APPROVAL', 'APPROVED', 'BAST_ISSUED', 'RETURN_REQUESTED'])->count(),
+            'returned' => (clone $baseQuery)->where('status', 'RETURNED')->count(),
+            'rejected' => (clone $baseQuery)->whereIn('status', ['REJECTED', 'NEEDS_REVISION'])->count(),
+        ];
+
+        $query = (clone $baseQuery)->with(['items.asset', 'documents'])->orderBy('created_at', 'desc');
+
+        if ($statusFilter === 'active') {
+            $query->where('status', 'ACTIVE');
+        } elseif ($statusFilter === 'process') {
+            $query->whereIn('status', ['SUBMITTED', 'UNDER_APPROVAL', 'APPROVED', 'BAST_ISSUED', 'RETURN_REQUESTED']);
+        } elseif ($statusFilter === 'returned') {
+            $query->where('status', 'RETURNED');
+        } elseif ($statusFilter === 'rejected') {
+            $query->whereIn('status', ['REJECTED', 'NEEDS_REVISION']);
+        } elseif ($statusFilter && $statusFilter !== 'all') {
+            $query->where('status', $statusFilter);
+        }
+
+        $loans = $query->paginate(10)->withQueryString();
+
+        return view('loans.index', compact('loans', 'statusFilter', 'counts'));
     }
 
     /**
@@ -275,18 +300,42 @@ class LoanRequestController extends Controller
      */
     public function manageQueue(Request $request)
     {
+        abort_unless(
+            Auth::check() && (Auth::user()->isPengelola() || Auth::user()->isAdmin()),
+            403,
+            'Akses antrean telaah terbatas untuk Pengelola BMN dan Administrator Sistem.'
+        );
+
         $statusFilter = $request->query('status');
+
+        $baseQuery = LoanRequest::query();
+
+        $counts = [
+            'all' => (clone $baseQuery)->count(),
+            'SUBMITTED' => (clone $baseQuery)->where('status', 'SUBMITTED')->count(),
+            'UNDER_APPROVAL' => (clone $baseQuery)->where('status', 'UNDER_APPROVAL')->count(),
+            'APPROVED' => (clone $baseQuery)->where('status', 'APPROVED')->count(),
+            'BAST_ISSUED' => (clone $baseQuery)->where('status', 'BAST_ISSUED')->count(),
+            'ACTIVE' => (clone $baseQuery)->where('status', 'ACTIVE')->count(),
+            'RETURN_REQUESTED' => (clone $baseQuery)->where('status', 'RETURN_REQUESTED')->count(),
+            'RETURNED' => (clone $baseQuery)->where('status', 'RETURNED')->count(),
+            'REJECTED' => (clone $baseQuery)->whereIn('status', ['REJECTED', 'NEEDS_REVISION'])->count(),
+        ];
 
         $query = LoanRequest::with(['borrower', 'items.asset'])
             ->orderBy('created_at', 'desc');
 
         if ($statusFilter) {
-            $query->where('status', $statusFilter);
+            if ($statusFilter === 'REJECTED') {
+                $query->whereIn('status', ['REJECTED', 'NEEDS_REVISION']);
+            } else {
+                $query->where('status', $statusFilter);
+            }
         }
 
         $loans = $query->paginate(12)->withQueryString();
 
-        return view('kelola.queue', compact('loans', 'statusFilter'));
+        return view('kelola.queue', compact('loans', 'statusFilter', 'counts'));
     }
 
     /**
@@ -294,6 +343,12 @@ class LoanRequestController extends Controller
      */
     public function review(Request $request, string $id)
     {
+        abort_unless(
+            Auth::check() && (Auth::user()->isPengelola() || Auth::user()->isAdmin()),
+            403,
+            'Akses telaah pengajuan terbatas untuk Pengelola BMN dan Administrator Sistem.'
+        );
+
         $loan = LoanRequest::findOrFail($id);
         $user = Auth::user();
 
@@ -326,8 +381,22 @@ class LoanRequestController extends Controller
      */
     public function issueBast(Request $request, string $id)
     {
+        abort_unless(
+            Auth::check() && (Auth::user()->isPengelola() || Auth::user()->isAdmin()),
+            403,
+            'Akses penerbitan BAST Peminjaman terbatas untuk Pengelola BMN dan Administrator.'
+        );
+
         $loan = LoanRequest::findOrFail($id);
         $user = Auth::user();
+
+        // Validasi ketersediaan foto fisik pendukung BAST Peminjaman
+        $existingPhotosCount = $loan->photos()->where('stage', 'BAST_PEMINJAMAN')->count();
+        $hasUploadedPhotos = $request->hasFile('photos') && count(array_filter((array)$request->file('photos'), fn($f) => $f && $f->isValid())) > 0;
+
+        if ($existingPhotosCount === 0 && !$hasUploadedPhotos) {
+            return back()->with('error', 'Dokumentasi foto fisik BMN wajib dilampirkan sebelum menerbitkan BAST Peminjaman agar dokumen memiliki bukti dukung fisik.');
+        }
 
         try {
             // Simpan foto dokumentasi fisik BMN jika dilampirkan langsung saat pembuatan draf BAST
@@ -367,6 +436,12 @@ class LoanRequestController extends Controller
      */
     public function confirmActive(Request $request, string $id)
     {
+        abort_unless(
+            Auth::check() && (Auth::user()->isPengelola() || Auth::user()->isAdmin()),
+            403,
+            'Akses konfirmasi penyerahan BMN terbatas untuk Pengelola BMN.'
+        );
+
         $loan = LoanRequest::findOrFail($id);
         $user = Auth::user();
 
@@ -408,8 +483,22 @@ class LoanRequestController extends Controller
      */
     public function processReturnCheck(Request $request, string $id)
     {
+        abort_unless(
+            Auth::check() && (Auth::user()->isPengelola() || Auth::user()->isAdmin()),
+            403,
+            'Akses pemeriksaan fisik pengembalian terbatas untuk Pengelola BMN.'
+        );
+
         $loan = LoanRequest::findOrFail($id);
         $user = Auth::user();
+
+        // Validasi ketersediaan foto fisik pendukung BAST Pengembalian
+        $existingPhotosCount = $loan->photos()->where('stage', 'BAST_PENGEMBALIAN')->count();
+        $hasUploadedPhotos = $request->hasFile('photos') && count(array_filter((array)$request->file('photos'), fn($f) => $f && $f->isValid())) > 0;
+
+        if ($existingPhotosCount === 0 && !$hasUploadedPhotos) {
+            return back()->with('error', 'Dokumentasi foto fisik pengembalian BMN wajib dilampirkan sebelum menerbitkan BAST Pengembalian agar kondisi akhir tercatat valid.');
+        }
 
         $itemsCondition = $request->input('items', []);
 
@@ -452,6 +541,12 @@ class LoanRequestController extends Controller
      */
     public function finalizeReturn(string $id)
     {
+        abort_unless(
+            Auth::check() && (Auth::user()->isPengelola() || Auth::user()->isAdmin()),
+            403,
+            'Akses penyelesaian pengembalian BMN terbatas untuk Pengelola BMN.'
+        );
+
         $loan = LoanRequest::findOrFail($id);
         $user = Auth::user();
 
@@ -475,6 +570,14 @@ class LoanRequestController extends Controller
     {
         $loan = LoanRequest::findOrFail($id);
         $user = Auth::user();
+
+        // Otorisasi: Peminjam hanya boleh untuk peminjamannya sendiri, pengelola & admin boleh untuk semua
+        if ($user->role === 'PEMINJAM' && $loan->borrower_id !== $user->employee_id) {
+            abort(403, 'Anda tidak berhak mengunggah foto untuk pengajuan peminjaman ini.');
+        }
+        if (!$user->isPeminjam() && !$user->isPengelola() && !$user->isAdmin()) {
+            abort(403, 'Peran Anda tidak diizinkan untuk mengunggah foto dokumentasi.');
+        }
 
         $rawFiles = (array) $request->file('photos');
         $cleanFiles = array_values(array_filter($rawFiles, function ($f) {

@@ -2,37 +2,145 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AuditLog;
 use App\Models\LoanRequest;
 use App\Services\LoanStateMachine;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class ApprovalController extends Controller
 {
-    public function index()
+    /**
+     * Memastikan hanya Ketua Tim Keuangan & Aset atau Admin yang dapat mengakses modul persetujuan.
+     */
+    private function authorizeApproval(): void
     {
-        $loans = LoanRequest::where('status', 'UNDER_APPROVAL')
-            ->with(['borrower', 'items.asset'])
-            ->orderBy('created_at', 'asc')
-            ->paginate(10);
+        abort_unless(
+            Auth::check() && (Auth::user()->isKetuaTim() || Auth::user()->isAdmin()),
+            403,
+            'Akses khusus Ketua Tim Keuangan & Aset atau Administrator Sistem.'
+        );
+    }
 
-        return view('approval.index', compact('loans'));
+    public function index(Request $request)
+    {
+        $this->authorizeApproval();
+
+        $tab = $request->query('tab', 'waiting');
+
+        $query = LoanRequest::with(['borrower', 'items.asset', 'documents']);
+
+        if ($tab === 'approved') {
+            $query->whereIn('status', ['APPROVED', 'BAST_ISSUED', 'ACTIVE', 'RETURN_REQUESTED', 'RETURN_CHECKED', 'RETURNED'])
+                ->orderBy('updated_at', 'desc');
+        } elseif ($tab === 'rejected') {
+            $query->whereIn('status', ['REJECTED', 'NEEDS_REVISION', 'REVISION_REQUESTED'])
+                ->orderBy('updated_at', 'desc');
+        } elseif ($tab === 'all') {
+            $query->orderBy('created_at', 'desc');
+        } else {
+            $tab = 'waiting';
+            $query->where('status', 'UNDER_APPROVAL')
+                ->orderBy('created_at', 'asc');
+        }
+
+        $loans = $query->paginate(10)->withQueryString();
+
+        $counts = [
+            'waiting' => LoanRequest::where('status', 'UNDER_APPROVAL')->count(),
+            'approved' => LoanRequest::whereIn('status', ['APPROVED', 'BAST_ISSUED', 'ACTIVE', 'RETURN_REQUESTED', 'RETURN_CHECKED', 'RETURNED'])->count(),
+            'rejected' => LoanRequest::whereIn('status', ['REJECTED', 'NEEDS_REVISION', 'REVISION_REQUESTED'])->count(),
+            'all' => LoanRequest::count(),
+        ];
+
+        return view('approval.index', compact('loans', 'tab', 'counts'));
     }
 
     public function show(string $id)
     {
+        $this->authorizeApproval();
+
         $loan = LoanRequest::with(['borrower', 'items.asset', 'history.actor', 'documents'])
             ->findOrFail($id);
 
-        return view('approval.show', compact('loan'));
+        $user = Auth::user();
+        $isSelf = ($user->employee_id && $user->employee_id === $loan->borrower_id);
+
+        return view('approval.show', compact('loan', 'isSelf'));
     }
 
     public function approve(Request $request, string $id)
     {
+        $this->authorizeApproval();
+
         $loan = LoanRequest::findOrFail($id);
         $user = Auth::user();
         $note = $request->input('note', 'Pengajuan peminjaman BMN disetujui oleh Ketua Tim Keuangan dan Aset.');
+
+        // Proses tanda tangan digital Ketua Tim jika diberikan
+        $source = $request->input('signature_source'); // 'profile', 'pad', 'file', null
+        $signaturePath = null;
+
+        if ($source === 'profile') {
+            if ($user->signature_path && Storage::disk('public')->exists($user->signature_path)) {
+                $signaturePath = $user->signature_path;
+            }
+        } elseif ($source === 'pad') {
+            $dataUri = $request->input('signature_data');
+            if (!empty($dataUri) && preg_match('/^data:image\/(png|jpeg);base64,/', $dataUri)) {
+                $encodedImage = substr($dataUri, strpos($dataUri, ',') + 1);
+                $decodedImage = base64_decode($encodedImage);
+                if ($decodedImage !== false) {
+                    $fileName = 'signatures/approver_' . $loan->id . '_' . time() . '_' . Str::random(4) . '.png';
+                    Storage::disk('public')->put($fileName, $decodedImage);
+                    $signaturePath = $fileName;
+
+                    if ($request->boolean('save_to_profile')) {
+                        $user->signature_path = $fileName;
+                        $user->save();
+                    }
+                }
+            }
+        } elseif ($source === 'file') {
+            if ($request->hasFile('signature_file') && $request->file('signature_file')->isValid()) {
+                $request->validate([
+                    'signature_file' => 'required|image|mimes:png,jpg,jpeg|max:2048',
+                ]);
+                $file = $request->file('signature_file');
+                $fileName = 'signatures/approver_' . $loan->id . '_' . time() . '_' . Str::random(4) . '.' . $file->getClientOriginalExtension();
+                $path = $file->storeAs('signatures', basename($fileName), 'public');
+                $signaturePath = $path;
+
+                if ($request->boolean('save_to_profile')) {
+                    $user->signature_path = $path;
+                    $user->save();
+                }
+            }
+        }
+
+        // Jika tidak memilih secara eksplisit tapi user punya tanda tangan profil, gunakan sebagai default
+        if (!$signaturePath && $user->signature_path && Storage::disk('public')->exists($user->signature_path)) {
+            $signaturePath = $user->signature_path;
+        }
+
+        // Validasi Wajib: Dokumen resmi Surat Peminjaman tidak boleh terbit tanpa tanda tangan resmi Ketua Tim
+        if (!$signaturePath) {
+            return back()->with('error', 'Tanda tangan digital Ketua Tim Keuangan & Aset wajib dibubuhkan sebelum menyetujui dan menerbitkan Surat Peminjaman resmi.');
+        }
+
+        $loan->approver_signature = $signaturePath;
+        $loan->save();
+
+        AuditLog::record(
+            'SIGN_LOAN_APPROVER',
+            'LoanRequest',
+            $loan->id,
+            null,
+            ['source' => $source ?: 'profile_default', 'file' => $signaturePath]
+        );
 
         try {
             LoanStateMachine::transition($loan, 'APPROVED', $user, $note);
@@ -44,6 +152,8 @@ class ApprovalController extends Controller
 
     public function requestRevision(Request $request, string $id)
     {
+        $this->authorizeApproval();
+
         $request->validate(['note' => 'required|string']);
         $loan = LoanRequest::findOrFail($id);
         $user = Auth::user();
@@ -58,6 +168,8 @@ class ApprovalController extends Controller
 
     public function reject(Request $request, string $id)
     {
+        $this->authorizeApproval();
+
         $request->validate(['note' => 'required|string']);
         $loan = LoanRequest::findOrFail($id);
         $user = Auth::user();

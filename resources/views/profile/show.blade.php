@@ -317,15 +317,15 @@
     </div>
 
     <!-- MAIN SEGMENTED TAB SELECTOR -->
-    <div class="flex rounded-2xl bg-slate-200/70 p-1.5 max-w-xl">
+    <div class="flex rounded-2xl bg-slate-200/70 dark:bg-slate-800/90 p-1.5 max-w-xl border border-transparent dark:border-slate-700/60 shadow-xs">
         <button type="button" @click="switchMainTab('biodata')"
-                :class="mainTab === 'biodata' ? 'bg-white text-[#0B63B5] font-extrabold shadow-sm' : 'text-slate-600 hover:text-slate-900 font-bold'"
+                :class="mainTab === 'biodata' ? 'bg-white dark:bg-[#0B63B5] text-[#0B63B5] dark:text-white font-extrabold shadow-sm' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white font-bold'"
                 class="flex-1 py-2.5 px-4 rounded-xl text-xs sm:text-sm flex items-center justify-center gap-2 transition select-none cursor-pointer">
             <i data-lucide="id-card" class="w-4 h-4"></i>
             <span>Ubah Data Diri Peminjaman</span>
         </button>
         <button type="button" @click="switchMainTab('signature')"
-                :class="mainTab === 'signature' ? 'bg-white text-[#0B63B5] font-extrabold shadow-sm' : 'text-slate-600 hover:text-slate-900 font-bold'"
+                :class="mainTab === 'signature' ? 'bg-white dark:bg-[#0B63B5] text-[#0B63B5] dark:text-white font-extrabold shadow-sm' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white font-bold'"
                 class="flex-1 py-2.5 px-4 rounded-xl text-xs sm:text-sm flex items-center justify-center gap-2 transition select-none cursor-pointer">
             <i data-lucide="signature" class="w-4 h-4"></i>
             <span>Tanda Tangan Digital</span>
@@ -428,15 +428,15 @@
                 </div>
 
                 <!-- QUICK TAB SHORTCUT BUTTONS -->
-                <div class="pt-3 border-t border-slate-100 flex items-center gap-2">
+                <div class="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center gap-2">
                     <button type="button" @click="switchMainTab('biodata')"
-                            :class="mainTab === 'biodata' ? 'bg-blue-50 text-[#0B63B5] border-blue-200' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'"
+                            :class="mainTab === 'biodata' ? 'bg-blue-50 dark:bg-blue-950/60 text-[#0B63B5] dark:text-blue-400 border-blue-200 dark:border-blue-800' : 'bg-slate-50 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'"
                             class="flex-1 py-2 px-3 rounded-xl border text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer">
                         <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
                         <span>Ubah Data Diri</span>
                     </button>
                     <button type="button" @click="switchMainTab('signature')"
-                            :class="mainTab === 'signature' ? 'bg-blue-50 text-[#0B63B5] border-blue-200' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'"
+                            :class="mainTab === 'signature' ? 'bg-blue-50 dark:bg-blue-950/60 text-[#0B63B5] dark:text-blue-400 border-blue-200 dark:border-blue-800' : 'bg-slate-50 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'"
                             class="flex-1 py-2 px-3 rounded-xl border text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer">
                         <i data-lucide="signature" class="w-3.5 h-3.5"></i>
                         <span>Kelola TTD</span>
@@ -445,29 +445,29 @@
             </div>
 
             <!-- TANDA TANGAN AKTIF SAAT INI -->
-            <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 space-y-4">
+            <div class="bg-white dark:bg-[#1E293B] rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 space-y-4">
                 <div class="flex items-center justify-between">
-                    <h3 class="text-sm font-black text-slate-900 flex items-center gap-2">
+                    <h3 class="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
                         <i data-lucide="signature" class="w-4 h-4 text-[#0B63B5]"></i>
                         <span>Spesimen Tanda Tangan Tersimpan</span>
                     </h3>
                 </div>
 
                 @if($user->signature_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($user->signature_path))
-                    <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 flex flex-col items-center justify-center space-y-3">
-                        <div class="p-3 bg-white rounded-xl border border-dashed border-slate-300 w-full max-w-[260px] flex flex-col items-center justify-center min-h-[85px] shadow-2xs relative">
+                    <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 flex flex-col items-center justify-center space-y-3">
+                        <div class="p-3 bg-white signature-paper rounded-xl border border-dashed border-slate-300 dark:border-slate-400 w-full max-w-[260px] flex flex-col items-center justify-center min-h-[85px] shadow-2xs relative">
                             <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Ukuran Dokumen (± 2,5 cm)</span>
                             <img src="{{ asset('storage/' . $user->signature_path) }}" alt="Tanda Tangan {{ $user->name }}" class="max-h-[66px] max-w-[165px] object-contain">
                         </div>
-                        <div class="w-full flex items-center justify-between text-[11px] text-slate-500 font-medium">
-                            <span class="flex items-center gap-1 text-emerald-600 font-bold">
+                        <div class="w-full flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                            <span class="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold">
                                 <i data-lucide="check-circle" class="w-3.5 h-3.5"></i>
                                 Siap digunakan di BAST & Surat
                             </span>
                             <form method="POST" action="{{ route('profile.signature.delete') }}" onsubmit="return confirm('Hapus spesimen tanda tangan ini dari profil?')">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" class="text-red-500 hover:text-red-700 font-bold hover:underline transition flex items-center gap-1 cursor-pointer">
+                                <button type="submit" class="text-red-500 dark:text-red-400 hover:text-red-700 font-bold hover:underline transition flex items-center gap-1 cursor-pointer">
                                     <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                                     <span>Hapus</span>
                                 </button>
@@ -475,15 +475,15 @@
                         </div>
                     </div>
                 @else
-                    <div class="p-5 rounded-2xl bg-amber-50/70 border border-amber-200 text-center space-y-2">
-                        <div class="w-9 h-9 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mx-auto">
+                    <div class="p-5 rounded-2xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60 text-center space-y-2">
+                        <div class="w-9 h-9 rounded-full bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto">
                             <i data-lucide="alert-circle" class="w-4 h-4"></i>
                         </div>
-                        <h4 class="text-xs font-bold text-amber-900">Belum Ada Tanda Tangan Tersimpan</h4>
-                        <p class="text-[11px] text-amber-700">
+                        <h4 class="text-xs font-bold text-amber-900 dark:text-amber-300">Belum Ada Tanda Tangan Tersimpan</h4>
+                        <p class="text-[11px] text-amber-700 dark:text-amber-200/80">
                             Silakan buka tab "Tanda Tangan Digital" untuk menggambar langsung atau mengunggah gambar tanda tangan Anda.
                         </p>
-                        <button type="button" @click="switchMainTab('signature')" class="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-600 text-white font-bold text-xs hover:bg-amber-700 transition shadow-2xs cursor-pointer">
+                        <button type="button" @click="switchMainTab('signature')" class="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs transition shadow-2xs cursor-pointer">
                             <i data-lucide="pen-tool" class="w-3.5 h-3.5"></i>
                             <span>Buat Tanda Tangan Sekarang</span>
                         </button>
@@ -492,12 +492,12 @@
             </div>
 
             <!-- KLAUSUL RESMI KETENTUAN BMN -->
-            <div class="p-4 rounded-2xl bg-blue-50/60 border border-blue-200/60 text-slate-700 text-xs space-y-1.5">
-                <div class="font-bold text-slate-900 flex items-center gap-1.5">
-                    <i data-lucide="info" class="w-4 h-4 text-[#0B63B5]"></i>
+            <div class="p-4 rounded-2xl bg-blue-50/60 dark:bg-blue-950/30 border border-blue-200/60 dark:border-blue-900/40 text-slate-700 dark:text-slate-300 text-xs space-y-1.5">
+                <div class="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                    <i data-lucide="info" class="w-4 h-4 text-[#0B63B5] dark:text-blue-400"></i>
                     <span>Ketentuan Data Peminjam BMN</span>
                 </div>
-                <p class="text-[11px] text-slate-600 leading-relaxed">
+                <p class="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
                     Sesuai Peraturan Menkeu dan SOP BMN BBLSDM Makassar, data identitas dan alamat rumah digunakan sebagai klausul pertanggungjawaban mutlak peminjam atas barang milik negara (UU No. 1 Tahun 2004).
                 </p>
             </div>
@@ -739,15 +739,15 @@
                 </div>
 
                 <!-- SUB TAB SWITCHER FOR SIGNATURE METHOD -->
-                <div class="flex rounded-2xl bg-slate-100 p-1">
+                <div class="flex rounded-2xl bg-slate-100 dark:bg-slate-800/80 p-1 border border-slate-200/80 dark:border-slate-700/60">
                     <button type="button" @click="activeTab = 'pad'; initCanvas()"
-                            :class="activeTab === 'pad' ? 'bg-white text-slate-900 font-extrabold shadow-sm' : 'text-slate-600 hover:text-slate-900 font-bold'"
+                            :class="activeTab === 'pad' ? 'bg-white dark:bg-[#0B63B5] text-slate-900 dark:text-white font-extrabold shadow-sm' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white font-bold'"
                             class="flex-1 py-2 rounded-xl text-xs flex items-center justify-center gap-2 transition cursor-pointer">
                         <i data-lucide="pencil" class="w-4 h-4"></i>
                         <span>Gambar di Papan Kanvas</span>
                     </button>
                     <button type="button" @click="activeTab = 'upload'"
-                            :class="activeTab === 'upload' ? 'bg-white text-slate-900 font-extrabold shadow-sm' : 'text-slate-600 hover:text-slate-900 font-bold'"
+                            :class="activeTab === 'upload' ? 'bg-white dark:bg-[#0B63B5] text-slate-900 dark:text-white font-extrabold shadow-sm' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white font-bold'"
                             class="flex-1 py-2 rounded-xl text-xs flex items-center justify-center gap-2 transition cursor-pointer">
                         <i data-lucide="upload" class="w-4 h-4"></i>
                         <span>Unggah Berkas Gambar</span>
@@ -759,37 +759,37 @@
                      @keydown.window="if (($event.ctrlKey || $event.metaKey) && $event.key.toLowerCase() === 'z' && activeTab === 'pad') { $event.preventDefault(); undo(); }"
                      class="space-y-4">
                     <div class="flex items-center justify-between text-xs pb-1">
-                        <span class="font-bold text-slate-700 flex items-center gap-1.5">
-                            <i data-lucide="edit-3" class="w-3.5 h-3.5 text-[#0B63B5]"></i>
+                        <span class="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
+                            <i data-lucide="edit-3" class="w-3.5 h-3.5 text-[#0B63B5] dark:text-blue-400"></i>
                             <span>Goreskan Tanda Tangan:</span>
                         </span>
                         <div class="flex items-center gap-2">
-                            <span x-show="justCorrected" x-transition.opacity class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 shadow-2xs">
+                            <span x-show="justCorrected" x-transition.opacity class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800 shadow-2xs">
                                 <i data-lucide="sparkles" class="w-3 h-3 text-emerald-500"></i>
                                 <span>Stroke Dihaluskan Otomatis</span>
                             </span>
-                            <label class="inline-flex items-center gap-1.5 text-[11px] font-bold text-slate-600 cursor-pointer select-none bg-slate-100 hover:bg-slate-200/80 px-2.5 py-1 rounded-lg transition">
-                                <input type="checkbox" x-model="smoothingEnabled" class="rounded border-slate-300 text-[#0B63B5] focus:ring-[#0B63B5] w-3.5 h-3.5">
+                            <label class="inline-flex items-center gap-1.5 text-[11px] font-bold text-slate-600 dark:text-slate-300 cursor-pointer select-none bg-slate-100 dark:bg-slate-800 hover:bg-slate-200/80 dark:hover:bg-slate-700 px-2.5 py-1 rounded-lg transition border border-slate-200/60 dark:border-slate-700">
+                                <input type="checkbox" x-model="smoothingEnabled" class="rounded border-slate-300 dark:border-slate-600 text-[#0B63B5] focus:ring-[#0B63B5] w-3.5 h-3.5">
                                 <span>Koreksi Stroke Halus (Chaikin Smoothing)</span>
                             </label>
                         </div>
                     </div>
 
                     <!-- KOTAK TANDA TANGAN PROPORSIONAL DENGAN UKURAN DOKUMEN BMN (± 2,5 CM / RASIO 2.5 : 1) -->
-                    <div class="bg-slate-50/80 border border-slate-200/90 rounded-3xl p-5 space-y-3">
+                    <div class="bg-slate-50/80 dark:bg-slate-800/60 border border-slate-200/90 dark:border-slate-700/80 rounded-3xl p-5 space-y-3">
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
-                            <span class="inline-flex items-center gap-1.5 font-bold text-slate-800">
-                                <i data-lucide="file-check-2" class="w-4 h-4 text-[#0B63B5]"></i>
+                            <span class="inline-flex items-center gap-1.5 font-bold text-slate-800 dark:text-slate-200">
+                                <i data-lucide="file-check-2" class="w-4 h-4 text-[#0B63B5] dark:text-blue-400"></i>
                                 <span>Pratinjau Ruang Tanda Tangan Dokumen BMN</span>
                             </span>
-                            <span class="inline-flex items-center gap-1.5 text-[11px] font-bold text-[#0B63B5] bg-blue-50 px-2.5 py-1 rounded-full border border-blue-200/80 w-fit">
+                            <span class="inline-flex items-center gap-1.5 text-[11px] font-bold text-[#0B63B5] dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 px-2.5 py-1 rounded-full border border-blue-200/80 dark:border-blue-800/80 w-fit">
                                 <i data-lucide="scale" class="w-3 h-3"></i>
                                 <span>Rasio Dokumen 2.5 : 1 (Standar Cetak ± 2,5 cm)</span>
                             </span>
                         </div>
 
                         <!-- Canvas Box with Strict Document Aspect Ratio (2.5 : 1) -->
-                        <div class="w-full max-w-[420px] mx-auto bg-white rounded-2xl border-2 border-dashed border-slate-300 p-3 shadow-xs">
+                        <div class="w-full max-w-[420px] mx-auto bg-white signature-paper rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-400 p-3 shadow-xs">
                             <div class="relative w-full aspect-[5/2] rounded-xl overflow-hidden bg-slate-50/30">
                                 <canvas id="signature-pad"
                                         @mousedown="startDraw($event)"

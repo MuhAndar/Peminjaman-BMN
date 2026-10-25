@@ -17,8 +17,12 @@
     phoneNumber: '{{ addslashes($employee->phone_number ?? '') }}',
     searchQuery: '',
     selectedCategory: '',
+    hideUnavailable: false,
 
-    filterAsset(name, brandModel, nup, categoryCode, categoryLabel, plateNumber) {
+    filterAsset(name, brandModel, nup, categoryCode, categoryLabel, plateNumber, isLoaned) {
+        if (this.hideUnavailable && isLoaned) {
+            return false;
+        }
         if (this.selectedCategory && categoryCode !== this.selectedCategory) {
             return false;
         }
@@ -41,6 +45,7 @@
     clearFilters() {
         this.searchQuery = '';
         this.selectedCategory = '';
+        this.hideUnavailable = false;
     },
 
     toggleAsset(id) {
@@ -85,7 +90,8 @@
            onclick="if (document.referrer && document.referrer.indexOf(window.location.host) !== -1) { history.back(); return false; }"
            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:text-slate-900 hover:bg-slate-50 transition shadow-2xs">
             <i data-lucide="arrow-left" class="w-4 h-4 text-slate-500"></i>
-            <span>Kembali</span>
+            <span class="hidden sm:inline">Kembali ke Daftar Pengajuan</span>
+            <span class="sm:hidden">Kembali</span>
         </a>
         <span class="text-xs text-slate-500 font-semibold">
             Langkah <span x-text="step" class="font-black text-[#0B63B5]"></span> dari 4
@@ -178,19 +184,28 @@
             </div>
 
             <!-- QUICK FILTER BUTTONS (5 JENIS PALING SERING DIPINJAM SECARA DINAMIS) -->
-            <div class="space-y-1.5">
-                <div class="flex items-center justify-between text-[11px]">
-                    <span class="font-bold text-slate-500 flex items-center gap-1">
+            <div class="space-y-2">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px]">
+                    <span class="font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1">
                         <i data-lucide="flame" class="w-3.5 h-3.5 text-amber-500"></i>
                         <span>Filter Cepat Terpopuler:</span>
                     </span>
-                    <button type="button" x-show="selectedCategory || searchQuery" @click="clearFilters()" class="text-[11px] text-[#0B63B5] hover:underline font-bold">
-                        Reset Filter
-                    </button>
+
+                    <div class="flex items-center gap-3 self-end sm:self-auto">
+                        <!-- Checklist Filter: Sembunyikan Barang yang Sedang Digunakan -->
+                        <label class="inline-flex items-center gap-2 cursor-pointer select-none font-bold text-slate-700 dark:text-slate-300 hover:text-[#0B63B5] dark:hover:text-blue-400 transition bg-slate-50 dark:bg-slate-800/80 px-2.5 py-1 rounded-xl border border-slate-200 dark:border-slate-700">
+                            <input type="checkbox" x-model="hideUnavailable" class="w-3.5 h-3.5 rounded text-[#0B63B5] border-slate-300 dark:border-slate-600 focus:ring-blue-500 bg-white dark:bg-slate-700 cursor-pointer">
+                            <span>Sembunyikan barang sedang dipinjam</span>
+                        </label>
+
+                        <button type="button" x-show="selectedCategory || searchQuery || hideUnavailable" @click="clearFilters()" class="text-[11px] text-[#0B63B5] dark:text-blue-400 hover:underline font-bold whitespace-nowrap">
+                            Reset Filter
+                        </button>
+                    </div>
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
                     <button type="button" @click="selectedCategory = ''"
-                            :class="selectedCategory === '' ? 'bg-[#0B63B5] text-white border-[#0B63B5] shadow-xs' : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'"
+                            :class="selectedCategory === '' ? 'bg-[#0B63B5] text-white border-[#0B63B5] shadow-xs' : 'bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700'"
                             class="px-3 py-1.5 rounded-xl border text-xs font-bold transition flex items-center gap-1.5 select-none cursor-pointer">
                         <span>Semua</span>
                         <span class="text-[10px] opacity-80 tabular-nums">({{ $availableAssets->count() }})</span>
@@ -200,11 +215,11 @@
                     @foreach($popularCategories as $pop)
                         @php $catCount = $availableAssets->where('category_code', $pop->code)->count(); @endphp
                         <button type="button" @click="toggleCategory('{{ $pop->code }}')"
-                                :class="selectedCategory === '{{ $pop->code }}' ? 'bg-[#0B63B5] text-white border-[#0B63B5] shadow-xs ring-2 ring-blue-200' : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'"
+                                :class="selectedCategory === '{{ $pop->code }}' ? 'bg-[#0B63B5] text-white border-[#0B63B5] shadow-xs ring-2 ring-blue-200' : 'bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700'"
                                 class="px-3 py-1.5 rounded-xl border text-xs font-bold transition flex items-center gap-1.5 select-none cursor-pointer">
                             <span>{{ $pop->label }}</span>
                             <span class="text-[10px] px-1.5 py-0.5 rounded-full tabular-nums"
-                                  :class="selectedCategory === '{{ $pop->code }}' ? 'bg-white/20 text-white' : 'bg-slate-200/80 text-slate-600'">
+                                  :class="selectedCategory === '{{ $pop->code }}' ? 'bg-white/20 text-white' : 'bg-slate-200/80 dark:bg-slate-700 text-slate-600 dark:text-slate-300'">
                                 {{ $catCount }}
                             </span>
                         </button>
@@ -212,7 +227,7 @@
 
                     <!-- Indikator saat kategori yang dipilih lewat dropdown di luar 5 tombol terpopuler -->
                     <template x-if="selectedCategory && !{{ json_encode($popularCodes) }}.includes(selectedCategory)">
-                        <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 border border-blue-200 text-[#0B63B5] text-xs font-bold shadow-2xs">
+                        <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-950/70 border border-blue-200 dark:border-blue-800 text-[#0B63B5] dark:text-blue-400 text-xs font-bold shadow-2xs">
                             <span class="text-slate-400 text-[10px] uppercase font-bold">Kategori:</span>
                             <span x-text="document.querySelector('select[x-model=selectedCategory] option:checked')?.textContent || selectedCategory"></span>
                             <button type="button" @click="selectedCategory = ''" class="hover:text-red-600 p-0.5" title="Hapus filter kategori">
@@ -247,13 +262,13 @@
                         }
                     @endphp
 
-                    <div x-show="filterAsset('{{ addslashes($asset->item_name) }}', '{{ addslashes($asset->brand_model_combined) }}', '{{ $asset->nup }}', '{{ $asset->category_code }}', '{{ addslashes($asset->category->label ?? '') }}', '{{ addslashes($asset->plate_number ?? '') }}')"
+                    <div x-show="filterAsset('{{ addslashes($asset->item_name) }}', '{{ addslashes($asset->brand_model_combined) }}', '{{ $asset->nup }}', '{{ $asset->category_code }}', '{{ addslashes($asset->category->label ?? '') }}', '{{ addslashes($asset->plate_number ?? '') }}', {{ $isLoaned ? 'true' : 'false' }})"
                          @if(!$isLoaned)
                              @click="toggleAsset('{{ $asset->id }}')"
-                             :class="isSelected('{{ $asset->id }}') ? 'border-[#0B63B5] bg-blue-50/50 shadow-sm ring-1 ring-[#0B63B5]/30' : 'border-slate-200 hover:border-slate-300 bg-white'"
+                             :class="isSelected('{{ $asset->id }}') ? 'border-[#0B63B5] dark:border-blue-500 bg-blue-50/50 dark:bg-blue-950/40 shadow-sm ring-1 ring-[#0B63B5]/30' : 'border-slate-200 dark:border-slate-700/80 hover:border-slate-300 dark:hover:border-slate-600 bg-white dark:bg-[#1E293B]'"
                              class="p-4 rounded-2xl border cursor-pointer transition flex items-start gap-3 select-none h-full"
                          @else
-                             class="p-4 rounded-2xl border border-slate-200 bg-slate-100/90 text-slate-500 cursor-not-allowed select-none flex items-start gap-3 shadow-2xs h-full"
+                             class="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-100/90 dark:bg-[#0F172A]/90 text-slate-500 dark:text-slate-400 cursor-not-allowed select-none flex items-start gap-3 shadow-2xs h-full"
                          @endif>
 
                         <!-- Checkbox (disabled jika barang sedang dipinjam) -->
@@ -263,62 +278,62 @@
                                    class="mt-1 w-4 h-4 text-[#0B63B5] rounded border-slate-300 focus:ring-blue-500 pointer-events-none shrink-0"
                                @else
                                    disabled
-                                   class="mt-1 w-4 h-4 text-slate-400 rounded border-slate-300 bg-slate-200 cursor-not-allowed pointer-events-none opacity-60 shrink-0"
+                                   class="mt-1 w-4 h-4 text-slate-400 rounded border-slate-300 dark:border-slate-700 bg-slate-200 dark:bg-slate-800 cursor-not-allowed pointer-events-none opacity-60 shrink-0"
                                @endif>
 
                         <div class="flex-1 min-w-0">
                             <div class="flex items-start justify-between gap-2.5">
                                 <!-- Kolom Kiri: Nama Barang & Spesifikasi -->
                                 <div class="min-w-0 flex-1">
-                                    <h3 class="font-bold text-sm {{ $isLoaned ? 'text-slate-700' : 'text-slate-900' }} truncate" title="{{ $asset->item_name }}">
+                                    <h3 class="font-bold text-sm {{ $isLoaned ? 'text-slate-700 dark:text-slate-300' : 'text-slate-900 dark:text-white' }} truncate" title="{{ $asset->item_name }}">
                                         {{ $asset->item_name }}
                                     </h3>
-                                    <p class="text-xs font-medium {{ $isLoaned ? 'text-slate-500' : 'text-slate-700' }} mt-0.5 truncate" title="{{ $asset->brand_model_combined }}">
+                                    <p class="text-xs font-medium {{ $isLoaned ? 'text-slate-500 dark:text-slate-400' : 'text-slate-700 dark:text-slate-300' }} mt-0.5 truncate" title="{{ $asset->brand_model_combined }}">
                                         {{ $asset->brand_model_combined }}
                                     </p>
 
-                                    <div class="mt-2 text-[11px] {{ $isLoaned ? 'text-slate-400' : 'text-slate-500' }} space-y-0.5">
+                                    <div class="mt-2 text-[11px] {{ $isLoaned ? 'text-slate-500 dark:text-slate-400' : 'text-slate-500 dark:text-slate-400' }} space-y-0.5">
                                         @if($asset->plate_number)
-                                            <div>Plat: <strong class="{{ $isLoaned ? 'text-slate-600' : 'text-slate-700' }}">{{ $asset->plate_number }}</strong></div>
+                                            <div>Plat: <strong class="{{ $isLoaned ? 'text-slate-700 dark:text-slate-200' : 'text-slate-700 dark:text-slate-200' }}">{{ $asset->plate_number }}</strong></div>
                                         @endif
                                         @if($asset->nup)
-                                            <div>NUP: <strong class="{{ $isLoaned ? 'text-slate-600' : 'text-slate-700' }}">{{ $asset->nup }}</strong> &bull; Thn: {{ $asset->acquisition_year }}</div>
+                                            <div>NUP: <strong class="{{ $isLoaned ? 'text-slate-700 dark:text-slate-200' : 'text-slate-700 dark:text-slate-200' }}">{{ $asset->nup }}</strong> &bull; Thn: {{ $asset->acquisition_year }}</div>
                                         @endif
-                                        <div>Nilai: <span class="tabular-nums font-semibold">{{ $asset->formatted_value }}</span></div>
+                                        <div>Nilai: <span class="tabular-nums font-semibold {{ $isLoaned ? 'text-slate-700 dark:text-slate-300' : 'text-slate-800 dark:text-slate-200' }}">{{ $asset->formatted_value }}</span></div>
                                     </div>
                                 </div>
 
                                 <!-- Kolom Kanan: Kategori (Atas) & Status Ketersediaan / Peminjaman (Bawah) -->
                                 <div class="shrink-0 flex flex-col items-end gap-1.5 text-right">
                                     <!-- 1. Kategori Barang -->
-                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 truncate max-w-[130px]" title="{{ $asset->category->label ?? '-' }}">
+                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-transparent dark:border-slate-700/60 truncate max-w-[130px]" title="{{ $asset->category->label ?? '-' }}">
                                         {{ $asset->category->label ?? '-' }}
                                     </span>
 
                                     <!-- 2. Status & Informasi Tanggal -->
                                     @if($isLoaned)
                                         @if($isOverdue)
-                                            <span class="inline-flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 border border-rose-200 shadow-2xs">
+                                            <span class="inline-flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950/70 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800/80 shadow-2xs">
                                                 <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>
                                                 <span>Belum Kembali</span>
                                             </span>
-                                            <div class="text-[10px] text-rose-600 font-semibold leading-tight whitespace-nowrap">
+                                            <div class="text-[10px] text-rose-600 dark:text-rose-400 font-semibold leading-tight whitespace-nowrap">
                                                 Tenggat: {{ $loanEndDateStr }}
                                             </div>
                                         @else
-                                            <span class="inline-flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200 shadow-2xs">
+                                            <span class="inline-flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/80 shadow-2xs">
                                                 <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
                                                 <span>Sedang Dipinjam</span>
                                             </span>
                                             @if($loanPeriodCompact)
-                                                <div class="text-[10px] text-slate-500 font-medium leading-tight whitespace-nowrap">
+                                                <div class="text-[10px] text-slate-500 dark:text-slate-400 font-medium leading-tight whitespace-nowrap">
                                                     {{ $loanPeriodCompact }}
                                                 </div>
                                             @endif
                                         @endif
                                     @else
                                         <!-- Badge Tersedia untuk Keseimbangan Grid -->
-                                        <span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/80">
+                                        <span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/80">
                                             <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                                             <span>Tersedia</span>
                                         </span>

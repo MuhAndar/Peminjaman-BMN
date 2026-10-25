@@ -24,6 +24,7 @@ Route::middleware('auth')->group(function () {
 
     // Katalog BMN
     Route::get('/barang', [AssetController::class, 'index'])->name('assets.index');
+    Route::get('/barang/export/xlsx', [\App\Http\Controllers\DataImportController::class, 'exportAssets'])->name('assets.export');
     Route::get('/barang/{asset}', [AssetController::class, 'show'])->name('assets.show');
 
     // Profil & Pengaturan Data Diri Peminjaman & Tanda Tangan Digital Pengguna
@@ -54,7 +55,9 @@ Route::middleware('auth')->group(function () {
         // Fitur Unggah & Impor Data .xlsx
         Route::get('/import-data', [\App\Http\Controllers\DataImportController::class, 'index'])->name('import.index');
         Route::post('/import-data', [\App\Http\Controllers\DataImportController::class, 'upload'])->name('import.upload');
+        Route::post('/import-data/commit', [\App\Http\Controllers\DataImportController::class, 'commitImport'])->name('import.commit');
         Route::get('/import-data/template', [\App\Http\Controllers\DataImportController::class, 'downloadTemplate'])->name('import.template');
+        Route::get('/import-data/export', [\App\Http\Controllers\DataImportController::class, 'exportAssets'])->name('import.export');
     });
 
     // Alur Ketua Tim Keuangan & Aset
@@ -65,6 +68,10 @@ Route::middleware('auth')->group(function () {
         Route::post('/{id}/revisi', [ApprovalController::class, 'requestRevision'])->name('revision');
         Route::post('/{id}/tolak', [ApprovalController::class, 'reject'])->name('reject');
     });
+
+    // Alias routes untuk kompatibilitas nama approval.*
+    Route::get('/persetujuan-alias', [ApprovalController::class, 'index'])->name('approval.index');
+    Route::get('/persetujuan-alias/{id}', [ApprovalController::class, 'show'])->name('approval.show');
 
     // Audit Aktivitas Peminjaman BMN (Khusus Transaksi Peminjaman BMN, Bebas Data Sensitif)
     Route::prefix('audit')->name('audit.')->group(function () {
