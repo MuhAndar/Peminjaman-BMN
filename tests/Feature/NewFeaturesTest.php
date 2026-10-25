@@ -884,6 +884,8 @@ class NewFeaturesTest extends TestCase
         $resShow = $this->get(route('persetujuan.show', $loan->id));
         $resShow->assertOk();
         $resShow->assertSee($loanFresh->approver_signature);
+        $resShow->assertSee('Opsi 2: Kembalikan (Perlu Perbaikan)');
+        $resShow->assertSee('Opsi 3: Tolak Pengajuan Final');
 
         // 3. Setujui pengajuan tanpa mengirim ulang ttd (menggunakan ttd yang sudah terpasang)
         $resApprove = $this->post(route('persetujuan.approve', $loan->id), [
