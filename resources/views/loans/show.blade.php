@@ -1396,7 +1396,7 @@
                     <i data-lucide="git-commit" class="w-5 h-5 text-[#0B63B5] dark:text-blue-400"></i>
                     <div>
                         <h3 class="font-black text-sm text-slate-900 dark:text-white">Alur SOP Peminjaman BMN</h3>
-                        <span class="text-[10px] text-slate-400 dark:text-slate-400 font-semibold">SK SOP B-489 BBLSDM • 7 Tahap</span>
+                        <span class="text-[10px] text-slate-400 dark:text-slate-400 font-semibold">Standar Operasional Prosedur • 7 Tahap</span>
                     </div>
                 </div>
 
@@ -1448,7 +1448,7 @@
                         <i data-lucide="corner-down-left" class="w-4 h-4 text-purple-600 dark:text-purple-400"></i>
                         <div>
                             <h3 class="font-black text-sm text-slate-900 dark:text-white">Alur SOP Pengembalian BMN</h3>
-                            <span class="text-[10px] text-slate-400 dark:text-slate-400 font-semibold">SK SOP B-489 BBLSDM • Tahap Pengembalian</span>
+                            <span class="text-[10px] text-slate-400 dark:text-slate-400 font-semibold">Standar Operasional Prosedur • Tahap Pengembalian</span>
                         </div>
                     </div>
 

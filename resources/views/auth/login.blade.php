@@ -74,44 +74,13 @@
                 </h1>
 
                 <p class="text-sm xl:text-base text-slate-300 font-normal leading-relaxed">
-                    Layanan digital terintegrasi untuk pencatatan inventaris kantor, pengajuan peminjaman barang dinas, penerbitan Surat Peminjaman, dan Berita Acara Serah Terima (BAST) otomatis sesuai SOP B-489 BBLSDM Komdigi Makassar.
+                    Layanan digital terintegrasi untuk pencatatan inventaris kantor, pengajuan peminjaman barang dinas, penerbitan Surat Peminjaman, dan Berita Acara Serah Terima (BAST) otomatis sesuai standar operasional prosedur BBLSDM Komdigi Makassar.
                 </p>
-
-                <!-- Value Pillars / SOP Guarantees -->
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5 pt-4">
-                    <div class="p-3.5 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 hover:border-white/20 transition space-y-1.5">
-                        <div class="w-7 h-7 rounded-lg bg-blue-500/20 text-cyan-300 flex items-center justify-center">
-                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                        </div>
-                        <h4 class="text-xs font-bold text-white">SOP B-489</h4>
-                        <p class="text-[11px] text-slate-300 leading-snug">Alur 7 tahap telaah, disposisi, hingga BAST resmi.</p>
-                    </div>
-
-                    <div class="p-3.5 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 hover:border-white/20 transition space-y-1.5">
-                        <div class="w-7 h-7 rounded-lg bg-blue-500/20 text-cyan-300 flex items-center justify-center">
-                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-                        </div>
-                        <h4 class="text-xs font-bold text-white">Nomor Otomatis</h4>
-                        <p class="text-[11px] text-slate-300 leading-snug">Penomoran dokumen atomik tanpa risiko bentrok.</p>
-                    </div>
-
-                    <div class="p-3.5 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 hover:border-white/20 transition space-y-1.5">
-                        <div class="w-7 h-7 rounded-lg bg-blue-500/20 text-cyan-300 flex items-center justify-center">
-                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
-                        </div>
-                        <h4 class="text-xs font-bold text-white">Tanda Tangan Digital</h4>
-                        <p class="text-[11px] text-slate-300 leading-snug">Pencetakan berkas hukum ber-TTD spesimen sah.</p>
-                    </div>
-                </div>
             </div>
 
             <!-- Bottom Footer on Left Panel -->
             <div class="relative z-10 pt-6 border-t border-white/10 flex items-center justify-between text-xs text-slate-400 font-medium">
                 <span>© 2026 BBLSDM Komunikasi dan Digital Makassar</span>
-                <span class="inline-flex items-center gap-1.5 text-cyan-400">
-                    <svg class="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
-                    <span>Server Aktif (WITA)</span>
-                </span>
             </div>
         </div>
 
@@ -120,8 +89,8 @@
              ========================================== -->
         <div class="col-span-12 lg:col-span-6 xl:col-span-5 flex flex-col justify-between p-6 sm:p-10 xl:p-12 min-h-screen bg-white dark:bg-[#0B1220] transition-colors">
             
-            <!-- Mobile Brand Header -->
-            <div class="flex items-center justify-between pb-6 border-b border-slate-100 dark:border-slate-800 lg:border-none">
+            <!-- Mobile Brand Header (Hanya tampil di HP/tablet, disembunyikan di Desktop agar tidak double dengan panel kiri) -->
+            <div class="flex lg:hidden items-center justify-between pb-6 border-b border-slate-100 dark:border-slate-800">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#0B63B5] to-[#12A8E0] text-white font-extrabold text-lg flex items-center justify-center shadow-md shadow-blue-500/25 shrink-0">
                         B
@@ -130,13 +99,6 @@
                         <h2 class="text-sm font-extrabold text-slate-900 dark:text-white leading-tight">Peminjaman BMN</h2>
                         <span class="text-[11px] text-slate-500 dark:text-slate-400 font-medium block">BBLSDM Komdigi Makassar</span>
                     </div>
-                </div>
-
-                <!-- SOP Badge -->
-                <div class="flex items-center gap-2">
-                    <span class="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-blue-50 dark:bg-blue-950/60 text-[#0B63B5] dark:text-cyan-400 border border-blue-200/70 dark:border-blue-900">
-                        SOP B-489
-                    </span>
                 </div>
             </div>
 
@@ -148,7 +110,7 @@
                         Masuk ke Akun
                     </h1>
                     <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium mt-1.5">
-                        Gunakan email pegawai dan kata sandi Anda untuk mengakses layanan BMN.
+                        Gunakan email terdaftar dan kata sandi Anda untuk mengakses layanan BMN.
                     </p>
                 </div>
 
@@ -174,7 +136,7 @@
                     <!-- EMAIL INPUT -->
                     <div>
                         <label for="email" class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
-                            Email Pegawai
+                            Email Terdaftar
                         </label>
                         <div class="relative">
                             <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
@@ -184,7 +146,7 @@
                                    type="email"
                                    name="email"
                                    x-model="emailInput"
-                                   value="{{ old('email', 'peminjam@komdigi.go.id') }}"
+                                   value="{{ old('email', '') }}"
                                    required
                                    autofocus
                                    placeholder="nama@komdigi.go.id"
@@ -208,7 +170,7 @@
                                    :type="showPass ? 'text' : 'password'"
                                    name="password"
                                    x-model="passwordInput"
-                                   value="password"
+                                   value=""
                                    required
                                    placeholder="Masukkan kata sandi"
                                    class="w-full pl-10 pr-11 py-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 focus:border-[#0B63B5] dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-950/60 outline-none text-base sm:text-sm font-medium text-slate-900 dark:text-white placeholder-slate-400 transition shadow-2xs">
@@ -222,13 +184,12 @@
                         </div>
                     </div>
 
-                    <!-- REMEMBER ME & PROTOCOL -->
-                    <div class="flex items-center justify-between text-xs pt-1">
+                    <!-- REMEMBER ME -->
+                    <div class="flex items-center text-xs pt-1">
                         <label class="inline-flex items-center gap-2 cursor-pointer select-none text-slate-600 dark:text-slate-400">
                             <input type="checkbox" name="remember" class="w-4 h-4 rounded text-[#0B63B5] focus:ring-blue-500 border-slate-300 dark:border-slate-700 dark:bg-slate-900">
                             <span class="font-medium">Ingat perangkat ini</span>
                         </label>
-                        <span class="text-slate-400">Protokol Keamanan SOP</span>
                     </div>
 
                     <!-- SUBMIT BUTTON -->
@@ -239,106 +200,6 @@
                     </button>
                 </form>
 
-                <!-- ========================================================
-                     TESTING CREDENTIALS HELPER (Manual Login Reference)
-                     Sesuai Permintaan: Menyediakan informasi 4 role testing
-                     secara elegan tanpa tombol pintas demo otomatis.
-                     ======================================================== -->
-                <div class="pt-2 border-t border-slate-100 dark:border-slate-800">
-                    <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/60 p-4 space-y-3">
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-slate-200">
-                                <span class="flex h-5 w-5 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-950 text-[#0B63B5] dark:text-blue-400 font-black text-[11px]">
-                                    i
-                                </span>
-                                <span>Akun Pengujian (Testing 4 Role)</span>
-                            </div>
-                            <span class="text-[10px] font-semibold text-slate-400">Kata Sandi: <code class="font-mono font-bold text-slate-700 dark:text-slate-300">password</code></span>
-                        </div>
-
-                        <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed font-medium">
-                            Klik tombol salin di samping untuk mengisi email ke form secara manual:
-                        </p>
-
-                        <!-- 4 Accounts List -->
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                            
-                            <!-- 1. Peminjam (Budi) -->
-                            <div class="p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-2 shadow-2xs">
-                                <div class="min-w-0">
-                                    <div class="flex items-center gap-1.5">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-                                        <span class="font-bold text-slate-800 dark:text-white truncate">Peminjam</span>
-                                    </div>
-                                    <span class="text-[10px] text-slate-500 dark:text-slate-400 block truncate">Budi (Instruktur)</span>
-                                    <span class="text-[10px] font-mono text-slate-400 block truncate">peminjam@komdigi.go.id</span>
-                                </div>
-                                <button type="button"
-                                        @click="fillEmail('peminjam@komdigi.go.id')"
-                                        class="px-2 py-1 rounded-lg bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-[#0B63B5] dark:bg-slate-700 dark:hover:bg-blue-950 dark:text-slate-300 dark:hover:text-cyan-300 text-[10px] font-bold transition shrink-0 cursor-pointer"
-                                        title="Gunakan email ini">
-                                    Pakai
-                                </button>
-                            </div>
-
-                            <!-- 2. Pengelola BMN (Agung) -->
-                            <div class="p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-2 shadow-2xs">
-                                <div class="min-w-0">
-                                    <div class="flex items-center gap-1.5">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-                                        <span class="font-bold text-slate-800 dark:text-white truncate">Pengelola BMN</span>
-                                    </div>
-                                    <span class="text-[10px] text-slate-500 dark:text-slate-400 block truncate">Muhammad Agung</span>
-                                    <span class="text-[10px] font-mono text-slate-400 block truncate">pengelola@komdigi.go.id</span>
-                                </div>
-                                <button type="button"
-                                        @click="fillEmail('pengelola@komdigi.go.id')"
-                                        class="px-2 py-1 rounded-lg bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-[#0B63B5] dark:bg-slate-700 dark:hover:bg-blue-950 dark:text-slate-300 dark:hover:text-cyan-300 text-[10px] font-bold transition shrink-0 cursor-pointer"
-                                        title="Gunakan email ini">
-                                    Pakai
-                                </button>
-                            </div>
-
-                            <!-- 3. Ketua Tim Aset (Olga) -->
-                            <div class="p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-2 shadow-2xs">
-                                <div class="min-w-0">
-                                    <div class="flex items-center gap-1.5">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
-                                        <span class="font-bold text-slate-800 dark:text-white truncate">Ketua Tim Aset</span>
-                                    </div>
-                                    <span class="text-[10px] text-slate-500 dark:text-slate-400 block truncate">Olga Olivia, SE</span>
-                                    <span class="text-[10px] font-mono text-slate-400 block truncate">ketuatim@komdigi.go.id</span>
-                                </div>
-                                <button type="button"
-                                        @click="fillEmail('ketuatim@komdigi.go.id')"
-                                        class="px-2 py-1 rounded-lg bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-[#0B63B5] dark:bg-slate-700 dark:hover:bg-blue-950 dark:text-slate-300 dark:hover:text-cyan-300 text-[10px] font-bold transition shrink-0 cursor-pointer"
-                                        title="Gunakan email ini">
-                                    Pakai
-                                </button>
-                            </div>
-
-                            <!-- 4. Administrator Sistem -->
-                            <div class="p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-2 shadow-2xs">
-                                <div class="min-w-0">
-                                    <div class="flex items-center gap-1.5">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
-                                        <span class="font-bold text-slate-800 dark:text-white truncate">Admin Sistem</span>
-                                    </div>
-                                    <span class="text-[10px] text-slate-500 dark:text-slate-400 block truncate">Administrator</span>
-                                    <span class="text-[10px] font-mono text-slate-400 block truncate">admin@komdigi.go.id</span>
-                                </div>
-                                <button type="button"
-                                        @click="fillEmail('admin@komdigi.go.id')"
-                                        class="px-2 py-1 rounded-lg bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-[#0B63B5] dark:bg-slate-700 dark:hover:bg-blue-950 dark:text-slate-300 dark:hover:text-cyan-300 text-[10px] font-bold transition shrink-0 cursor-pointer"
-                                        title="Gunakan email ini">
-                                    Pakai
-                                </button>
-                            </div>
-
-                        </div>
-                    </div>
-                </div>
-
             </div>
 
             <!-- Bottom Mobile/Desktop Clean Footer -->
@@ -347,7 +208,7 @@
                     Balai Besar Pelatihan Sumber Daya Manusia Komunikasi dan Digital Makassar
                 </p>
                 <p class="text-[11px] text-slate-400/80 dark:text-slate-600 font-normal mt-0.5">
-                    Jl. Prof. Abdurrahman Basalamah II No 25 Makassar • SOP B-489
+                    Jl. Prof. Abdurrahman Basalamah II No 25 Makassar
                 </p>
             </div>
 
@@ -355,20 +216,12 @@
 
     </div>
 
-    <!-- Alpine.js helper for interactive email population -->
+    <!-- Alpine.js helper for login page -->
     <script>
         function loginPage() {
             return {
-                emailInput: '{{ old('email', 'peminjam@komdigi.go.id') }}',
-                passwordInput: 'password',
-                fillEmail(email) {
-                    this.emailInput = email;
-                    this.passwordInput = 'password';
-                    const el = document.getElementById('email');
-                    if (el) {
-                        el.focus();
-                    }
-                }
+                emailInput: '{{ old('email', '') }}',
+                passwordInput: ''
             };
         }
     </script>
