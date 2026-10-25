@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Masuk — Sistem Peminjaman BMN BBLSDM Makassar</title>
+    <title>Masuk — Sistem Peminjaman BMN BBLSDM Komdigi Makassar</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -22,7 +22,7 @@
             </div>
             <h1 class="text-2xl font-black text-slate-900 tracking-tight">Sistem BMN Makassar</h1>
             <p class="text-xs text-slate-500 font-medium mt-1">
-                Balai Besar Pelatihan SDM Komunikasi & Digital Makassar
+                BBLSDM Komdigi Makassar
             </p>
         </div>
 
@@ -41,7 +41,7 @@
             <div class="grid grid-cols-2 gap-2 text-xs">
                 <a href="{{ route('login.quick', 'PEMINJAM') }}" class="p-2.5 rounded-xl bg-white border border-blue-200 hover:border-[#0B63B5] hover:shadow-sm text-slate-800 transition font-semibold text-center block">
                     <span class="block text-slate-900">Peminjam</span>
-                    <span class="text-[10px] text-slate-500 font-normal">Andi Pratama</span>
+                    <span class="text-[10px] text-slate-500 font-normal">Budi</span>
                 </a>
                 <a href="{{ route('login.quick', 'PENGELOLA_BMN') }}" class="p-2.5 rounded-xl bg-white border border-blue-200 hover:border-[#0B63B5] hover:shadow-sm text-slate-800 transition font-semibold text-center block">
                     <span class="block text-slate-900">Pengelola BMN</span>

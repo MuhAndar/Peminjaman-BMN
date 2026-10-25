@@ -72,4 +72,14 @@ class User extends Authenticatable
         }
         return $this->role === $roles || $this->role === 'ADMIN';
     }
+
+    public function getWorkUnitAttribute(): string
+    {
+        return 'BBLSDM Komdigi Makassar';
+    }
+
+    public function getSatuanKerjaAttribute(): string
+    {
+        return 'BBLSDM Komdigi Makassar';
+    }
 }

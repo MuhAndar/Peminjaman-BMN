@@ -6,7 +6,7 @@
     <div class="judul-wrapper">
         <div class="doc-title">
             <span class="doc-title-line">BERITA ACARA SERAH TERIMA PEMINJAMAN</span>
-            <span class="doc-title-line">BARANG INVENTARIS BBPSDMP-MAKASSAR</span>
+            <span class="doc-title-line">BARANG INVENTARIS BBLSDM KOMDIGI MAKASSAR</span>
         </div>
         <div class="doc-number">
             Nomor : {{ $document->doc_number ?? '...............................................................' }}

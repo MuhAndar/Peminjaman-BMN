@@ -422,7 +422,7 @@
                     <div>
                         <span class="text-slate-400 font-bold uppercase tracking-wider text-[10px] block">Satuan Kerja</span>
                         <span class="text-slate-800 font-semibold text-xs block">
-                            BBLSDM Komunikasi dan Digital Makassar
+                            BBLSDM Komdigi Makassar
                         </span>
                     </div>
                 </div>

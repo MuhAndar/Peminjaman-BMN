@@ -6,7 +6,7 @@
     <div class="judul-wrapper">
         <div class="doc-title">
             <span class="doc-title-line">SURAT PEMINJAMAN</span>
-            <span class="doc-title-line">BARANG INVENTARIS BBPSDMP-MAKASSAR</span>
+            <span class="doc-title-line">BARANG INVENTARIS BBLSDM KOMDIGI MAKASSAR</span>
         </div>
         <div class="doc-number">
             Nomor : {{ $document->doc_number ?? '...............................................................' }}
@@ -102,7 +102,7 @@
             <td>
                 <div style="height: 14pt;"></div>
                 Ketua Tim Keuangan dan Aset<br>
-                BBPSDMP Makassar,
+                BBLSDM Komdigi Makassar,
                 <div class="signature-space">
                     @if(!empty($ketuaSignatureBase64))
                         <img src="{{ $ketuaSignatureBase64 }}" alt="TTD Ketua">

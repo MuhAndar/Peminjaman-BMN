@@ -245,7 +245,7 @@
                 <td class="header-text">
                     <div class="line1">KEMENTERIAN KOMUNIKASI DAN DIGITAL RI</div>
                     <div class="line2">BADAN PENGEMBANGAN SUMBER DAYA MANUSIA KOMUNIKASI DAN DIGITAL</div>
-                    <div class="line3">BALAI BESAR PENGEMBANGAN SUMBER DAYA MANUSIA DAN PENELITIAN<br>KOMUNIKASI DAN INFORMATIKA MAKASSAR</div>
+                    <div class="line3">BALAI BESAR PELATIHAN SUMBER DAYA MANUSIA<br>KOMUNIKASI DAN DIGITAL MAKASSAR</div>
                     <div class="line4">Jl. Prof. Abdurrahman Basalamah II No 25 Makassar 90231, www.komdigi.go.id</div>
                 </td>
             </tr>

@@ -48,4 +48,14 @@ class Employee extends Model
         }
         return $this->nip;
     }
+
+    public function getWorkUnitAttribute(): string
+    {
+        return 'BBLSDM Komdigi Makassar';
+    }
+
+    public function getSatuanKerjaAttribute(): string
+    {
+        return 'BBLSDM Komdigi Makassar';
+    }
 }

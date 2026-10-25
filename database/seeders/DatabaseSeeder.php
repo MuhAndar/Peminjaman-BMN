@@ -61,16 +61,16 @@ class DatabaseSeeder extends Seeder
             AssetCategory::updateOrCreate(['code' => $cat['code']], $cat);
         }
 
-        // 3. Employees (Data fiktif terstruktur)
-        $empKetua = Employee::create([
-            'nip' => '198206082009012001',
-            'full_name' => 'Olga Olivia Sombolayuk, SE',
-            'rank_grade' => 'Penata Tk. I, III/d',
-            'position' => 'Ketua Tim Keuangan dan Aset',
-            'home_address' => 'Jl. Boulevard Raya No. 45, Panakkukang, Makassar',
+        // 3. Employees (Data fiktif terstruktur - 4 Pegawai)
+        $empPeminjam1 = Employee::create([
+            'nip' => '199005152019031005',
+            'full_name' => 'Budi',
+            'rank_grade' => 'Penata Muda Tk. I, III/b',
+            'position' => 'Instruktur Ahli Pertama',
+            'home_address' => 'Racing Centre No. 1',
             'employment_status' => 'PNS',
-            'email' => 'olga@komdigi.go.id',
-            'phone' => '081234567890',
+            'email' => 'peminjam@komdigi.go.id',
+            'phone' => '081234567892',
             'is_active' => true,
         ]);
 
@@ -78,47 +78,35 @@ class DatabaseSeeder extends Seeder
             'nip' => '199803112025041003',
             'full_name' => 'Muhammad Agung, S.Ds.',
             'rank_grade' => 'Penata Muda, III/a',
-            'position' => 'Pengelola BMN / Pihak Pertama',
-            'home_address' => 'Jl. Urip Sumoharjo KM 4 No. 12, Makassar',
+            'position' => 'Instruktur Ahli Pertama',
+            'home_address' => 'Racing Centre No. 2',
             'employment_status' => 'CPNS',
-            'email' => 'agung@komdigi.go.id',
+            'email' => 'pengelola@komdigi.go.id',
             'phone' => '081234567891',
             'is_active' => true,
         ]);
 
-        $empPeminjam1 = Employee::create([
-            'nip' => '199005152019031005',
-            'full_name' => 'Andi Pratama, S.Kom.',
-            'rank_grade' => 'Penata Muda Tk. I, III/b',
-            'position' => 'Pranata Komputer Ahli Muda',
-            'home_address' => 'Perumahan Dosen Unhas Tamalanrea Blok C/10, Makassar',
+        $empKetua = Employee::create([
+            'nip' => '198206082009012001',
+            'full_name' => 'Olga Olivia Sombolayuk, SE',
+            'rank_grade' => 'Penata Tk. I, III/d',
+            'position' => 'Ketua Tim Keuangan dan Aset',
+            'home_address' => 'Racing Centre No. 3',
             'employment_status' => 'PNS',
-            'email' => 'andi.pratama@komdigi.go.id',
-            'phone' => '081234567892',
+            'email' => 'olga@komdigi.go.id',
+            'phone' => '081234567890',
             'is_active' => true,
         ]);
 
-        $empPeminjam2 = Employee::create([
-            'nip' => '199508202022032008',
-            'full_name' => 'Siti Rahmawati, S.AP.',
-            'rank_grade' => 'Penata Muda, III/a',
-            'position' => 'Analis Tata Usaha',
-            'home_address' => 'Jl. Hertasning Baru No. 88, Makassar',
-            'employment_status' => 'PPPK',
-            'email' => 'siti.rahmawati@komdigi.go.id',
-            'phone' => '081234567893',
-            'is_active' => true,
-        ]);
-
-        $empPpnpn = Employee::create([
-            'nip' => null, // PPNPN tidak memiliki NIP 18 digit
-            'full_name' => 'Rahmat Hidayat',
-            'rank_grade' => '-',
-            'position' => 'Petugas Operasional Lapangan',
-            'home_address' => 'Jl. Toddopuli VI No. 21, Makassar',
-            'employment_status' => 'PPPNPN',
-            'email' => 'rahmat@komdigi.go.id',
-            'phone' => '081234567894',
+        $empAdmin = Employee::create([
+            'nip' => '198501012010011001',
+            'full_name' => 'Administrator Sistem',
+            'rank_grade' => 'Penata Tk. I, III/d',
+            'position' => 'Administrator Sistem',
+            'home_address' => 'Racing Centre No. 4',
+            'employment_status' => 'PNS',
+            'email' => 'admin@komdigi.go.id',
+            'phone' => '081234567899',
             'is_active' => true,
         ]);
 
@@ -126,7 +114,7 @@ class DatabaseSeeder extends Seeder
         Signatory::create([
             'role' => 'KETUA_TIM_KEUANGAN_ASET',
             'employee_id' => $empKetua->id,
-            'title_line' => 'Ketua Tim Keuangan dan Aset BBLSDM Makassar,',
+            'title_line' => 'Ketua Tim Keuangan dan Aset BBLSDM Komdigi Makassar,',
             'valid_from' => '2025-01-01',
             'valid_to' => null,
         ]);
@@ -134,7 +122,7 @@ class DatabaseSeeder extends Seeder
         Signatory::create([
             'role' => 'PENGELOLA_ASET',
             'employee_id' => $empPengelola->id,
-            'title_line' => 'Pengelola Aset / Pihak Pertama BBLSDM Makassar,',
+            'title_line' => 'Pengelola Aset / Pihak Pertama BBLSDM Komdigi Makassar,',
             'valid_from' => '2025-01-01',
             'valid_to' => null,
         ]);
@@ -143,7 +131,7 @@ class DatabaseSeeder extends Seeder
         $defaultPassword = Hash::make('password');
 
         User::create([
-            'name' => 'Andi Pratama (Peminjam)',
+            'name' => 'Budi (Peminjam)',
             'email' => 'peminjam@komdigi.go.id',
             'password' => $defaultPassword,
             'employee_id' => $empPeminjam1->id,
@@ -173,6 +161,7 @@ class DatabaseSeeder extends Seeder
             'name' => 'Administrator Sistem',
             'email' => 'admin@komdigi.go.id',
             'password' => $defaultPassword,
+            'employee_id' => $empAdmin->id,
             'role' => 'ADMIN',
             'is_active' => true,
         ]);
