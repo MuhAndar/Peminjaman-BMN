@@ -1131,7 +1131,7 @@
                                 data-confirm-title="Pengembalian BMN"
                                 data-confirm-btn="Ya, Ajukan Pengembalian"
                                 data-confirm-type="warning"
-                                class="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shadow-md transition flex items-center gap-2">
+                                class="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shadow-md transition flex items-center gap-2 cursor-pointer">
                             <i data-lucide="package-open" class="w-4 h-4"></i>
                             <span>Ajukan Pengembalian Fisik BMN ke Kantor</span>
                         </button>
@@ -1164,7 +1164,7 @@
                                     data-confirm-title="Teruskan ke Ketua Tim"
                                     data-confirm-btn="Ya, Teruskan Berkas"
                                     data-confirm-type="primary"
-                                    class="px-5 py-2.5 bg-[#0B63B5] hover:bg-[#0B4F8A] text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5">
+                                    class="px-5 py-2.5 bg-[#0B63B5] hover:bg-[#0B4F8A] text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5 cursor-pointer">
                                 <i data-lucide="arrow-right-circle" class="w-4 h-4"></i>
                                 <span>Teruskan ke Ketua Tim (Dokumen Lengkap)</span>
                             </button>
@@ -1174,7 +1174,7 @@
                                     data-confirm-title="Kembalikan untuk Perbaikan"
                                     data-confirm-btn="Ya, Kembalikan"
                                     data-confirm-type="warning"
-                                    class="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5">
+                                    class="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer">
                                 <i data-lucide="undo-2" class="w-4 h-4"></i>
                                 <span>Kembalikan untuk Diperbaiki</span>
                             </button>
@@ -1240,7 +1240,7 @@
                                 data-confirm-title="Terbitkan BAST Peminjaman"
                                 data-confirm-btn="Ya, Terbitkan BAST"
                                 data-confirm-type="primary"
-                                class="px-5 py-2.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-2">
+                                class="px-5 py-2.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-2 cursor-pointer">
                             <i data-lucide="file-plus" class="w-4 h-4"></i>
                             <span>Buat Dokumen BAST Peminjaman Bernomor</span>
                         </button>
@@ -1280,7 +1280,7 @@
                                 data-confirm-title="Konfirmasi Serah Terima BMN"
                                 data-confirm-btn="Ya, Serahkan & Aktifkan"
                                 data-confirm-type="success"
-                                class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-2">
+                                class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-2 cursor-pointer">
                             <i data-lucide="check-circle-2" class="w-4 h-4"></i>
                             <span>Konfirmasi Tanda Tangan & Serahkan Barang (Aktifkan)</span>
                         </button>
@@ -1304,7 +1304,7 @@
                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <div>
                                         <label class="block text-[11px] font-bold text-slate-600 mb-1">Kondisi Fisik Diterima</label>
-                                        <select name="items[{{ $item->id }}][condition_in]" class="w-full p-2 bg-white rounded-xl border border-slate-300 text-xs font-semibold">
+                                        <select name="items[{{ $item->id }}][condition_in]" class="w-full p-2 bg-white rounded-xl border border-slate-300 text-xs font-semibold cursor-pointer">
                                             <option value="Baik" selected>Baik (Lengkap & Normal)</option>
                                             <option value="Rusak">Rusak (Perlu Perbaikan)</option>
                                             <option value="Tidak Lengkap/Hilang">Tidak Lengkap / Hilang</option>
@@ -1359,7 +1359,7 @@
                                 data-confirm-title="Pemeriksaan Fisik BMN"
                                 data-confirm-btn="Ya, Terbitkan BAST Kembali"
                                 data-confirm-type="primary"
-                                class="px-5 py-2.5 bg-[#0B63B5] hover:bg-[#0B4F8A] text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-2">
+                                class="px-5 py-2.5 bg-[#0B63B5] hover:bg-[#0B4F8A] text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-2 cursor-pointer">
                             <i data-lucide="clipboard-check" class="w-4 h-4"></i>
                             <span>Selesaikan Pemeriksaan & Terbitkan BAST Pengembalian</span>
                         </button>
@@ -1381,7 +1381,7 @@
                                 data-confirm-title="Finalisasi Pengembalian"
                                 data-confirm-btn="Ya, Selesaikan & Simpan"
                                 data-confirm-type="success"
-                                class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-2">
+                                class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-2 cursor-pointer">
                             <i data-lucide="archive" class="w-4 h-4"></i>
                             <span>Tutup Siklus Peminjaman & Simpan BMN ke Inventaris</span>
                         </button>
@@ -1553,8 +1553,7 @@
                                 Menandatangani sebagai: <strong class="text-[#0B63B5] dark:text-blue-400" x-text="sigAs === 'borrower' ? 'Pihak Kedua (Peminjam)' : 'Pihak Pertama (Pengelola BMN)'"></strong>
                             </p>
                         </div>
-                    </div>
-                    <button type="button" @click="sigModalOpen = false" class="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 p-1 rounded-lg">
+                    <button type="button" @click="sigModalOpen = false" class="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 p-1 rounded-lg cursor-pointer">
                         <i data-lucide="x" class="w-5 h-5"></i>
                     </button>
                 </div>
@@ -1705,11 +1704,11 @@
                     <!-- Actions -->
                     <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
                         <button type="button" @click="sigModalOpen = false"
-                                class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 text-xs font-bold transition">
+                                class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 text-xs font-bold transition cursor-pointer">
                             Batal
                         </button>
                         <button type="button" @click="submitSig()"
-                                class="px-5 py-2.5 bg-[#0B63B5] hover:bg-[#0B4F8A] text-white rounded-xl text-xs font-bold shadow-md transition flex items-center gap-1.5">
+                                class="px-5 py-2.5 bg-[#0B63B5] hover:bg-[#0B4F8A] text-white rounded-xl text-xs font-bold shadow-md transition flex items-center gap-1.5 cursor-pointer">
                             <i data-lucide="check" class="w-4 h-4"></i>
                             <span>Bubuhkan ke Dokumen</span>
                         </button>
@@ -1738,7 +1737,7 @@
                             <p class="text-xs text-slate-500 dark:text-slate-400">Ambil jepretan kamera langsung atau pilih 1 atau lebih foto dari galeri</p>
                         </div>
                     </div>
-                    <button type="button" @click="photoModalOpen = false" class="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 p-1 rounded-lg">
+                    <button type="button" @click="photoModalOpen = false" class="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 p-1 rounded-lg cursor-pointer">
                         <i data-lucide="x" class="w-5 h-5"></i>
                     </button>
                 </div>
@@ -1795,7 +1794,7 @@
                         <div class="space-y-2">
                             <div class="flex items-center justify-between text-xs">
                                 <span class="font-bold text-slate-700 dark:text-slate-200" x-text="previewPhotos.length + ' foto siap diunggah:'"></span>
-                                <button type="button" @click="previewPhotos = []" class="text-red-600 dark:text-red-400 font-bold text-[11px] hover:underline">Hapus Semua</button>
+                                <button type="button" @click="previewPhotos = []" class="text-red-600 dark:text-red-400 font-bold text-[11px] hover:underline cursor-pointer">Hapus Semua</button>
                             </div>
                             <div class="grid grid-cols-3 gap-2 max-h-36 overflow-y-auto p-1 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-700">
                                 <template x-for="(p, idx) in previewPhotos" :key="idx">
@@ -1818,11 +1817,11 @@
                     <!-- Actions -->
                     <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">
                         <button type="button" @click="photoModalOpen = false"
-                                class="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-bold transition">
+                                class="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-bold transition cursor-pointer">
                             Batal
                         </button>
                         <button type="submit"
-                                class="px-5 py-2.5 bg-purple-700 hover:bg-purple-800 text-white rounded-xl text-xs font-bold shadow-md transition flex items-center gap-1.5">
+                                class="px-5 py-2.5 bg-purple-700 hover:bg-purple-800 text-white rounded-xl text-xs font-bold shadow-md transition flex items-center gap-1.5 cursor-pointer">
                             <i data-lucide="upload" class="w-4 h-4"></i>
                             <span>Unggah Foto Dokumentasi</span>
                         </button>
@@ -1839,7 +1838,7 @@
          @click="lightboxOpen = false">
         <div class="relative max-w-4xl w-full flex flex-col items-center gap-3" @click.stop>
             <button type="button" @click="lightboxOpen = false"
-                    class="absolute -top-10 right-0 text-white/80 hover:text-white p-1 rounded-full bg-slate-800/60 hover:bg-slate-800 transition">
+                    class="absolute -top-10 right-0 text-white/80 hover:text-white p-1 rounded-full bg-slate-800/60 hover:bg-slate-800 transition cursor-pointer">
                 <i data-lucide="x" class="w-6 h-6"></i>
             </button>
 

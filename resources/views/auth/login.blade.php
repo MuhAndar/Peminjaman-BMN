@@ -19,6 +19,13 @@
         }
         [x-cloak] { display: none !important; }
         
+        button, [type='button'], [type='reset'], [type='submit'], a, label[for], select, summary, [role='button'], .cursor-pointer {
+            cursor: pointer !important;
+        }
+        button:disabled, [type='button']:disabled, [type='reset']:disabled, [type='submit']:disabled, [aria-disabled='true'], .cursor-not-allowed {
+            cursor: not-allowed !important;
+        }
+        
         /* Subtle animated gradient background for left brand panel */
         .brand-mesh {
             background-color: #071E3D;

@@ -6,13 +6,47 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Peminjaman BMN') — BBLSDM Komdigi Makassar</title>
 
-    <!-- Theme Detection Script (Mencegah FOUC / Layar Berkedip Putih) -->
+    <!-- Theme & Sidebar Synchronous State Detection (Mencegah FOUC & Animasi Membesar/Mengecil saat Navigasi) -->
     <script>
-        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-        }
+        (function() {
+            try {
+                // 1. Theme Detection
+                if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    document.documentElement.classList.add('dark');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                }
+
+                // 2. Sidebar State: Kunci kelas 'sidebar-collapsed' SEBELUM body di-render oleh browser
+                if (localStorage.getItem('bmn_sidebar_collapsed') === 'true') {
+                    document.documentElement.classList.add('sidebar-collapsed');
+                } else {
+                    document.documentElement.classList.remove('sidebar-collapsed');
+                }
+
+                // 3. Matikan sementara seluruh transisi saat memuat halaman baru
+                document.documentElement.classList.add('preload-no-transition');
+            } catch (e) {}
+        })();
+
+        // Aktifkan kembali animasi transisi setelah halaman selesai dimuat
+        window.addEventListener('DOMContentLoaded', function() {
+            requestAnimationFrame(function() {
+                requestAnimationFrame(function() {
+                    document.documentElement.classList.remove('preload-no-transition');
+                });
+            });
+        });
+
+        // Dukungan HTMX SPA swap: Mencegah efek berkedip / melompat saat berpindah halaman
+        document.addEventListener('htmx:beforeSwap', function() {
+            document.documentElement.classList.add('preload-no-transition');
+        });
+        document.addEventListener('htmx:afterSettle', function() {
+            requestAnimationFrame(function() {
+                document.documentElement.classList.remove('preload-no-transition');
+            });
+        });
     </script>
 
     <!-- Google Fonts: Plus Jakarta Sans -->
@@ -55,6 +89,59 @@
         }
         [x-cloak] { display: none !important; }
 
+        /* Matikan animasi/transisi saat memuat atau menukar halaman (Mencegah Sidebar Bergerak/Membesar) */
+        .preload-no-transition,
+        .preload-no-transition * {
+            -webkit-transition: none !important;
+            -moz-transition: none !important;
+            -ms-transition: none !important;
+            -o-transition: none !important;
+            transition: none !important;
+        }
+
+        /* Saat sidebar-collapsed aktif di html, kunci layout langsung di 5rem (80px) */
+        @media (min-width: 1024px) {
+            html.sidebar-collapsed aside#bmn-sidebar {
+                width: 5rem !important; /* 80px */
+            }
+            html.sidebar-collapsed #bmn-content-wrapper {
+                padding-left: 5rem !important; /* 80px */
+            }
+            html.sidebar-collapsed aside#bmn-sidebar .sidebar-hide-on-collapse {
+                display: none !important;
+            }
+            html.sidebar-collapsed aside#bmn-sidebar .sidebar-center-on-collapse {
+                justify-content: center !important;
+                padding-left: 0 !important;
+                padding-right: 0 !important;
+            }
+            html.sidebar-collapsed aside#bmn-sidebar .sidebar-chevron-icon {
+                transform: rotate(180deg) !important;
+            }
+        }
+
+        /* Enforce hand pointer for ALL buttons, submits, links, and clickable controls */
+        button,
+        [type='button'],
+        [type='reset'],
+        [type='submit'],
+        a,
+        label[for],
+        select,
+        summary,
+        [role='button'],
+        .cursor-pointer {
+            cursor: pointer !important;
+        }
+        button:disabled,
+        [type='button']:disabled,
+        [type='reset']:disabled,
+        [type='submit']:disabled,
+        [aria-disabled='true'],
+        .cursor-not-allowed {
+            cursor: not-allowed !important;
+        }
+
         /* HTMX Top Progress Bar Glow */
         #bmn-top-progress {
             box-shadow: 0 0 10px rgba(11, 99, 181, 0.6), 0 0 5px rgba(0, 163, 255, 0.6);
@@ -64,12 +151,17 @@
 <body class="h-full flex flex-col text-slate-800 dark:text-slate-100 bg-slate-50 dark:bg-[#0B1120] antialiased transition-colors duration-200"
       hx-boost="true"
       x-data="{
-          sidebarCollapsed: localStorage.getItem('bmn_sidebar_collapsed') === 'true',
+          sidebarCollapsed: document.documentElement.classList.contains('sidebar-collapsed'),
           sidebarMobileOpen: false,
           darkMode: document.documentElement.classList.contains('dark'),
           toggleCollapse() {
               this.sidebarCollapsed = !this.sidebarCollapsed;
               localStorage.setItem('bmn_sidebar_collapsed', this.sidebarCollapsed);
+              if (this.sidebarCollapsed) {
+                  document.documentElement.classList.add('sidebar-collapsed');
+              } else {
+                  document.documentElement.classList.remove('sidebar-collapsed');
+              }
               this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
           },
           toggleDarkMode() {
@@ -101,7 +193,8 @@
          class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 lg:hidden"></div>
 
     <!-- LEFT SIDEBAR NAVIGATION -->
-    <aside class="fixed top-0 bottom-0 left-0 z-40 bg-white dark:bg-[#0F172A] border-r border-slate-200 dark:border-slate-800 flex flex-col -translate-x-full lg:translate-x-0 w-64 transition-transform duration-300 lg:transition-[width,transform] lg:duration-300 ease-in-out shadow-sm select-none overflow-visible"
+    <aside id="bmn-sidebar"
+           class="fixed top-0 bottom-0 left-0 z-40 bg-white dark:bg-[#0F172A] border-r border-slate-200 dark:border-slate-800 flex flex-col -translate-x-full lg:translate-x-0 w-64 transition-transform duration-300 lg:transition-[width,transform] lg:duration-300 ease-in-out shadow-sm select-none overflow-visible"
            :class="{
                'w-64': !sidebarCollapsed,
                'w-20': sidebarCollapsed,
@@ -115,26 +208,26 @@
                 class="hidden lg:flex absolute -right-3.5 top-[50px] z-50 w-7 h-7 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-[#0B63B5] dark:hover:border-blue-400 text-slate-500 dark:text-slate-400 hover:text-[#0B63B5] dark:hover:text-blue-400 rounded-full shadow-md items-center justify-center transition-all duration-200 focus:outline-none hover:scale-110 active:scale-95 cursor-pointer"
                 :title="sidebarCollapsed ? 'Perlebar Sidebar (Expand)' : 'Perkecil Sidebar (Minimize)'">
             <i data-lucide="chevron-left"
-               class="w-4 h-4 transition-transform duration-300"
+               class="sidebar-chevron-icon w-4 h-4 transition-transform duration-300"
                :class="sidebarCollapsed ? 'rotate-180' : ''"></i>
         </button>
 
         <!-- Sidebar Header (Brand Logo) -->
-        <div class="h-16 px-4 border-b border-slate-200 dark:border-slate-800 flex items-center shrink-0 relative transition-all duration-300"
+        <div class="sidebar-center-on-collapse h-16 px-4 border-b border-slate-200 dark:border-slate-800 flex items-center shrink-0 relative transition-all duration-300"
              :class="sidebarCollapsed && !sidebarMobileOpen ? 'justify-center px-0' : 'justify-between px-4'">
             <!-- Brand Logo -->
             <a href="{{ route('dashboard') }}" class="flex items-center gap-3 overflow-hidden">
                 <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#0B63B5] to-[#12A8E0] flex items-center justify-center text-white font-black text-xl shadow-md shadow-blue-500/20 shrink-0">
                     B
                 </div>
-                <div x-show="!sidebarCollapsed || sidebarMobileOpen"
+                <div class="sidebar-hide-on-collapse truncate whitespace-nowrap"
+                     x-show="!sidebarCollapsed || sidebarMobileOpen"
                      x-transition:enter="transition-opacity duration-150 delay-75"
                      x-transition:enter-start="opacity-0"
                      x-transition:enter-end="opacity-100"
                      x-transition:leave="transition-opacity duration-75"
                      x-transition:leave-start="opacity-100"
-                     x-transition:leave-end="opacity-0"
-                     class="truncate whitespace-nowrap">
+                     x-transition:leave-end="opacity-0">
                     <span class="font-extrabold text-slate-900 dark:text-white text-base tracking-tight flex items-center gap-1">
                         BMN <span class="text-[#0B63B5] dark:text-blue-400">Makassar</span>
                     </span>
@@ -145,7 +238,7 @@
             </a>
 
             <!-- Mobile Close Button -->
-            <button type="button" @click="sidebarMobileOpen = false" class="lg:hidden p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
+            <button type="button" @click="sidebarMobileOpen = false" class="lg:hidden p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-pointer">
                 <i data-lucide="x" class="w-5 h-5"></i>
             </button>
         </div>
@@ -159,13 +252,13 @@
                 <div x-show="!sidebarCollapsed || sidebarMobileOpen"
                      x-transition:enter="transition-opacity duration-150 delay-75"
                      x-transition:leave="transition-opacity duration-75"
-                     class="px-3 pt-2.5 pb-1 text-[11px] font-bold uppercase tracking-wider text-slate-400 truncate whitespace-nowrap">
+                     class="sidebar-hide-on-collapse px-3 pt-2.5 pb-1 text-[11px] font-bold uppercase tracking-wider text-slate-400 truncate whitespace-nowrap">
                     Menu Utama
                 </div>
 
                 <!-- Beranda -->
                 <a href="{{ route('dashboard') }}"
-                   class="flex items-center rounded-xl h-11 transition-colors group relative select-none {{ request()->routeIs('dashboard') ? 'bg-blue-50 text-[#0B63B5] font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium' }}"
+                   class="sidebar-center-on-collapse flex items-center rounded-xl h-11 transition-colors group relative select-none cursor-pointer {{ request()->routeIs('dashboard') ? 'bg-blue-50 text-[#0B63B5] font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium' }}"
                    :class="sidebarCollapsed && !sidebarMobileOpen ? 'justify-center px-0' : 'px-3 gap-3'">
                     <div class="w-6 h-6 flex items-center justify-center shrink-0">
                         <i data-lucide="layout-dashboard" class="w-5 h-5 {{ request()->routeIs('dashboard') ? 'text-[#0B63B5]' : 'text-slate-500 group-hover:text-slate-800' }}"></i>
@@ -177,7 +270,7 @@
                           x-transition:leave="transition-opacity duration-75"
                           x-transition:leave-start="opacity-100"
                           x-transition:leave-end="opacity-0"
-                          class="truncate whitespace-nowrap text-sm">
+                          class="sidebar-hide-on-collapse truncate whitespace-nowrap text-sm">
                         Beranda
                     </span>
 
@@ -192,7 +285,7 @@
 
                 <!-- Katalog BMN -->
                 <a href="{{ route('assets.index') }}"
-                   class="flex items-center rounded-xl h-11 transition-colors group relative select-none {{ request()->routeIs('assets.*') ? 'bg-blue-50 text-[#0B63B5] font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium' }}"
+                   class="sidebar-center-on-collapse flex items-center rounded-xl h-11 transition-colors group relative select-none cursor-pointer {{ request()->routeIs('assets.*') ? 'bg-blue-50 text-[#0B63B5] font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium' }}"
                    :class="sidebarCollapsed && !sidebarMobileOpen ? 'justify-center px-0' : 'px-3 gap-3'">
                     <div class="w-6 h-6 flex items-center justify-center shrink-0">
                         <i data-lucide="package" class="w-5 h-5 {{ request()->routeIs('assets.*') ? 'text-[#0B63B5]' : 'text-slate-500 group-hover:text-slate-800' }}"></i>
@@ -204,7 +297,7 @@
                           x-transition:leave="transition-opacity duration-75"
                           x-transition:leave-start="opacity-100"
                           x-transition:leave-end="opacity-0"
-                          class="truncate whitespace-nowrap text-sm">
+                          class="sidebar-hide-on-collapse truncate whitespace-nowrap text-sm">
                         Katalog BMN
                     </span>
 
@@ -219,7 +312,7 @@
 
                 <!-- Ajukan Peminjaman (Quick Action) -->
                 <a href="{{ route('loans.create') }}"
-                   class="flex items-center rounded-xl h-11 transition-colors group relative select-none {{ request()->routeIs('loans.create') ? 'bg-blue-50 text-[#0B63B5] font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium' }}"
+                   class="sidebar-center-on-collapse flex items-center rounded-xl h-11 transition-colors group relative select-none cursor-pointer {{ request()->routeIs('loans.create') ? 'bg-blue-50 text-[#0B63B5] font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium' }}"
                    :class="sidebarCollapsed && !sidebarMobileOpen ? 'justify-center px-0' : 'px-3 gap-3'">
                     <div class="w-6 h-6 flex items-center justify-center shrink-0">
                         <i data-lucide="plus-circle" class="w-5 h-5 {{ request()->routeIs('loans.create') ? 'text-[#0B63B5]' : 'text-slate-500 group-hover:text-slate-800' }}"></i>
@@ -231,7 +324,7 @@
                           x-transition:leave="transition-opacity duration-75"
                           x-transition:leave-start="opacity-100"
                           x-transition:leave-end="opacity-0"
-                          class="truncate whitespace-nowrap text-sm">
+                          class="sidebar-hide-on-collapse truncate whitespace-nowrap text-sm">
                         Ajukan BMN Baru
                     </span>
 
@@ -251,12 +344,12 @@
                 <div x-show="!sidebarCollapsed || sidebarMobileOpen"
                      x-transition:enter="transition-opacity duration-150 delay-75"
                      x-transition:leave="transition-opacity duration-75"
-                     class="px-3 pt-2.5 pb-1 text-[11px] font-bold uppercase tracking-wider text-slate-400 truncate whitespace-nowrap">
+                     class="sidebar-hide-on-collapse px-3 pt-2.5 pb-1 text-[11px] font-bold uppercase tracking-wider text-slate-400 truncate whitespace-nowrap">
                     Layanan Peminjam
                 </div>
 
                 <a href="{{ route('loans.index') }}"
-                   class="flex items-center rounded-xl h-11 transition-colors group relative select-none {{ request()->routeIs('loans.index') ? 'bg-blue-50 text-[#0B63B5] font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium' }}"
+                   class="sidebar-center-on-collapse flex items-center rounded-xl h-11 transition-colors group relative select-none cursor-pointer {{ request()->routeIs('loans.index') ? 'bg-blue-50 text-[#0B63B5] font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium' }}"
                    :class="sidebarCollapsed && !sidebarMobileOpen ? 'justify-center px-0' : 'px-3 gap-3'">
                     <div class="w-6 h-6 flex items-center justify-center shrink-0">
                         <i data-lucide="file-text" class="w-5 h-5 {{ request()->routeIs('loans.index') ? 'text-[#0B63B5]' : 'text-slate-500 group-hover:text-slate-800' }}"></i>
@@ -268,7 +361,7 @@
                           x-transition:leave="transition-opacity duration-75"
                           x-transition:leave-start="opacity-100"
                           x-transition:leave-end="opacity-0"
-                          class="truncate whitespace-nowrap text-sm">
+                          class="sidebar-hide-on-collapse truncate whitespace-nowrap text-sm">
                         Pengajuan
                     </span>
 
@@ -283,7 +376,7 @@
 
                 <!-- Data Diri Peminjaman & Profil -->
                 <a href="{{ route('profile.show') }}"
-                   class="flex items-center rounded-xl h-11 transition-colors group relative select-none {{ request()->routeIs('profile.*') ? 'bg-blue-50 text-[#0B63B5] font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium' }}"
+                   class="sidebar-center-on-collapse flex items-center rounded-xl h-11 transition-colors group relative select-none cursor-pointer {{ request()->routeIs('profile.*') ? 'bg-blue-50 text-[#0B63B5] font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium' }}"
                    :class="sidebarCollapsed && !sidebarMobileOpen ? 'justify-center px-0' : 'px-3 gap-3'">
                     <div class="w-6 h-6 flex items-center justify-center shrink-0">
                         <i data-lucide="user-pen" class="w-5 h-5 {{ request()->routeIs('profile.*') ? 'text-[#0B63B5]' : 'text-slate-500 group-hover:text-slate-800' }}"></i>
@@ -295,7 +388,7 @@
                           x-transition:leave="transition-opacity duration-75"
                           x-transition:leave-start="opacity-100"
                           x-transition:leave-end="opacity-0"
-                          class="truncate whitespace-nowrap text-sm">
+                          class="sidebar-hide-on-collapse truncate whitespace-nowrap text-sm">
                         Data Diri
                     </span>
 
@@ -316,7 +409,7 @@
                 <div x-show="!sidebarCollapsed || sidebarMobileOpen"
                      x-transition:enter="transition-opacity duration-150 delay-75"
                      x-transition:leave="transition-opacity duration-75"
-                     class="px-3 pt-2.5 pb-1 text-[11px] font-bold uppercase tracking-wider text-slate-400 truncate whitespace-nowrap">
+                     class="sidebar-hide-on-collapse px-3 pt-2.5 pb-1 text-[11px] font-bold uppercase tracking-wider text-slate-400 truncate whitespace-nowrap">
                     Pengelolaan BMN
                 </div>
 
@@ -325,7 +418,7 @@
                     $isImportActive = request()->routeIs('kelola.import.*');
                 @endphp
                 <a href="{{ route('kelola.queue') }}"
-                   class="flex items-center justify-between rounded-xl h-11 transition-colors group relative select-none {{ $isQueueActive ? 'bg-blue-50 dark:bg-blue-950/50 text-[#0B63B5] dark:text-blue-400 font-bold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/60 font-medium' }}"
+                   class="sidebar-center-on-collapse flex items-center justify-between rounded-xl h-11 transition-colors group relative select-none cursor-pointer {{ $isQueueActive ? 'bg-blue-50 dark:bg-blue-950/50 text-[#0B63B5] dark:text-blue-400 font-bold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/60 font-medium' }}"
                    :class="sidebarCollapsed && !sidebarMobileOpen ? 'justify-center px-0' : 'px-3'">
                     <div class="flex items-center gap-3 truncate">
                         <div class="w-6 h-6 flex items-center justify-center shrink-0">
@@ -338,7 +431,7 @@
                               x-transition:leave="transition-opacity duration-75"
                               x-transition:leave-start="opacity-100"
                               x-transition:leave-end="opacity-0"
-                              class="truncate whitespace-nowrap text-sm">
+                              class="sidebar-hide-on-collapse truncate whitespace-nowrap text-sm">
                             Antrean Telaah
                         </span>
                     </div>
@@ -346,7 +439,7 @@
                     @php $pendingCount = \App\Models\LoanRequest::whereIn('status', ['SUBMITTED', 'RETURN_REQUESTED'])->count(); @endphp
                     @if($pendingCount > 0)
                         <span x-show="!sidebarCollapsed || sidebarMobileOpen"
-                              class="px-1.5 py-0.5 text-[10px] bg-amber-500 text-white rounded-full font-bold tabular-nums">
+                              class="sidebar-hide-on-collapse px-1.5 py-0.5 text-[10px] bg-amber-500 text-white rounded-full font-bold tabular-nums">
                             {{ $pendingCount }}
                         </span>
                     @endif
@@ -365,7 +458,7 @@
 
                 <!-- Unggah Data Excel (.xlsx) -->
                 <a href="{{ route('kelola.import.index') }}"
-                   class="flex items-center rounded-xl h-11 transition-colors group relative select-none {{ $isImportActive ? 'bg-blue-50 dark:bg-blue-950/50 text-[#0B63B5] dark:text-blue-400 font-bold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/60 font-medium' }}"
+                   class="sidebar-center-on-collapse flex items-center rounded-xl h-11 transition-colors group relative select-none cursor-pointer {{ $isImportActive ? 'bg-blue-50 dark:bg-blue-950/50 text-[#0B63B5] dark:text-blue-400 font-bold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/60 font-medium' }}"
                    :class="sidebarCollapsed && !sidebarMobileOpen ? 'justify-center px-0' : 'px-3 gap-3'">
                     <div class="w-6 h-6 flex items-center justify-center shrink-0">
                         <i data-lucide="file-spreadsheet" class="w-5 h-5 {{ $isImportActive ? 'text-[#0B63B5] dark:text-blue-400' : 'text-slate-500 group-hover:text-slate-800 dark:group-hover:text-slate-200' }}"></i>
@@ -377,7 +470,7 @@
                           x-transition:leave="transition-opacity duration-75"
                           x-transition:leave-start="opacity-100"
                           x-transition:leave-end="opacity-0"
-                          class="truncate whitespace-nowrap text-sm">
+                          class="sidebar-hide-on-collapse truncate whitespace-nowrap text-sm">
                         Unggah Data (.xlsx)
                     </span>
 
@@ -392,7 +485,7 @@
 
                 <!-- Audit Aktivitas Peminjaman (Pengelola) -->
                 <a href="{{ route('audit.loans') }}"
-                   class="flex items-center rounded-xl h-11 transition-colors group relative select-none {{ request()->routeIs('audit.*') ? 'bg-blue-50 text-[#0B63B5] font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium' }}"
+                   class="sidebar-center-on-collapse flex items-center rounded-xl h-11 transition-colors group relative select-none cursor-pointer {{ request()->routeIs('audit.*') ? 'bg-blue-50 text-[#0B63B5] font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium' }}"
                    :class="sidebarCollapsed && !sidebarMobileOpen ? 'justify-center px-0' : 'px-3 gap-3'">
                     <div class="w-6 h-6 flex items-center justify-center shrink-0">
                         <i data-lucide="clipboard-check" class="w-5 h-5 {{ request()->routeIs('audit.*') ? 'text-[#0B63B5]' : 'text-slate-500 group-hover:text-slate-800' }}"></i>
@@ -404,7 +497,7 @@
                           x-transition:leave="transition-opacity duration-75"
                           x-transition:leave-start="opacity-100"
                           x-transition:leave-end="opacity-0"
-                          class="truncate whitespace-nowrap text-sm">
+                          class="sidebar-hide-on-collapse truncate whitespace-nowrap text-sm">
                         Audit Peminjaman
                     </span>
 
@@ -425,12 +518,12 @@
                 <div x-show="!sidebarCollapsed || sidebarMobileOpen"
                      x-transition:enter="transition-opacity duration-150 delay-75"
                      x-transition:leave="transition-opacity duration-75"
-                     class="px-3 pt-2.5 pb-1 text-[11px] font-bold uppercase tracking-wider text-slate-400 truncate whitespace-nowrap">
+                     class="sidebar-hide-on-collapse px-3 pt-2.5 pb-1 text-[11px] font-bold uppercase tracking-wider text-slate-400 truncate whitespace-nowrap">
                     Persetujuan
                 </div>
 
                 <a href="{{ route('persetujuan.index') }}"
-                   class="flex items-center justify-between rounded-xl h-11 transition-colors group relative select-none {{ request()->routeIs('persetujuan.*') ? 'bg-blue-50 text-[#0B63B5] font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium' }}"
+                   class="sidebar-center-on-collapse flex items-center justify-between rounded-xl h-11 transition-colors group relative select-none cursor-pointer {{ request()->routeIs('persetujuan.*') ? 'bg-blue-50 text-[#0B63B5] font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium' }}"
                    :class="sidebarCollapsed && !sidebarMobileOpen ? 'justify-center px-0' : 'px-3'">
                     <div class="flex items-center gap-3 truncate">
                         <div class="w-6 h-6 flex items-center justify-center shrink-0">
@@ -443,7 +536,7 @@
                               x-transition:leave="transition-opacity duration-75"
                               x-transition:leave-start="opacity-100"
                               x-transition:leave-end="opacity-0"
-                              class="truncate whitespace-nowrap text-sm">
+                              class="sidebar-hide-on-collapse truncate whitespace-nowrap text-sm">
                             Persetujuan BMN
                         </span>
                     </div>
@@ -451,7 +544,7 @@
                     @php $approvalCount = \App\Models\LoanRequest::where('status', 'UNDER_APPROVAL')->count(); @endphp
                     @if($approvalCount > 0)
                         <span x-show="!sidebarCollapsed || sidebarMobileOpen"
-                              class="px-1.5 py-0.5 text-[10px] bg-blue-600 text-white rounded-full font-bold tabular-nums">
+                              class="sidebar-hide-on-collapse px-1.5 py-0.5 text-[10px] bg-blue-600 text-white rounded-full font-bold tabular-nums">
                             {{ $approvalCount }}
                         </span>
                     @endif
@@ -470,7 +563,7 @@
 
                 <!-- Audit Aktivitas Peminjaman (Ketua Tim) -->
                 <a href="{{ route('audit.loans') }}"
-                   class="flex items-center rounded-xl h-11 transition-colors group relative select-none {{ request()->routeIs('audit.*') ? 'bg-blue-50 text-[#0B63B5] font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium' }}"
+                   class="sidebar-center-on-collapse flex items-center rounded-xl h-11 transition-colors group relative select-none cursor-pointer {{ request()->routeIs('audit.*') ? 'bg-blue-50 text-[#0B63B5] font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium' }}"
                    :class="sidebarCollapsed && !sidebarMobileOpen ? 'justify-center px-0' : 'px-3 gap-3'">
                     <div class="w-6 h-6 flex items-center justify-center shrink-0">
                         <i data-lucide="clipboard-check" class="w-5 h-5 {{ request()->routeIs('audit.*') ? 'text-[#0B63B5]' : 'text-slate-500 group-hover:text-slate-800' }}"></i>
@@ -482,7 +575,7 @@
                           x-transition:leave="transition-opacity duration-75"
                           x-transition:leave-start="opacity-100"
                           x-transition:leave-end="opacity-0"
-                          class="truncate whitespace-nowrap text-sm">
+                          class="sidebar-hide-on-collapse truncate whitespace-nowrap text-sm">
                         Audit Peminjaman
                     </span>
 
@@ -503,13 +596,13 @@
                 <div x-show="!sidebarCollapsed || sidebarMobileOpen"
                      x-transition:enter="transition-opacity duration-150 delay-75"
                      x-transition:leave="transition-opacity duration-75"
-                     class="px-3 pt-2.5 pb-1 text-[11px] font-bold uppercase tracking-wider text-slate-400 truncate whitespace-nowrap">
+                     class="sidebar-hide-on-collapse px-3 pt-2.5 pb-1 text-[11px] font-bold uppercase tracking-wider text-slate-400 truncate whitespace-nowrap">
                     Administrasi & Audit
                 </div>
 
                 <!-- 1. Audit Aktivitas Peminjaman (Khusus Peminjaman BMN Tanpa Data Sensitif) -->
                 <a href="{{ route('audit.loans') }}"
-                   class="flex items-center justify-between rounded-xl h-11 transition-colors group relative select-none {{ request()->routeIs('audit.*') ? 'bg-blue-50 text-[#0B63B5] font-bold border border-blue-200/80 shadow-2xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium' }}"
+                   class="sidebar-center-on-collapse flex items-center justify-between rounded-xl h-11 transition-colors group relative select-none cursor-pointer {{ request()->routeIs('audit.*') ? 'bg-blue-50 text-[#0B63B5] font-bold border border-blue-200/80 shadow-2xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium' }}"
                    :class="sidebarCollapsed && !sidebarMobileOpen ? 'justify-center px-0' : 'px-3'">
                     <div class="flex items-center gap-3 truncate">
                         <div class="w-6 h-6 flex items-center justify-center shrink-0">
@@ -522,11 +615,11 @@
                               x-transition:leave="transition-opacity duration-75"
                               x-transition:leave-start="opacity-100"
                               x-transition:leave-end="opacity-0"
-                              class="truncate whitespace-nowrap text-sm">
+                              class="sidebar-hide-on-collapse truncate whitespace-nowrap text-sm">
                             Audit Peminjaman
                         </span>
                     </div>
-                    <span x-show="!sidebarCollapsed || sidebarMobileOpen" class="px-1.5 py-0.5 text-[9px] bg-blue-100 text-[#0B63B5] rounded-md font-bold uppercase">BMN</span>
+                    <span x-show="!sidebarCollapsed || sidebarMobileOpen" class="sidebar-hide-on-collapse px-1.5 py-0.5 text-[9px] bg-blue-100 text-[#0B63B5] rounded-md font-bold uppercase">BMN</span>
 
                     <!-- Floating Tooltip -->
                     <div x-show="sidebarCollapsed && !sidebarMobileOpen"
@@ -539,7 +632,7 @@
 
                 <!-- 2. Log Aktivitas Sistem (Forensik Teknis IT Lengkap) -->
                 <a href="{{ route('admin.activity-logs') }}"
-                   class="flex items-center justify-between rounded-xl h-11 transition-colors group relative select-none {{ request()->routeIs('admin.activity-logs') || request()->routeIs('admin.audit-logs') ? 'bg-blue-50 text-[#0B63B5] font-bold border border-blue-200/80 shadow-2xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium' }}"
+                   class="sidebar-center-on-collapse flex items-center justify-between rounded-xl h-11 transition-colors group relative select-none cursor-pointer {{ request()->routeIs('admin.activity-logs') || request()->routeIs('admin.audit-logs') ? 'bg-blue-50 text-[#0B63B5] font-bold border border-blue-200/80 shadow-2xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium' }}"
                    :class="sidebarCollapsed && !sidebarMobileOpen ? 'justify-center px-0' : 'px-3'">
                     <div class="flex items-center gap-3 truncate">
                         <div class="w-6 h-6 flex items-center justify-center shrink-0">
@@ -552,11 +645,11 @@
                               x-transition:leave="transition-opacity duration-75"
                               x-transition:leave-start="opacity-100"
                               x-transition:leave-end="opacity-0"
-                              class="truncate whitespace-nowrap text-sm">
+                              class="sidebar-hide-on-collapse truncate whitespace-nowrap text-sm">
                             Log Aktivitas Sistem
                         </span>
                     </div>
-                    <span x-show="!sidebarCollapsed || sidebarMobileOpen" class="px-1.5 py-0.5 text-[9px] bg-slate-200/80 text-slate-700 rounded-md font-bold uppercase">Sistem</span>
+                    <span x-show="!sidebarCollapsed || sidebarMobileOpen" class="sidebar-hide-on-collapse px-1.5 py-0.5 text-[9px] bg-slate-200/80 text-slate-700 rounded-md font-bold uppercase">Sistem</span>
 
                     <!-- Floating Tooltip -->
                     <div x-show="sidebarCollapsed && !sidebarMobileOpen"
@@ -569,7 +662,7 @@
 
                 <!-- Manajemen Pengguna -->
                 <a href="{{ route('admin.users') }}"
-                   class="flex items-center rounded-xl h-11 transition-colors group relative select-none {{ request()->routeIs('admin.users') ? 'bg-blue-50 text-[#0B63B5] font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium' }}"
+                   class="sidebar-center-on-collapse flex items-center rounded-xl h-11 transition-colors group relative select-none cursor-pointer {{ request()->routeIs('admin.users') ? 'bg-blue-50 text-[#0B63B5] font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium' }}"
                    :class="sidebarCollapsed && !sidebarMobileOpen ? 'justify-center px-0' : 'px-3 gap-3'">
                     <div class="w-6 h-6 flex items-center justify-center shrink-0">
                         <i data-lucide="users" class="w-5 h-5 {{ request()->routeIs('admin.users') ? 'text-[#0B63B5]' : 'text-slate-500 group-hover:text-slate-800' }}"></i>
@@ -581,7 +674,7 @@
                           x-transition:leave="transition-opacity duration-75"
                           x-transition:leave-start="opacity-100"
                           x-transition:leave-end="opacity-0"
-                          class="truncate whitespace-nowrap text-sm">
+                          class="sidebar-hide-on-collapse truncate whitespace-nowrap text-sm">
                         Manajemen Pengguna
                     </span>
 
@@ -596,7 +689,7 @@
 
                 <!-- Pejabat Penandatangan -->
                 <a href="{{ route('admin.signatories') }}"
-                   class="flex items-center rounded-xl h-11 transition-colors group relative select-none {{ request()->routeIs('admin.signatories') ? 'bg-blue-50 text-[#0B63B5] font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium' }}"
+                   class="sidebar-center-on-collapse flex items-center rounded-xl h-11 transition-colors group relative select-none cursor-pointer {{ request()->routeIs('admin.signatories') ? 'bg-blue-50 text-[#0B63B5] font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium' }}"
                    :class="sidebarCollapsed && !sidebarMobileOpen ? 'justify-center px-0' : 'px-3 gap-3'">
                     <div class="w-6 h-6 flex items-center justify-center shrink-0">
                         <i data-lucide="feather" class="w-5 h-5 {{ request()->routeIs('admin.signatories') ? 'text-[#0B63B5]' : 'text-slate-500 group-hover:text-slate-800' }}"></i>
@@ -608,7 +701,7 @@
                           x-transition:leave="transition-opacity duration-75"
                           x-transition:leave-start="opacity-100"
                           x-transition:leave-end="opacity-0"
-                          class="truncate whitespace-nowrap text-sm">
+                          class="sidebar-hide-on-collapse truncate whitespace-nowrap text-sm">
                         Pejabat Penandatangan
                     </span>
 
@@ -623,7 +716,7 @@
 
                 <!-- Pengaturan Satker -->
                 <a href="{{ route('admin.settings') }}"
-                   class="flex items-center rounded-xl h-11 transition-colors group relative select-none {{ request()->routeIs('admin.settings') ? 'bg-blue-50 text-[#0B63B5] font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium' }}"
+                   class="sidebar-center-on-collapse flex items-center rounded-xl h-11 transition-colors group relative select-none cursor-pointer {{ request()->routeIs('admin.settings') ? 'bg-blue-50 text-[#0B63B5] font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium' }}"
                    :class="sidebarCollapsed && !sidebarMobileOpen ? 'justify-center px-0' : 'px-3 gap-3'">
                     <div class="w-6 h-6 flex items-center justify-center shrink-0">
                         <i data-lucide="settings" class="w-5 h-5 {{ request()->routeIs('admin.settings') ? 'text-[#0B63B5]' : 'text-slate-500 group-hover:text-slate-800' }}"></i>
@@ -635,7 +728,7 @@
                           x-transition:leave="transition-opacity duration-75"
                           x-transition:leave-start="opacity-100"
                           x-transition:leave-end="opacity-0"
-                          class="truncate whitespace-nowrap text-sm">
+                          class="sidebar-hide-on-collapse truncate whitespace-nowrap text-sm">
                         Pengaturan Satker
                     </span>
 
@@ -656,7 +749,7 @@
         <div class="p-3 border-t border-slate-100 dark:border-slate-800 shrink-0 bg-slate-50/50 dark:bg-slate-900/40">
             <!-- User Mini Profile -->
             <a href="{{ route('profile.show') }}"
-               class="flex items-center gap-2.5 p-2 rounded-xl bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700 shadow-2xs group relative select-none hover:border-[#0B63B5]/50 dark:hover:border-blue-500/50 hover:bg-blue-50/30 dark:hover:bg-slate-700/50 transition cursor-pointer"
+               class="sidebar-center-on-collapse flex items-center gap-2.5 p-2 rounded-xl bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700 shadow-2xs group relative select-none hover:border-[#0B63B5]/50 dark:hover:border-blue-500/50 hover:bg-blue-50/30 dark:hover:bg-slate-700/50 transition cursor-pointer"
                  :class="sidebarCollapsed && !sidebarMobileOpen ? 'justify-center' : ''">
                 <div class="w-9 h-9 rounded-full bg-blue-100 dark:bg-blue-950/80 text-[#0B63B5] dark:text-blue-400 font-black flex items-center justify-center text-sm shrink-0 border border-blue-200 dark:border-blue-800">
                     {{ substr(auth()->user()->name, 0, 1) }}
@@ -668,7 +761,7 @@
                      x-transition:leave="transition-opacity duration-75"
                      x-transition:leave-start="opacity-100"
                      x-transition:leave-end="opacity-0"
-                     class="truncate min-w-0 flex-1 whitespace-nowrap">
+                     class="sidebar-hide-on-collapse truncate min-w-0 flex-1 whitespace-nowrap">
                     <span class="font-bold text-slate-800 dark:text-slate-200 text-sm block truncate">{{ auth()->user()->name }}</span>
                     <span class="text-xs font-semibold text-[#0B63B5] dark:text-blue-400 uppercase block truncate">{{ str_replace('_', ' ', auth()->user()->role) }}</span>
                 </div>
@@ -686,7 +779,8 @@
     </aside>
 
     <!-- CONTENT AREA WRAPPER (Offsets fixed sidebar) -->
-    <div class="flex-1 flex flex-col min-h-screen lg:transition-[padding] lg:duration-300 lg:ease-in-out"
+    <div id="bmn-content-wrapper"
+         class="flex-1 flex flex-col min-h-screen lg:transition-[padding] lg:duration-300 lg:ease-in-out"
          :class="sidebarCollapsed ? 'lg:pl-20' : 'lg:pl-64'">
 
         <!-- TOP HEADER BAR -->

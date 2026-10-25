@@ -35,6 +35,29 @@
   .tabular-nums {
     font-variant-numeric: tabular-nums;
   }
+
+  /* Universal Hand Pointer for ALL buttons, submits, links, and clickable controls across the website */
+  button,
+  [type='button'],
+  [type='reset'],
+  [type='submit'],
+  a,
+  label[for],
+  select,
+  summary,
+  [role='button'],
+  .cursor-pointer {
+    cursor: pointer !important;
+  }
+
+  button:disabled,
+  [type='button']:disabled,
+  [type='reset']:disabled,
+  [type='submit']:disabled,
+  [aria-disabled='true'],
+  .cursor-not-allowed {
+    cursor: not-allowed !important;
+  }
 }
 
 @layer utilities {

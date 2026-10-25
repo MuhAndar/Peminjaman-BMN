@@ -99,8 +99,8 @@ class LoanRequestController extends Controller
             }
         }
 
-        // Ambil semua kategori untuk filter dropdown
-        $categories = AssetCategory::orderBy('label')->get();
+        // Ambil semua kategori untuk filter dropdown (eager-load count aset untuk optimasi performa)
+        $categories = AssetCategory::withCount('assets')->orderBy('label')->get();
 
         // 5 jenis/kategori barang yang paling sering diajukan secara riil (Rolling Window 60 hari + Cache harian reset 00:00)
         $frequentCategoryCodes = Cache::remember('bmn_popular_category_codes', now()->endOfDay(), function () {
@@ -136,7 +136,7 @@ class LoanRequestController extends Controller
         // Susun 5 kategori quick filter terpopuler (fallback jumlah unit barang tersedia jika data pengajuan masih belum ada)
         $popularCategories = $categories->sortByDesc(function ($cat) use ($frequentCategoryCodes) {
             $idx = array_search($cat->code, $frequentCategoryCodes);
-            return $idx !== false ? (100 - $idx) : $cat->assets()->count();
+            return $idx !== false ? (100 - $idx) : ($cat->assets_count ?? 0);
         })->take(5)->values();
 
         return view('loans.create', compact('employee', 'availableAssets', 'selectedAssetId', 'categories', 'popularCategories'));

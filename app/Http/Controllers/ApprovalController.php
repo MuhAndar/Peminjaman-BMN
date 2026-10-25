@@ -83,45 +83,7 @@ class ApprovalController extends Controller
         $loan = LoanRequest::findOrFail($id);
         $user = Auth::user();
 
-        $source = $request->input('signature_source'); // 'profile', 'pad', 'file'
-        $signaturePath = null;
-
-        if ($source === 'profile') {
-            if ($user->signature_path && Storage::disk('public')->exists($user->signature_path)) {
-                $signaturePath = $user->signature_path;
-            }
-        } elseif ($source === 'pad') {
-            $dataUri = $request->input('signature_data');
-            if (!empty($dataUri) && preg_match('/^data:image\/(png|jpeg);base64,/', $dataUri)) {
-                $encodedImage = substr($dataUri, strpos($dataUri, ',') + 1);
-                $decodedImage = base64_decode($encodedImage);
-                if ($decodedImage !== false) {
-                    $fileName = 'signatures/approver_' . $loan->id . '_' . time() . '_' . Str::random(4) . '.png';
-                    Storage::disk('public')->put($fileName, $decodedImage);
-                    $signaturePath = $fileName;
-
-                    if ($request->boolean('save_to_profile')) {
-                        $user->signature_path = $fileName;
-                        $user->save();
-                    }
-                }
-            }
-        } elseif ($source === 'file') {
-            if ($request->hasFile('signature_file') && $request->file('signature_file')->isValid()) {
-                $request->validate([
-                    'signature_file' => 'required|image|mimes:png,jpg,jpeg|max:2048',
-                ]);
-                $file = $request->file('signature_file');
-                $fileName = 'signatures/approver_' . $loan->id . '_' . time() . '_' . Str::random(4) . '.' . $file->getClientOriginalExtension();
-                $path = $file->storeAs('signatures', basename($fileName), 'public');
-                $signaturePath = $path;
-
-                if ($request->boolean('save_to_profile')) {
-                    $user->signature_path = $path;
-                    $user->save();
-                }
-            }
-        }
+        $signaturePath = $this->resolveSignatureFromRequest($request, $loan, $user);
 
         if ($signaturePath) {
             $loan->approver_signature = $signaturePath;
@@ -131,7 +93,7 @@ class ApprovalController extends Controller
                 'ok' => true,
                 'signature_url' => asset('storage/' . $signaturePath),
                 'signature_path' => $signaturePath,
-                'source' => $source,
+                'source' => $request->input('signature_source'),
             ]);
         }
 
@@ -148,44 +110,7 @@ class ApprovalController extends Controller
 
         // Proses tanda tangan digital Ketua Tim jika diberikan
         $source = $request->input('signature_source'); // 'profile', 'pad', 'file', null
-        $signaturePath = null;
-
-        if ($source === 'profile') {
-            if ($user->signature_path && Storage::disk('public')->exists($user->signature_path)) {
-                $signaturePath = $user->signature_path;
-            }
-        } elseif ($source === 'pad') {
-            $dataUri = $request->input('signature_data');
-            if (!empty($dataUri) && preg_match('/^data:image\/(png|jpeg);base64,/', $dataUri)) {
-                $encodedImage = substr($dataUri, strpos($dataUri, ',') + 1);
-                $decodedImage = base64_decode($encodedImage);
-                if ($decodedImage !== false) {
-                    $fileName = 'signatures/approver_' . $loan->id . '_' . time() . '_' . Str::random(4) . '.png';
-                    Storage::disk('public')->put($fileName, $decodedImage);
-                    $signaturePath = $fileName;
-
-                    if ($request->boolean('save_to_profile')) {
-                        $user->signature_path = $fileName;
-                        $user->save();
-                    }
-                }
-            }
-        } elseif ($source === 'file') {
-            if ($request->hasFile('signature_file') && $request->file('signature_file')->isValid()) {
-                $request->validate([
-                    'signature_file' => 'required|image|mimes:png,jpg,jpeg|max:2048',
-                ]);
-                $file = $request->file('signature_file');
-                $fileName = 'signatures/approver_' . $loan->id . '_' . time() . '_' . Str::random(4) . '.' . $file->getClientOriginalExtension();
-                $path = $file->storeAs('signatures', basename($fileName), 'public');
-                $signaturePath = $path;
-
-                if ($request->boolean('save_to_profile')) {
-                    $user->signature_path = $path;
-                    $user->save();
-                }
-            }
-        }
+        $signaturePath = $this->resolveSignatureFromRequest($request, $loan, $user);
 
         // Jika tidak memilih secara eksplisit tapi loan sudah punya approver_signature yang tersimpan (misal dari draft autosave)
         if (!$signaturePath && $loan->approver_signature && Storage::disk('public')->exists($loan->approver_signature)) {
@@ -252,4 +177,53 @@ class ApprovalController extends Controller
             return back()->with('error', $e->getMessage());
         }
     }
+
+    /**
+     * Ekstraksi dan validasi tanda tangan dari request (profil, pad canvas, atau unggah file).
+     */
+    private function resolveSignatureFromRequest(Request $request, LoanRequest $loan, $user): ?string
+    {
+        $source = $request->input('signature_source'); // 'profile', 'pad', 'file'
+        $signaturePath = null;
+
+        if ($source === 'profile') {
+            if ($user->signature_path && Storage::disk('public')->exists($user->signature_path)) {
+                $signaturePath = $user->signature_path;
+            }
+        } elseif ($source === 'pad') {
+            $dataUri = $request->input('signature_data');
+            if (!empty($dataUri) && preg_match('/^data:image\/(png|jpeg);base64,/', $dataUri)) {
+                $encodedImage = substr($dataUri, strpos($dataUri, ',') + 1);
+                $decodedImage = base64_decode($encodedImage);
+                if ($decodedImage !== false) {
+                    $fileName = 'signatures/approver_' . $loan->id . '_' . time() . '_' . Str::random(4) . '.png';
+                    Storage::disk('public')->put($fileName, $decodedImage);
+                    $signaturePath = $fileName;
+
+                    if ($request->boolean('save_to_profile')) {
+                        $user->signature_path = $fileName;
+                        $user->save();
+                    }
+                }
+            }
+        } elseif ($source === 'file') {
+            if ($request->hasFile('signature_file') && $request->file('signature_file')->isValid()) {
+                $request->validate([
+                    'signature_file' => 'required|image|mimes:png,jpg,jpeg|max:2048',
+                ]);
+                $file = $request->file('signature_file');
+                $fileName = 'signatures/approver_' . $loan->id . '_' . time() . '_' . Str::random(4) . '.' . $file->getClientOriginalExtension();
+                $path = $file->storeAs('signatures', basename($fileName), 'public');
+                $signaturePath = $path;
+
+                if ($request->boolean('save_to_profile')) {
+                    $user->signature_path = $path;
+                    $user->save();
+                }
+            }
+        }
+
+        return $signaturePath;
+    }
 }
+

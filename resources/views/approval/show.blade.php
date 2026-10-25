@@ -217,7 +217,7 @@
                                             </p>
                                         </div>
                                     </div>
-                                    <button type="button" @click="sigModalOpen = false" class="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 p-1 rounded-lg">
+                                    <button type="button" @click="sigModalOpen = false" class="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 p-1 rounded-lg cursor-pointer">
                                         <i data-lucide="x" class="w-5 h-5"></i>
                                     </button>
                                 </div>
@@ -402,7 +402,7 @@
                                 data-confirm-title="Kembalikan Pengajuan"
                                 data-confirm-btn="Ya, Kembalikan untuk Revisi"
                                 data-confirm-type="warning"
-                                class="w-full py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition">
+                                class="w-full py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition cursor-pointer">
                             Kembalikan ke Peminjam
                         </button>
                     </form>
@@ -423,7 +423,7 @@
                                 data-confirm-title="Penolakan Pengajuan"
                                 data-confirm-btn="Ya, Tolak Pengajuan"
                                 data-confirm-type="danger"
-                                class="w-full py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition">
+                                class="w-full py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition cursor-pointer">
                             Tolak Pengajuan
                         </button>
                     </form>
