@@ -896,5 +896,19 @@ class NewFeaturesTest extends TestCase
         $this->assertEquals('APPROVED', $loan->fresh()->status);
         $this->assertEquals($loanFresh->approver_signature, $loan->fresh()->approver_signature);
     }
+
+    public function test_login_page_renders_manual_form_without_demo_switcher_and_has_testing_accounts(): void
+    {
+        $response = $this->get(route('login'));
+        $response->assertOk();
+        $response->assertDontSee('Masuk Cepat Demo (Sesuai Peran SOP):');
+        $response->assertSee('Masuk ke Akun');
+        $response->assertSee('Masuk ke Sistem');
+        $response->assertSee('Akun Pengujian (Testing 4 Role)');
+        $response->assertSee('peminjam@komdigi.go.id');
+        $response->assertSee('pengelola@komdigi.go.id');
+        $response->assertSee('ketuatim@komdigi.go.id');
+        $response->assertSee('admin@komdigi.go.id');
+    }
 }
 

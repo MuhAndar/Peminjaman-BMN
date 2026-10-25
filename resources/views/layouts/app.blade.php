@@ -1022,39 +1022,53 @@
                  x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
                  x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
                  @click.outside="close()"
-                 class="relative transform overflow-hidden rounded-3xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-md border border-slate-100 p-6 sm:p-7">
+                 class="relative transform overflow-hidden rounded-3xl bg-white dark:bg-slate-900 text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-md border border-slate-100 dark:border-slate-800 p-6 sm:p-7">
 
-                <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl mb-4"
+                <!-- 1 Ikon Tunggal Mewakili Setiap Aksi (Bebas dari Bug Duplikasi Lucide) -->
+                <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl mb-4 shrink-0 transition"
                      :class="{
-                         'bg-emerald-100 text-emerald-600': type === 'success',
-                         'bg-red-100 text-red-600': type === 'danger',
-                         'bg-amber-100 text-amber-600': type === 'warning',
-                         'bg-blue-100 text-[#0B63B5]': type === 'primary'
+                         'bg-emerald-100 text-emerald-600 dark:bg-emerald-950/70 dark:text-emerald-400 dark:border dark:border-emerald-800/60': type === 'success',
+                         'bg-red-100 text-red-600 dark:bg-red-950/70 dark:text-red-400 dark:border dark:border-red-800/60': type === 'danger',
+                         'bg-amber-100 text-amber-600 dark:bg-amber-950/70 dark:text-amber-400 dark:border dark:border-amber-800/60': type === 'warning',
+                         'bg-blue-100 text-[#0B63B5] dark:bg-blue-950/70 dark:text-blue-400 dark:border dark:border-blue-800/60': type === 'primary'
                      }">
-                    <template x-if="type === 'success'">
-                        <i data-lucide="check-circle-2" class="w-7 h-7"></i>
-                    </template>
-                    <template x-if="type === 'danger'">
-                        <i data-lucide="alert-octagon" class="w-7 h-7"></i>
-                    </template>
-                    <template x-if="type === 'warning'">
-                        <i data-lucide="alert-triangle" class="w-7 h-7"></i>
-                    </template>
-                    <template x-if="type === 'primary'">
-                        <i data-lucide="help-circle" class="w-7 h-7"></i>
-                    </template>
+                    <!-- Setujui (Success: Check Circle) -->
+                    <svg x-show="type === 'success'" class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+
+                    <!-- Tolak (Danger: X Circle) -->
+                    <svg x-show="type === 'danger'" class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="15" y1="9" x2="9" y2="15"></line>
+                        <line x1="9" y1="9" x2="15" y2="15"></line>
+                    </svg>
+
+                    <!-- Kembalikan (Warning: Rotate CCW / Undo) -->
+                    <svg x-show="type === 'warning'" class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                        <path d="M3 3v5h5"></path>
+                    </svg>
+
+                    <!-- Konfirmasi Lainnya (Primary: Info Circle) -->
+                    <svg x-show="type === 'primary'" class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="16" x2="12" y2="12"></line>
+                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                    </svg>
                 </div>
 
                 <div class="text-center">
-                    <h3 class="text-lg font-black text-slate-900 tracking-tight" id="modal-title" x-text="title"></h3>
+                    <h3 class="text-lg font-black text-slate-900 dark:text-white tracking-tight" id="modal-title" x-text="title"></h3>
                     <div class="mt-2">
-                        <p class="text-xs sm:text-sm text-slate-600 leading-relaxed font-medium" x-text="message"></p>
+                        <p class="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-medium" x-text="message"></p>
                     </div>
                 </div>
 
                 <div class="mt-6 flex flex-col-reverse sm:flex-row items-center justify-end gap-2.5">
                     <button type="button" @click="close()"
-                            class="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-slate-200 text-slate-700 font-bold text-xs hover:bg-slate-50 transition">
+                            class="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs hover:bg-slate-50 dark:hover:bg-slate-800 transition">
                         <span x-text="cancelText"></span>
                     </button>
                     <button type="button" @click="confirm()"
@@ -1129,7 +1143,6 @@
                     this.type = detail.type || 'primary';
                     this.callback = detail.callback || null;
                     this.isOpen = true;
-                    this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
                 },
                 close() {
                     this.isOpen = false;
