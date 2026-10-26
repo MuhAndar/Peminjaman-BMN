@@ -331,6 +331,24 @@
                 <i data-lucide="{{ $meta['icon'] }}" class="w-3.5 h-3.5"></i>
                 <span>{{ $meta['label'] }}</span>
             </span>
+
+            @if(in_array($loan->status, ['DRAFT', 'SUBMITTED', 'NEEDS_REVISION', 'UNDER_APPROVAL']) && ($isPengelola || $user->isAdmin()))
+                <form method="POST" action="{{ route('kelola.destroy', $loan->id) }}" class="inline-block">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit"
+                            data-confirm="Apakah Anda yakin ingin menghapus berkas pengajuan peminjaman ini? Tindakan ini akan membatalkan pengajuan dan seluruh barang inventaris terkait akan langsung kembali berstatus Tersedia untuk dipinjam pegawai lain."
+                            data-confirm-title="Hapus Berkas Pengajuan BMN?"
+                            data-confirm-btn="Ya, Hapus Pengajuan"
+                            data-confirm-cancel="Batal"
+                            data-confirm-type="danger"
+                            title="Hapus berkas pengajuan ini sebelum disetujui Ketua Tim"
+                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-red-200 dark:border-red-800/80 bg-red-50 dark:bg-red-950/60 hover:bg-red-100 dark:hover:bg-red-900/60 text-red-700 dark:text-red-300 text-xs font-bold transition shadow-2xs cursor-pointer">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5 text-red-600 dark:text-red-400"></i>
+                        <span>Hapus Pengajuan</span>
+                    </button>
+                </form>
+            @endif
         </div>
     </div>
 
@@ -447,13 +465,14 @@
                                         data-confirm-type="primary"
                                         class="px-6 py-2.5 bg-[#0B63B5] hover:bg-[#0B4F8A] text-white rounded-xl text-xs font-black shadow-md shadow-blue-500/20 transition flex items-center gap-2 cursor-pointer active:scale-95">
                                     <i data-lucide="send" class="w-4 h-4"></i>
-                                    <span>{{ $isRevision ? 'Kirim Ulang Pengajuan ke Pengelola BMN' : 'Kirim Pengajuan ke Pengelola BMN' }}</span>
+                                    <span>{{ $isRevision ? 'Kirim Ulang Pengajuan' : 'Kirim Pengajuan' }}</span>
                                 </button>
                             @else
-                                <button type="button" @click="openSigModal('borrower')"
-                                        class="px-6 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shadow-md transition flex items-center gap-2 cursor-pointer">
-                                    <i data-lucide="pen-tool" class="w-4 h-4"></i>
-                                    <span>Bubuhkan TTD & Kirim Pengajuan</span>
+                                <button type="button" disabled
+                                        title="Harap bubuhkan tanda tangan peminjam terlebih dahulu sebelum mengirim pengajuan"
+                                        class="px-6 py-2.5 bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-bold flex items-center gap-2 cursor-not-allowed shadow-inner select-none">
+                                    <i data-lucide="send" class="w-4 h-4 opacity-40"></i>
+                                    <span>{{ $isRevision ? 'Kirim Ulang Pengajuan' : 'Kirim Pengajuan' }}</span>
                                 </button>
                             @endif
                         </form>
@@ -1312,6 +1331,68 @@
                                 <span>Kembalikan untuk Diperbaiki</span>
                             </button>
                         </div>
+                    </form>
+                </div>
+            @endif
+
+            <!-- Action Pengelola BMN: Pengajuan Dalam Perbaikan / Draf (NEEDS_REVISION / DRAFT) -->
+            @if(in_array($loan->status, ['NEEDS_REVISION', 'DRAFT']) && ($isPengelola || $user->isAdmin()))
+                <div class="bg-white dark:bg-slate-900 rounded-3xl border-2 border-amber-200 dark:border-amber-800 p-6 shadow-sm space-y-4">
+                    <div class="flex items-center gap-2.5 text-amber-700 dark:text-amber-400">
+                        <i data-lucide="help-circle" class="w-5 h-5"></i>
+                        <h3 class="text-base font-black text-slate-900 dark:text-white">
+                            {{ $loan->status === 'NEEDS_REVISION' ? 'Tindakan Pengelola BMN: Menunggu Perbaikan Peminjam' : 'Tindakan Pengelola BMN: Berkas Draf Peminjam' }}
+                        </h3>
+                    </div>
+                    <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                        {{ $loan->status === 'NEEDS_REVISION'
+                            ? 'Pengajuan ini sedang menunggu peminjam untuk memperbaiki draf sesuai catatan telaah. Apabila peminjam tidak kunjung memperbaiki atau membatalkan rencana peminjaman, Pengelola BMN dapat menghapus pengajuan ini agar barang kembali berstatus Tersedia untuk dipinjam pegawai lain.'
+                            : 'Pengajuan ini masih berupa draf yang belum dikirim resmi oleh peminjam. Pengelola BMN dapat menghapus pengajuan ini jika diperlukan agar barang inventaris kantor kembali berstatus Tersedia.' }}
+                    </p>
+                    <div class="pt-1">
+                        <form method="POST" action="{{ route('kelola.destroy', $loan->id) }}">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit"
+                                    data-confirm="Apakah Anda yakin ingin menghapus berkas pengajuan ini? Tindakan ini akan membatalkan berkas pengajuan dan mengembalikan seluruh barang inventaris terkait agar berstatus Tersedia untuk dipinjam pegawai lain."
+                                    data-confirm-title="Hapus Berkas Pengajuan BMN?"
+                                    data-confirm-btn="Ya, Hapus Pengajuan"
+                                    data-confirm-cancel="Batal"
+                                    data-confirm-type="danger"
+                                    class="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-2 cursor-pointer">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                <span>Hapus Pengajuan & Kembalikan Ketersediaan Barang</span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            @endif
+
+            <!-- Action Pengelola BMN: Berkas Menunggu Persetujuan Ketua Tim (UNDER_APPROVAL) -->
+            @if($loan->status === 'UNDER_APPROVAL' && ($isPengelola || $user->isAdmin()))
+                <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                            <i data-lucide="hourglass" class="w-4 h-4"></i>
+                        </div>
+                        <div class="text-xs">
+                            <span class="font-bold text-slate-800 dark:text-white block">Berkas Sedang Menunggu Persetujuan Disposisi Ketua Tim</span>
+                            <p class="text-[11px] text-slate-500 dark:text-slate-400">Pengelola masih dapat membatalkan/menghapus pengajuan sebelum disetujui Ketua Tim jika terdapat pembatalan tugas.</p>
+                        </div>
+                    </div>
+                    <form method="POST" action="{{ route('kelola.destroy', $loan->id) }}" class="shrink-0">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit"
+                                data-confirm="Apakah Anda yakin ingin menghapus berkas pengajuan ini sebelum persetujuan disposisi Ketua Tim? Barang akan kembali berstatus Tersedia."
+                                data-confirm-title="Hapus Berkas Pengajuan BMN?"
+                                data-confirm-btn="Ya, Hapus Pengajuan"
+                                data-confirm-cancel="Batal"
+                                data-confirm-type="danger"
+                                class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold shadow-2xs transition flex items-center gap-1.5 cursor-pointer">
+                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                            <span>Hapus Pengajuan</span>
+                        </button>
                     </form>
                 </div>
             @endif

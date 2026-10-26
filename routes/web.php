@@ -53,6 +53,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/pengajuan/{id}/konfirmasi-aktif', [LoanRequestController::class, 'confirmActive'])->name('confirm-active');
         Route::post('/pengajuan/{id}/cek-kembali', [LoanRequestController::class, 'processReturnCheck'])->name('process-return-check');
         Route::post('/pengajuan/{id}/selesai-kembali', [LoanRequestController::class, 'finalizeReturn'])->name('finalize-return');
+        Route::delete('/pengajuan/{id}', [LoanRequestController::class, 'destroy'])->name('destroy');
 
         // Fitur Unggah & Impor Data .xlsx
         Route::get('/import-data', [\App\Http\Controllers\DataImportController::class, 'index'])->name('import.index');

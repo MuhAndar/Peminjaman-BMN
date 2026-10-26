@@ -153,10 +153,29 @@
                                     </span>
                                 </td>
                                 <td class="py-4 px-6 text-right whitespace-nowrap">
-                                    <a href="{{ route('loans.show', $loan->id) }}" class="inline-flex items-center gap-1.5 text-xs font-bold text-[#0B63B5] dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 px-3.5 py-1.5 rounded-xl border border-blue-100 dark:border-blue-900/40 transition shadow-2xs whitespace-nowrap">
-                                        <span>Buka Berkas</span>
-                                        <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
-                                    </a>
+                                    <div class="inline-flex items-center gap-1.5 justify-end">
+                                        <a href="{{ route('loans.show', $loan->id) }}" class="inline-flex items-center gap-1.5 text-xs font-bold text-[#0B63B5] dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 px-3.5 py-1.5 rounded-xl border border-blue-100 dark:border-blue-900/40 transition shadow-2xs whitespace-nowrap">
+                                            <span>Buka Berkas</span>
+                                            <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                                        </a>
+
+                                        @if(in_array($loan->status, ['DRAFT', 'SUBMITTED', 'NEEDS_REVISION', 'UNDER_APPROVAL']))
+                                            <form method="POST" action="{{ route('kelola.destroy', $loan->id) }}" class="inline-block">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit"
+                                                        data-confirm="Apakah Anda yakin ingin menghapus berkas pengajuan #{{ substr($loan->id, 0, 8) }} atas nama {{ $loan->snap_full_name }}? Tindakan ini akan membatalkan pengajuan dan seluruh barang terkait akan kembali berstatus Tersedia."
+                                                        data-confirm-title="Hapus Berkas Pengajuan BMN?"
+                                                        data-confirm-btn="Ya, Hapus"
+                                                        data-confirm-cancel="Batal"
+                                                        data-confirm-type="danger"
+                                                        title="Hapus pengajuan ini"
+                                                        class="p-1.5 rounded-xl border border-transparent hover:border-red-200 dark:hover:border-red-800 text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/60 transition cursor-pointer">
+                                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                                </button>
+                                            </form>
+                                        @endif
+                                    </div>
                                 </td>
                             </tr>
                         @endforeach
@@ -189,10 +208,28 @@
 
                         <div class="pt-1 flex items-center justify-between">
                             <span class="text-[11px] font-mono text-slate-400">#{{ substr($loan->id, 0, 8) }}</span>
-                            <a href="{{ route('loans.show', $loan->id) }}" class="inline-flex items-center gap-1 text-xs font-bold text-[#0B63B5] dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 px-3 py-1.5 rounded-xl border border-blue-100 dark:border-blue-900/40 transition shadow-2xs">
-                                <span>Buka Berkas</span>
-                                <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
-                            </a>
+                            <div class="flex items-center gap-1.5">
+                                <a href="{{ route('loans.show', $loan->id) }}" class="inline-flex items-center gap-1 text-xs font-bold text-[#0B63B5] dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 px-3 py-1.5 rounded-xl border border-blue-100 dark:border-blue-900/40 transition shadow-2xs">
+                                    <span>Buka Berkas</span>
+                                    <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                                </a>
+                                @if(in_array($loan->status, ['DRAFT', 'SUBMITTED', 'NEEDS_REVISION', 'UNDER_APPROVAL']))
+                                    <form method="POST" action="{{ route('kelola.destroy', $loan->id) }}" class="inline-block">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit"
+                                                data-confirm="Apakah Anda yakin ingin menghapus berkas pengajuan #{{ substr($loan->id, 0, 8) }} atas nama {{ $loan->snap_full_name }}? Tindakan ini akan membatalkan pengajuan dan seluruh barang terkait akan kembali berstatus Tersedia."
+                                                data-confirm-title="Hapus Berkas Pengajuan BMN?"
+                                                data-confirm-btn="Ya, Hapus"
+                                                data-confirm-cancel="Batal"
+                                                data-confirm-type="danger"
+                                                title="Hapus pengajuan ini"
+                                                class="p-1.5 rounded-xl border border-transparent hover:border-red-200 dark:hover:border-red-800 text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/60 transition cursor-pointer">
+                                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                        </button>
+                                    </form>
+                                @endif
+                            </div>
                         </div>
                     </div>
                 @endforeach

@@ -581,6 +581,69 @@ class LoanRequestController extends Controller
     }
 
     /**
+     * Pengelola BMN / Admin deletes a loan request prior to Ketua Tim approval.
+     */
+    public function destroy(string $id)
+    {
+        abort_unless(
+            Auth::check() && (Auth::user()->isPengelola() || Auth::user()->isAdmin()),
+            403,
+            'Hanya Pengelola BMN dan Administrator yang memiliki hak untuk menghapus berkas pengajuan ini.'
+        );
+
+        $loan = LoanRequest::with(['items', 'photos'])->findOrFail($id);
+        $user = Auth::user();
+
+        // Tombol dan fungsi hapus hanya ada sampai ketua aset menyetujui disposisi (sebelum APPROVED)
+        $allowedStatuses = ['DRAFT', 'SUBMITTED', 'NEEDS_REVISION', 'UNDER_APPROVAL'];
+        if (!in_array($loan->status, $allowedStatuses)) {
+            return back()->with('error', 'Pengajuan ini tidak dapat dihapus karena disposisi telah disetujui oleh Ketua Tim Keuangan & Aset.');
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $loanId = $loan->id;
+            $borrowerName = $loan->snap_full_name;
+            $itemCount = $loan->items->count();
+
+            AuditLog::record(
+                'DELETE_LOAN_REQUEST',
+                'LoanRequest',
+                $loanId,
+                [
+                    'status' => $loan->status,
+                    'borrower' => $borrowerName,
+                    'items_count' => $itemCount,
+                ],
+                [
+                    'deleted_by' => $user->name,
+                    'reason' => 'Pengajuan dihapus oleh Pengelola BMN sebelum persetujuan disposisi. Seluruh barang inventaris terkait kembali tersedia penuh.',
+                ]
+            );
+
+            // Bersihkan file foto dari storage jika ada
+            if (Storage::disk('public')->exists('loan_photos/' . $loanId)) {
+                Storage::disk('public')->deleteDirectory('loan_photos/' . $loanId);
+            }
+
+            // Hapus pengajuan (cascade delete items, status history, documents, photos)
+            $loan->delete();
+
+            // Reset cache kategori populer
+            Cache::forget('bmn_popular_category_codes');
+
+            DB::commit();
+
+            return redirect()->route('kelola.queue')
+                ->with('success', "Pengajuan peminjaman #{$loanId} atas nama {$borrowerName} berhasil dihapus. Seluruh barang inventaris terkait kini telah kembali berstatus Tersedia.");
+        } catch (Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Gagal menghapus pengajuan: ' . $e->getMessage());
+        }
+    }
+
+    /**
      * Pengelola BMN issues BAST Peminjaman (APPROVED -> BAST_ISSUED).
      */
     public function issueBast(Request $request, string $id)

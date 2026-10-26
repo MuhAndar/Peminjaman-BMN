@@ -1112,5 +1112,134 @@ class NewFeaturesTest extends TestCase
         // SVG chevron-left yang berputar 180° menjadi chevron-right
         $response->assertSee('<path d="m15 18-6-6 6-6"/>', false);
     }
+
+    /**
+     * Verifikasi tombol Kirim Pengajuan disabled/gelap tanpa TTD dan aktif setelah ada TTD.
+     */
+    public function test_borrower_submit_button_disabled_without_signature(): void
+    {
+        $peminjam = User::where('role', 'PEMINJAM')->first();
+        // Pastikan signature user null
+        $peminjam->signature_path = null;
+        $peminjam->save();
+
+        $asset = Asset::first();
+        $loan = LoanRequest::create([
+            'borrower_id' => $peminjam->employee_id,
+            'loan_type' => 'SHORT_TERM',
+            'start_date' => Carbon::now()->addDays(1)->toDateString(),
+            'end_date' => Carbon::now()->addDays(3)->toDateString(),
+            'status' => 'DRAFT',
+            'snap_full_name' => $peminjam->name,
+            'snap_nip' => $peminjam->employee->nip,
+            'borrower_signature' => null,
+        ]);
+        $loan->items()->create([
+            'asset_id' => $asset->id,
+            'purpose' => 'Dinas operasional',
+            'snap_item_name' => $asset->item_name,
+            'snap_brand_model' => $asset->brand_model_combined,
+            'snap_value' => $asset->acquisition_value,
+        ]);
+
+        $this->actingAs($peminjam);
+        $resWithoutSig = $this->get(route('loans.show', $loan->id));
+        $resWithoutSig->assertOk();
+        $resWithoutSig->assertSee('Kirim Pengajuan');
+        $resWithoutSig->assertSee('cursor-not-allowed', false);
+        $resWithoutSig->assertSee('disabled', false);
+
+        // Berikan tanda tangan pada loan
+        $loan->update(['borrower_signature' => 'data:image/png;base64,sample_signature']);
+
+        $resWithSig = $this->get(route('loans.show', $loan->id));
+        $resWithSig->assertOk();
+        $resWithSig->assertSee('Kirim Pengajuan');
+        $resWithSig->assertSee('bg-[#0B63B5]', false);
+    }
+
+    /**
+     * Verifikasi Pengelola BMN dapat menghapus pengajuan yang perlu perbaikan / draf / sebelum disetujui,
+     * dan barang inventaris kembali berstatus Tersedia.
+     */
+    public function test_pengelola_can_delete_loan_and_free_asset(): void
+    {
+        $peminjam = User::where('role', 'PEMINJAM')->first();
+        $pengelola = User::where('role', 'PENGELOLA_BMN')->first();
+
+        $asset = Asset::where('status', 'AVAILABLE')->first();
+
+        // Buat pengajuan berstatus NEEDS_REVISION
+        $loan = LoanRequest::create([
+            'borrower_id' => $peminjam->employee_id,
+            'loan_type' => 'SHORT_TERM',
+            'start_date' => Carbon::now()->addDays(1)->toDateString(),
+            'end_date' => Carbon::now()->addDays(3)->toDateString(),
+            'status' => 'NEEDS_REVISION',
+            'snap_full_name' => $peminjam->name,
+            'snap_nip' => $peminjam->employee->nip,
+        ]);
+        $loan->items()->create([
+            'asset_id' => $asset->id,
+            'purpose' => 'Tugas luar',
+            'snap_item_name' => $asset->item_name,
+            'snap_brand_model' => $asset->brand_model_combined,
+            'snap_value' => $asset->acquisition_value,
+        ]);
+
+        // Cek bahwa asset tidak berstatus AVAILABLE saat pengajuan aktif/pending
+        $this->assertEquals('PENDING_APPROVAL', $asset->fresh()->operational_status['code']);
+
+        // 1. Peminjam biasa dilarang menghapus via rute kelola.destroy (403)
+        $this->actingAs($peminjam);
+        $resForbidden = $this->delete(route('kelola.destroy', $loan->id));
+        $resForbidden->assertForbidden();
+
+        // 2. Pengelola BMN menghapus pengajuan yang menggantung
+        $this->actingAs($pengelola);
+        $resDelete = $this->delete(route('kelola.destroy', $loan->id));
+        $resDelete->assertRedirect(route('kelola.queue'));
+        $resDelete->assertSessionHas('success');
+
+        // 3. Pastikan pengajuan dan item terhapus dari database
+        $this->assertDatabaseMissing('loan_requests', ['id' => $loan->id]);
+        $this->assertDatabaseMissing('loan_items', ['loan_request_id' => $loan->id]);
+
+        // 4. Pastikan barang kembali berstatus AVAILABLE
+        $this->assertEquals('AVAILABLE', $asset->fresh()->operational_status['code']);
+
+        // 5. Pastikan Audit Log tercatat
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'DELETE_LOAN_REQUEST',
+            'entity' => 'LoanRequest',
+            'entity_id' => $loan->id,
+        ]);
+    }
+
+    /**
+     * Verifikasi pengajuan yang telah disetujui Ketua Tim (APPROVED) tidak dapat lagi dihapus oleh Pengelola BMN.
+     */
+    public function test_pengelola_cannot_delete_loan_after_ketua_approval(): void
+    {
+        $peminjam = User::where('role', 'PEMINJAM')->first();
+        $pengelola = User::where('role', 'PENGELOLA_BMN')->first();
+
+        $loan = LoanRequest::create([
+            'borrower_id' => $peminjam->employee_id,
+            'loan_type' => 'SHORT_TERM',
+            'start_date' => Carbon::now()->addDays(1)->toDateString(),
+            'end_date' => Carbon::now()->addDays(3)->toDateString(),
+            'status' => 'APPROVED',
+            'snap_full_name' => $peminjam->name,
+            'snap_nip' => $peminjam->employee->nip,
+        ]);
+
+        $this->actingAs($pengelola);
+        $response = $this->delete(route('kelola.destroy', $loan->id));
+        $response->assertSessionHas('error');
+
+        // Pengajuan tetap ada di DB
+        $this->assertDatabaseHas('loan_requests', ['id' => $loan->id]);
+    }
 }
 
