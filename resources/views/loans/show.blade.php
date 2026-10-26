@@ -2080,50 +2080,126 @@
                 </div>
 
                 <!-- 2. ALUR SOP PENGEMBALIAN BMN (4 TAHAP) -->
+                @php
+                    $isReturnActive = in_array($loan->status, ['RETURN_REQUESTED', 'RETURN_CHECKED']);
+                    $isReturnCompleted = ($loan->status === 'RETURNED');
+                    $isReturnReady = ($loan->status === 'ACTIVE');
+                    
+                    $sopReturnSteps = [
+                        1 => ['title' => 'Mengajukan Pengembalian', 'actor' => 'Peminjam', 'sla' => '1 Menit'],
+                        2 => ['title' => 'Pemeriksaan Fisik & Draf BAST', 'actor' => 'Petugas BMN', 'sla' => '5 Menit'],
+                        3 => ['title' => 'Tanda Tangan BAST Kembali', 'actor' => 'Peminjam & Petugas', 'sla' => '1 Menit'],
+                        4 => ['title' => 'Simpan BMN ke Inventaris', 'actor' => 'Petugas BMN', 'sla' => '1 Menit'],
+                    ];
+                @endphp
                 <div class="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800">
-                    <div class="flex items-center gap-2 pb-3 mb-4">
-                        <i data-lucide="corner-down-left" class="w-4 h-4 text-purple-600 dark:text-purple-400"></i>
-                        <div>
-                            <h3 class="font-black text-sm text-slate-900 dark:text-white">Alur SOP Pengembalian BMN</h3>
-                            <span class="text-[10px] text-slate-400 dark:text-slate-400 font-semibold">Standar Operasional Prosedur • Tahap Pengembalian</span>
-                        </div>
-                    </div>
-
-                    @php
-                        $returnStepIndex = $meta['return_step'] ?? 0;
-                        $sopReturnSteps = [
-                            1 => ['title' => 'Mengajukan Pengembalian', 'actor' => 'Peminjam', 'sla' => '1 Menit'],
-                            2 => ['title' => 'Pemeriksaan Fisik & Draf BAST', 'actor' => 'Petugas BMN', 'sla' => '5 Menit'],
-                            3 => ['title' => 'Tanda Tangan BAST Kembali', 'actor' => 'Peminjam & Petugas', 'sla' => '1 Menit'],
-                            4 => ['title' => 'Simpan BMN ke Inventaris', 'actor' => 'Petugas BMN', 'sla' => '1 Menit'],
-                        ];
-                    @endphp
-
-                    <div class="relative pl-6 space-y-5 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200 dark:before:bg-slate-700">
-                        @foreach($sopReturnSteps as $rNum => $rInfo)
-                            @php
-                                $rDone = ($returnStepIndex > $rNum) || ($returnStepIndex === 4 && $rNum === 4);
-                                $rCurrent = ($returnStepIndex === $rNum);
-                            @endphp
-                            <div class="relative">
-                                <div class="absolute -left-6 top-0.5 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold
-                                            {{ $rDone ? 'bg-emerald-500 text-white ring-4 ring-emerald-50 dark:ring-emerald-950/60' : ($rCurrent ? 'bg-purple-600 dark:bg-purple-500 text-white ring-4 ring-purple-100 dark:ring-purple-950/70 animate-pulse' : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-300/50 dark:border-slate-700') }}">
-                                    @if($rDone) &check; @else {{ $rNum }} @endif
+                    <div class="rounded-2xl p-4 transition-all duration-300 {{ $isReturnCompleted ? 'bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/80 shadow-xs ring-1 ring-emerald-500/20' : ($isReturnActive ? 'bg-blue-50/40 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800/80 shadow-xs ring-1 ring-blue-500/20' : ($isReturnReady ? 'bg-slate-50/70 dark:bg-slate-850 border border-slate-200/80 dark:border-slate-800' : 'bg-transparent')) }}">
+                        <div class="flex items-center justify-between pb-3 mb-4 border-b {{ $isReturnCompleted ? 'border-emerald-100 dark:border-emerald-900/50' : ($isReturnActive ? 'border-blue-100 dark:border-blue-900/50' : 'border-slate-100 dark:border-slate-800') }}">
+                            <div class="flex items-center gap-2">
+                                <div class="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 {{ $isReturnCompleted ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300' : ($isReturnActive ? 'bg-blue-100 text-[#0B63B5] dark:bg-blue-900/60 dark:text-blue-300' : 'bg-slate-100 dark:bg-slate-800 text-slate-500') }}">
+                                    @if($isReturnCompleted)
+                                        <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+                                    @elseif($isReturnActive)
+                                        <i data-lucide="refresh-cw" class="w-4 h-4 animate-spin" style="animation-duration: 4s;"></i>
+                                    @else
+                                        <i data-lucide="corner-down-left" class="w-4 h-4"></i>
+                                    @endif
                                 </div>
-
                                 <div>
-                                    <div class="flex items-center justify-between gap-1">
-                                        <h4 class="text-xs font-bold {{ $rCurrent ? 'text-purple-700 dark:text-purple-400 font-extrabold' : ($rDone ? 'text-slate-800 dark:text-slate-200' : 'text-slate-600 dark:text-slate-300 font-medium') }}">
-                                            {{ $rInfo['title'] }}
-                                        </h4>
-                                        <span class="text-[9px] font-semibold text-slate-400 dark:text-slate-400 tabular-nums">{{ $rInfo['sla'] }}</span>
-                                    </div>
-                                    <span class="text-[11px] block mt-0.5 {{ $rCurrent ? 'text-slate-700 dark:text-slate-200 font-semibold' : 'text-slate-500 dark:text-slate-400' }}">
-                                        Pelaksana: {{ $rInfo['actor'] }}
+                                    <h3 class="font-black text-sm {{ $isReturnCompleted ? 'text-emerald-900 dark:text-emerald-200' : ($isReturnActive ? 'text-blue-950 dark:text-white' : 'text-slate-900 dark:text-white') }}">
+                                        Alur SOP Pengembalian BMN
+                                    </h3>
+                                    <span class="text-[10px] {{ $isReturnCompleted ? 'text-emerald-700 dark:text-emerald-400' : ($isReturnActive ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400') }} font-semibold">
+                                        Standar Operasional Prosedur • 4 Tahap
                                     </span>
                                 </div>
                             </div>
-                        @endforeach
+
+                            <!-- Header Badge Status -->
+                            @if($isReturnCompleted)
+                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-emerald-500 text-white shadow-xs">
+                                    <i data-lucide="check" class="w-3 h-3 stroke-[3]"></i>
+                                    <span>Selesai Penuh</span>
+                                </span>
+                            @elseif($isReturnActive)
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-[#0B63B5] text-white shadow-xs animate-pulse">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-white"></span>
+                                    <span>Sedang Diproses</span>
+                                </span>
+                            @elseif($isReturnReady)
+                                @if($loan->isOverdue())
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-300 border border-red-200 dark:border-red-800 animate-pulse">
+                                        Lewat Tenggat
+                                    </span>
+                                @else
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200/80 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                                        Siap Diajukan
+                                    </span>
+                                @endif
+                            @endif
+                        </div>
+
+                        <!-- Connector Line Color -->
+                        <div class="relative pl-6 space-y-5 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 {{ $isReturnCompleted ? 'before:bg-emerald-500 dark:before:bg-emerald-500' : ($isReturnActive ? 'before:bg-gradient-to-b before:from-emerald-500 before:via-[#0B63B5] before:to-slate-300 dark:before:to-slate-700' : 'before:bg-slate-200 dark:before:bg-slate-700') }}">
+                            @foreach($sopReturnSteps as $rNum => $rInfo)
+                                @php
+                                    // Tahap 1: Pengajuan Return
+                                    if ($rNum === 1) {
+                                        $rDone = in_array($loan->status, ['RETURN_REQUESTED', 'RETURN_CHECKED', 'RETURNED']);
+                                        $rCurrent = ($loan->status === 'ACTIVE');
+                                    }
+                                    // Tahap 2: Pemeriksaan Fisik & Draf BAST
+                                    elseif ($rNum === 2) {
+                                        $rDone = in_array($loan->status, ['RETURN_CHECKED', 'RETURNED']);
+                                        $rCurrent = ($loan->status === 'RETURN_REQUESTED');
+                                    }
+                                    // Tahap 3: Tanda Tangan & Konfirmasi BAST
+                                    elseif ($rNum === 3) {
+                                        $rDone = ($loan->status === 'RETURNED');
+                                        $rCurrent = ($loan->status === 'RETURN_CHECKED');
+                                    }
+                                    // Tahap 4: Simpan ke Inventaris
+                                    else {
+                                        $rDone = ($loan->status === 'RETURNED');
+                                        $rCurrent = false;
+                                    }
+                                @endphp
+                                <div class="relative">
+                                    <!-- Bullet Icon -->
+                                    <div class="absolute -left-6 top-0.5 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold transition-all duration-200
+                                                {{ $rDone ? 'bg-emerald-500 text-white ring-4 ring-emerald-100 dark:ring-emerald-950/80 shadow-xs' : ($rCurrent ? 'bg-[#0B63B5] dark:bg-blue-600 text-white ring-4 ring-blue-200 dark:ring-blue-900/80 shadow-md shadow-blue-500/25 animate-pulse' : 'bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-300/50 dark:border-slate-700') }}">
+                                        @if($rDone)
+                                            <i data-lucide="check" class="w-3 h-3 stroke-[3]"></i>
+                                        @else
+                                            {{ $rNum }}
+                                        @endif
+                                    </div>
+
+                                    <div>
+                                        <div class="flex items-center justify-between gap-1">
+                                            <h4 class="text-xs font-bold {{ $rDone ? 'text-emerald-900 dark:text-emerald-200 font-extrabold' : ($rCurrent ? 'text-[#0B63B5] dark:text-blue-400 font-black' : 'text-slate-600 dark:text-slate-400 font-medium') }}">
+                                                {{ $rInfo['title'] }}
+                                            </h4>
+                                            
+                                            @if($rDone)
+                                                <span class="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-md bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300 font-bold text-[9px]">
+                                                    <i data-lucide="check" class="w-2.5 h-2.5 stroke-[3]"></i> Selesai
+                                                </span>
+                                            @elseif($rCurrent)
+                                                <span class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-md bg-blue-100 text-[#0B63B5] dark:bg-blue-900/60 dark:text-blue-300 font-black text-[9px] animate-pulse">
+                                                    <span class="w-1 h-1 rounded-full bg-[#0B63B5] dark:bg-blue-400"></span> Sedang Proses
+                                                </span>
+                                            @else
+                                                <span class="text-[9px] font-semibold text-slate-400 dark:text-slate-500 tabular-nums">{{ $rInfo['sla'] }}</span>
+                                            @endif
+                                        </div>
+                                        <span class="text-[11px] block mt-0.5 {{ $rDone ? 'text-emerald-700/80 dark:text-emerald-400/80 font-medium' : ($rCurrent ? 'text-slate-700 dark:text-slate-200 font-semibold' : 'text-slate-400 dark:text-slate-500') }}">
+                                            Pelaksana: {{ $rInfo['actor'] }}
+                                        </span>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
                     </div>
                 </div>
 

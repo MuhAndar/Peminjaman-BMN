@@ -92,10 +92,12 @@ Route::middleware('auth')->group(function () {
         Route::get('/log-aktivitas/export', [\App\Http\Controllers\AdminController::class, 'exportAuditLogs'])->name('activity-logs.export');
         Route::get('/audit-logs/export', [\App\Http\Controllers\AdminController::class, 'exportAuditLogs'])->name('audit-logs.export');
         Route::get('/users', [\App\Http\Controllers\AdminController::class, 'users'])->name('users');
+        Route::post('/users', [\App\Http\Controllers\AdminController::class, 'storeUser'])->name('users.store');
         Route::get('/signatories', [\App\Http\Controllers\AdminController::class, 'signatories'])->name('signatories');
         Route::get('/settings', [\App\Http\Controllers\AdminController::class, 'settings'])->name('settings');
     });
 
     // Download & Preview PDF Resmi
     Route::get('/dokumen/{loanId}/pdf/{docType}', [DocumentController::class, 'showPdf'])->name('document.pdf');
+    Route::get('/dokumen/{loanId}/pdf-alias/{docType}', [DocumentController::class, 'showPdf'])->name('documents.pdf');
 });

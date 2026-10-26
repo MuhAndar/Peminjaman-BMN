@@ -1714,5 +1714,104 @@ class NewFeaturesTest extends TestCase
             $this->assertEquals('AVAILABLE', $item->asset->status);
         }
     }
+
+    /**
+     * Test alur SOP pengembalian di sebelah kanan menyala pada saat diproses dan selesai penuh.
+     */
+    public function test_sop_pengembalian_visual_states_glow_on_process_and_completion(): void
+    {
+        $borrower = Employee::first();
+        $pengelola = User::where('role', 'PENGELOLA_BMN')->first();
+        $ketuaTim = User::where('role', 'KETUA_TIM_ASET')->first();
+
+        $loan = $this->createActiveLoan($borrower, $pengelola, $ketuaTim);
+
+        // 1. Peminjam mengajukan pengembalian (status RETURN_REQUESTED)
+        LoanStateMachine::transition($loan, 'RETURN_REQUESTED', $borrower->user);
+        $loan->refresh();
+
+        $this->actingAs($pengelola);
+        $resProcessing = $this->get(route('loans.show', $loan->id));
+        $resProcessing->assertOk();
+        $resProcessing->assertSee('Alur SOP Pengembalian BMN');
+        $resProcessing->assertSee('Sedang Diproses');
+        $resProcessing->assertSee('Sedang Proses');
+
+        // 2. Transisi hingga selesai penuh (RETURN_CHECKED -> RETURNED)
+        LoanStateMachine::transition($loan, 'RETURN_CHECKED', $pengelola);
+        LoanStateMachine::transition($loan, 'RETURNED', $pengelola);
+        $loan->refresh();
+
+        $resCompleted = $this->get(route('loans.show', $loan->id));
+        $resCompleted->assertOk();
+        $resCompleted->assertSee('Alur SOP Pengembalian BMN');
+        $resCompleted->assertSee('Selesai Penuh');
+        $resCompleted->assertSee('Selesai');
+    }
+
+    /**
+     * Test admin dapat membuat akun user selain role ADMIN, dan role ADMIN dilarang secara ketat.
+     */
+    public function test_admin_can_create_user_for_allowed_roles_and_admin_role_is_strictly_prevented(): void
+    {
+        $admin = User::where('role', 'ADMIN')->first();
+        $peminjam = User::where('role', 'PEMINJAM')->first();
+
+        // 1. Non-admin dilarang membuat user (403)
+        $this->actingAs($peminjam);
+        $resForbidden = $this->post(route('admin.users.store'), [
+            'name' => 'Pegawai Percobaan',
+            'email' => 'percobaan@komdigi.go.id',
+            'password' => 'password123',
+            'role' => 'PEMINJAM',
+        ]);
+        $resForbidden->assertForbidden();
+
+        // 2. Admin mencoba membuat akun dengan role ADMIN -> Dilarang!
+        $this->actingAs($admin);
+        $resAdminAttempt = $this->post(route('admin.users.store'), [
+            'name' => 'Admin Baru Ilegal',
+            'email' => 'admin_baru@komdigi.go.id',
+            'password' => 'password123',
+            'role' => 'ADMIN',
+        ]);
+        $resAdminAttempt->assertSessionHas('error');
+        $this->assertDatabaseMissing('users', ['email' => 'admin_baru@komdigi.go.id']);
+
+        // 3. Admin berhasil membuat akun role PENGELOLA_BMN
+        $resCreatePengelola = $this->post(route('admin.users.store'), [
+            'name' => 'Andi Pratama, S.Kom.',
+            'nip' => '19950512 202012 1 002',
+            'email' => 'andi.pratama@komdigi.go.id',
+            'password' => 'password123',
+            'role' => 'PENGELOLA_BMN',
+            'position' => 'Pranata Komputer Ahli Pertama',
+            'rank_grade' => 'Penata Muda (III/a)',
+            'phone' => '081234567890',
+        ]);
+
+        $resCreatePengelola->assertRedirect(route('admin.users'));
+        $resCreatePengelola->assertSessionHas('success');
+
+        // Verifikasi akun User dan Employee tersimpan di basis data
+        $this->assertDatabaseHas('users', [
+            'name' => 'Andi Pratama, S.Kom.',
+            'email' => 'andi.pratama@komdigi.go.id',
+            'role' => 'PENGELOLA_BMN',
+            'is_active' => true,
+        ]);
+
+        $this->assertDatabaseHas('employees', [
+            'nip' => '199505122020121002',
+            'full_name' => 'Andi Pratama, S.Kom.',
+            'position' => 'Pranata Komputer Ahli Pertama',
+        ]);
+
+        // Verifikasi pencatatan audit log
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'ADMIN_CREATE_USER',
+            'actor_id' => $admin->id,
+        ]);
+    }
 }
 

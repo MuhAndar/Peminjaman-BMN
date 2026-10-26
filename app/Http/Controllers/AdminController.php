@@ -5,12 +5,15 @@ namespace App\Http\Controllers;
 use App\Helpers\FormatHelper;
 use App\Models\AppSetting;
 use App\Models\AuditLog;
+use App\Models\Employee;
 use App\Models\LoanRequest;
 use App\Models\Signatory;
 use App\Models\User;
 use App\Services\LoanStateMachine;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
@@ -95,11 +98,138 @@ class AdminController extends Controller
     /**
      * Display user management.
      */
-    public function users()
+    public function users(Request $request)
     {
         $this->authorizeAdmin();
-        $users = User::with('employee')->paginate(15);
+        $query = User::with('employee');
+
+        if ($request->filled('search')) {
+            $term = trim($request->query('search'));
+            $query->where(function ($q) use ($term) {
+                $q->where('name', 'like', "%{$term}%")
+                  ->orWhere('email', 'like', "%{$term}%")
+                  ->orWhereHas('employee', function ($eq) use ($term) {
+                      $eq->where('nip', 'like', "%{$term}%")
+                         ->orWhere('position', 'like', "%{$term}%");
+                  });
+            });
+        }
+
+        if ($request->filled('role')) {
+            $query->where('role', $request->query('role'));
+        }
+
+        $users = $query->orderBy('created_at', 'desc')->paginate(15)->withQueryString();
         return view('admin.users', compact('users'));
+    }
+
+    /**
+     * Store newly created user (Roles: PEMINJAM, PENGELOLA_BMN, KETUA_TIM_ASET. Admin is strictly disallowed).
+     */
+    public function storeUser(Request $request)
+    {
+        $this->authorizeAdmin();
+
+        $allowedRoles = [
+            User::ROLE_PEMINJAM,
+            User::ROLE_PENGELOLA_BMN,
+            User::ROLE_KETUA_TIM_ASET,
+        ];
+
+        // Explicit check against creating ADMIN accounts
+        if ($request->input('role') === User::ROLE_ADMIN || $request->input('role') === 'ADMIN') {
+            return back()->withInput()->with('error', 'Pembuatan akun dengan peran Administrator Sistem (ADMIN) tidak diizinkan melalui menu ini demi alasan keamanan.');
+        }
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|max:255|unique:users,email',
+            'password' => 'required|string|min:8',
+            'role' => 'required|in:' . implode(',', $allowedRoles),
+            'nip' => 'nullable|string|max:30',
+            'rank_grade' => 'nullable|string|max:100',
+            'position' => 'nullable|string|max:255',
+            'home_address' => 'nullable|string|max:500',
+            'phone' => 'nullable|string|max:30',
+        ], [
+            'name.required' => 'Nama lengkap pegawai wajib diisi.',
+            'email.required' => 'Email kedinasan wajib diisi.',
+            'email.email' => 'Format alamat email tidak valid.',
+            'email.unique' => 'Alamat email ini telah terdaftar di sistem.',
+            'password.required' => 'Kata sandi akun wajib diisi.',
+            'password.min' => 'Kata sandi minimal 8 karakter.',
+            'role.required' => 'Peran (role) pengguna wajib dipilih.',
+            'role.in' => 'Peran yang dipilih tidak valid. Pembuatan akun dibatasi untuk Peminjam, Pengelola BMN, atau Ketua Tim Aset.',
+        ]);
+
+        $cleanNip = null;
+        if (!empty($validated['nip'])) {
+            $cleanNip = preg_replace('/\D/', '', $validated['nip']);
+        }
+
+        DB::transaction(function () use ($validated, $cleanNip) {
+            // 1. Cari atau buat Employee
+            $employee = null;
+            if (!empty($cleanNip)) {
+                $employee = Employee::where('nip', $cleanNip)->first();
+            }
+
+            if (!$employee) {
+                $employee = Employee::create([
+                    'nip' => $cleanNip,
+                    'full_name' => $validated['name'],
+                    'rank_grade' => $validated['rank_grade'] ?? null,
+                    'position' => $validated['position'] ?? null,
+                    'home_address' => $validated['home_address'] ?? null,
+                    'employment_status' => $validated['employment_status'] ?? 'PNS',
+                    'email' => $validated['email'],
+                    'phone' => $validated['phone'] ?? null,
+                    'is_active' => true,
+                ]);
+            } else {
+                // Perbarui profil pegawai jika ada data baru
+                $employee->update(array_filter([
+                    'full_name' => $validated['name'],
+                    'rank_grade' => $validated['rank_grade'] ?? $employee->rank_grade,
+                    'position' => $validated['position'] ?? $employee->position,
+                    'home_address' => $validated['home_address'] ?? $employee->home_address,
+                    'phone' => $validated['phone'] ?? $employee->phone,
+                ]));
+            }
+
+            // 2. Buat User
+            $newUser = User::create([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'password' => Hash::make($validated['password']),
+                'role' => $validated['role'],
+                'employee_id' => $employee->id,
+                'is_active' => true,
+            ]);
+
+            // 3. Catat Audit Log
+            AuditLog::record(
+                'ADMIN_CREATE_USER',
+                'User',
+                (string)$newUser->id,
+                null,
+                [
+                    'name' => $newUser->name,
+                    'email' => $newUser->email,
+                    'role' => $newUser->role,
+                    'employee_id' => $employee->id,
+                    'nip' => $cleanNip,
+                ]
+            );
+        });
+
+        $roleLabels = [
+            'PEMINJAM' => 'Peminjam (Pegawai)',
+            'PENGELOLA_BMN' => 'Pengelola BMN',
+            'KETUA_TIM_ASET' => 'Ketua Tim Keuangan & Aset',
+        ];
+
+        return redirect()->route('admin.users')->with('success', 'Akun pengguna baru "' . $validated['name'] . '" dengan peran ' . ($roleLabels[$validated['role']] ?? $validated['role']) . ' berhasil dibuat.');
     }
 
     /**
