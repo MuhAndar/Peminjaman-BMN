@@ -930,11 +930,11 @@ class NewFeaturesTest extends TestCase
     }
 
     /**
-     * Uji penegakan tanda tangan digital (gatekeeper) pada seluruh peran:
-     * - Peminjam wajib punya TTD sebelum mengirim pengajuan (loans.store)
+     * Uji alur draf pengajuan:
+     * - loans.store menyimpan sebagai DRAFT tanpa mewajibkan TTD di awal
+     * - loans.submit mencegah pengiriman berkas ke Pengelola jika peminjam belum memiliki TTD
+     * - loans.submit berhasil mengirim ke SUBMITTED setelah TTD dibubuhkan
      * - Pengelola wajib punya TTD sebelum meneruskan telaah (kelola.review)
-     * - Pengelola wajib punya TTD sebelum menerbitkan BAST Peminjaman (loans.issue-bast)
-     * - Pengelola wajib punya TTD sebelum menerbitkan BAST Pengembalian (loans.return.check)
      */
     public function test_all_roles_strictly_prevented_from_progressing_workflow_without_digital_signature(): void
     {
@@ -942,7 +942,7 @@ class NewFeaturesTest extends TestCase
         $pengelola = User::where('role', 'PENGELOLA_BMN')->first();
         $asset = Asset::where('status', 'AVAILABLE')->first();
 
-        // 1. Peminjam tanpa TTD tidak boleh mengirim pengajuan
+        // 1. Peminjam tanpa TTD dapat menyimpan sebagai DRAFT
         $peminjam->signature_path = null;
         $peminjam->save();
 
@@ -953,32 +953,38 @@ class NewFeaturesTest extends TestCase
             'end_date' => Carbon::now()->addDays(3)->toDateString(),
             'home_address' => 'Jl. Racing Centre No. 1 Makassar',
             'asset_ids' => [$asset->id],
-            'purposes' => [$asset->id => 'Uji proteksi TTD'],
-        ]);
-        $resStore->assertRedirect(route('profile.show', ['tab' => 'signature']));
-        $resStore->assertSessionHas('error');
-
-        // Kembalikan TTD peminjam dan buat pengajuan sah
-        $peminjam->signature_path = 'signatures/dummy_peminjam.png';
-        $peminjam->save();
-        $this->post(route('loans.store'), [
-            'loan_type' => 'SHORT_TERM',
-            'start_date' => Carbon::now()->addDays(1)->toDateString(),
-            'end_date' => Carbon::now()->addDays(3)->toDateString(),
-            'home_address' => 'Jl. Racing Centre No. 1 Makassar',
-            'asset_ids' => [$asset->id],
-            'purposes' => [$asset->id => 'Uji proteksi TTD valid'],
+            'purposes' => [$asset->id => 'Uji draf tanpa TTD'],
         ]);
 
         $loan = LoanRequest::where('borrower_id', $peminjam->employee_id)->latest()->first();
         $this->assertNotNull($loan);
-        $this->assertEquals('signatures/dummy_peminjam.png', $loan->borrower_signature);
+        $this->assertEquals('DRAFT', $loan->status);
+        $resStore->assertRedirect(route('loans.show', $loan->id));
+        $resStore->assertSessionHas('success');
 
-        // 2. Pengelola tanpa TTD tidak boleh meneruskan telaah (approve_review)
+        // 2. Mengirim pengajuan tanpa TTD harus ditolak
+        $resSubmitNoSig = $this->post(route('loans.submit', $loan->id));
+        $resSubmitNoSig->assertRedirect(route('loans.show', $loan->id));
+        $resSubmitNoSig->assertSessionHas('error');
+        $this->assertEquals('DRAFT', $loan->fresh()->status);
+
+        // 3. Pasang dummy TTD peminjam dan kirim berkas secara resmi
+        Storage::disk('public')->put('signatures/dummy_peminjam.png', 'dummy-content');
+        $peminjam->signature_path = 'signatures/dummy_peminjam.png';
+        $peminjam->save();
+
+        $resSubmitWithSig = $this->post(route('loans.submit', $loan->id));
+        $resSubmitWithSig->assertRedirect(route('loans.show', $loan->id));
+        $resSubmitWithSig->assertSessionHas('success');
+        $this->assertEquals('SUBMITTED', $loan->fresh()->status);
+        $this->assertEquals('signatures/dummy_peminjam.png', $loan->fresh()->borrower_signature);
+
+        // 4. Pengelola tanpa TTD tidak boleh meneruskan telaah (approve_review)
         $pengelola->signature_path = null;
         $pengelola->save();
-        $loan->officer_signature = null;
-        $loan->save();
+        $loanFresh = $loan->fresh();
+        $loanFresh->officer_signature = null;
+        $loanFresh->save();
 
         $this->actingAs($pengelola);
         $resReview = $this->post(route('kelola.review', $loan->id), [
@@ -989,6 +995,7 @@ class NewFeaturesTest extends TestCase
         $this->assertEquals('SUBMITTED', $loan->fresh()->status);
 
         // Kembalikan TTD pengelola dan teruskan telaah
+        Storage::disk('public')->put('signatures/dummy_pengelola.png', 'dummy-content');
         $pengelola->signature_path = 'signatures/dummy_pengelola.png';
         $pengelola->save();
 
@@ -998,6 +1005,78 @@ class NewFeaturesTest extends TestCase
         ]);
         $this->assertEquals('UNDER_APPROVAL', $loan->fresh()->status);
         $this->assertEquals('signatures/dummy_pengelola.png', $loan->fresh()->officer_signature);
+    }
+
+    /**
+     * Uji Peminjam dapat mengedit draf dan mengirim ulang saat pengajuan berstatus NEEDS_REVISION.
+     */
+    public function test_borrower_can_edit_draft_and_resubmit_when_needs_revision(): void
+    {
+        $peminjam = User::where('role', 'PEMINJAM')->first();
+        $pengelola = User::where('role', 'PENGELOLA_BMN')->first();
+        $assets = Asset::where('status', 'AVAILABLE')->take(2)->get();
+        $asset1 = $assets[0];
+        $asset2 = $assets[1];
+
+        Storage::disk('public')->put('signatures/dummy_peminjam.png', 'dummy-sig');
+        $peminjam->signature_path = 'signatures/dummy_peminjam.png';
+        $peminjam->save();
+
+        // 1. Buat draf
+        $this->actingAs($peminjam);
+        $this->post(route('loans.store'), [
+            'loan_type' => 'SHORT_TERM',
+            'start_date' => Carbon::now()->addDays(1)->toDateString(),
+            'end_date' => Carbon::now()->addDays(3)->toDateString(),
+            'home_address' => 'Jl. A.P. Pettarani No. 10 Makassar',
+            'asset_ids' => [$asset1->id],
+            'purposes' => [$asset1->id => 'Keperluan tugas dinas awal'],
+        ]);
+
+        $loan = LoanRequest::where('borrower_id', $peminjam->employee_id)->latest()->first();
+        $this->assertEquals('DRAFT', $loan->status);
+
+        // Kirim pengajuan
+        $this->post(route('loans.submit', $loan->id));
+        $this->assertEquals('SUBMITTED', $loan->fresh()->status);
+
+        // 2. Pengelola kembalikan untuk revisi
+        $this->actingAs($pengelola);
+        $this->post(route('kelola.review', $loan->id), [
+            'action' => 'request_revision',
+            'note' => 'Mohon tambahkan 1 unit barang tambahan dan sesuaikan alamat lengkap.',
+        ]);
+        $this->assertEquals('NEEDS_REVISION', $loan->fresh()->status);
+
+        // 3. Peminjam membuka halaman edit draf
+        $this->actingAs($peminjam);
+        $resEdit = $this->get(route('loans.edit', $loan->id));
+        $resEdit->assertOk();
+        $resEdit->assertSee('Edit Draf Pengajuan Peminjaman BMN');
+        $resEdit->assertSee('Mohon tambahkan 1 unit barang tambahan dan sesuaikan alamat lengkap.');
+
+        // 4. Peminjam memperbarui draf (tambah barang ke-2 dan ubah alamat)
+        $resUpdate = $this->put(route('loans.update', $loan->id), [
+            'loan_type' => 'SHORT_TERM',
+            'start_date' => Carbon::now()->addDays(2)->toDateString(),
+            'end_date' => Carbon::now()->addDays(5)->toDateString(),
+            'home_address' => 'Jl. Perintis Kemerdekaan KM 10 Blok C No. 5 Makassar',
+            'asset_ids' => [$asset1->id, $asset2->id],
+            'purposes' => [
+                $asset1->id => 'Keperluan tugas dinas diperbarui',
+                $asset2->id => 'Keperluan operasional tim dinas',
+            ],
+        ]);
+        $resUpdate->assertRedirect(route('loans.show', $loan->id));
+
+        $loanFresh = $loan->fresh();
+        $this->assertEquals('Jl. Perintis Kemerdekaan KM 10 Blok C No. 5 Makassar', $loanFresh->snap_home_address);
+        $this->assertCount(2, $loanFresh->items);
+
+        // 5. Peminjam mengirim ulang pengajuan yang telah direvisi
+        $resResubmit = $this->post(route('loans.submit', $loan->id));
+        $resResubmit->assertRedirect(route('loans.show', $loan->id));
+        $this->assertEquals('SUBMITTED', $loanFresh->fresh()->status);
     }
 
     /**

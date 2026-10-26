@@ -37,6 +37,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/pengajuan/baru', [LoanRequestController::class, 'create'])->name('loans.create');
     Route::post('/pengajuan', [LoanRequestController::class, 'store'])->name('loans.store');
     Route::get('/pengajuan/{id}', [LoanRequestController::class, 'show'])->name('loans.show');
+    Route::get('/pengajuan/{id}/edit', [LoanRequestController::class, 'edit'])->name('loans.edit');
+    Route::put('/pengajuan/{id}', [LoanRequestController::class, 'update'])->name('loans.update');
+    Route::post('/pengajuan/{id}/kirim', [LoanRequestController::class, 'submit'])->name('loans.submit');
     Route::post('/pengajuan/{id}/kembalikan', [LoanRequestController::class, 'requestReturn'])->name('loans.request-return');
     Route::post('/pengajuan/{id}/tanda-tangan', [LoanRequestController::class, 'signDocument'])->name('loans.sign');
     Route::post('/pengajuan/{id}/foto', [LoanRequestController::class, 'uploadPhotos'])->name('loans.photos.upload');

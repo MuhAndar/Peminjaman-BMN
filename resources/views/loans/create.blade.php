@@ -2,9 +2,6 @@
 
 @section('title', 'Ajukan Peminjaman BMN Baru')
 @section('content')
-@php
-    $hasBorrowerSig = !empty(auth()->user()->signature_path) && \Illuminate\Support\Facades\Storage::disk('public')->exists(auth()->user()->signature_path);
-@endphp
 <div class="space-y-6" x-data="{
     step: 1,
     selectedAssets: {{ $selectedAssetId ? json_encode([(string)$selectedAssetId]) : '[]' }},
@@ -141,7 +138,6 @@
 
     <!-- MAIN FORM (POST) -->
     <form method="POST" action="{{ route('loans.store') }}" id="loanForm"
-          @submit="if (!{{ $hasBorrowerSig ? 'true' : 'false' }}) { $event.preventDefault(); alert('Anda wajib memiliki tanda tangan digital di profil sebelum mengajukan peminjaman.'); return false; }"
           class="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-8 shadow-sm space-y-6">
         @csrf
 
@@ -513,8 +509,8 @@
         <!-- STEP 4: REVIEW & PRATINJAU -->
         <div x-show="step === 4" class="space-y-4" x-cloak>
             <div class="border-b border-slate-100 pb-3">
-                <h2 class="text-base font-bold text-slate-900">Langkah 4: Tinjau & Pernyataan Tanggung Jawab Mutlak</h2>
-                <p class="text-xs text-slate-500">Periksa kembali ringkasan pengajuan sebelum dikirimkan ke Pengelola BMN.</p>
+                <h2 class="text-base font-bold text-slate-900">Langkah 4: Tinjau & Simpan Draf</h2>
+                <p class="text-xs text-slate-500">Periksa kembali ringkasan pengajuan sebelum disimpan sebagai draf peminjaman BMN.</p>
             </div>
 
             <!-- Review Summary Card -->
@@ -548,58 +544,22 @@
                 </p>
             </div>
 
-            <!-- Validasi Tanda Tangan Digital Peminjam -->
-            @php
-                $hasBorrowerSig = auth()->user()->signature_path && \Illuminate\Support\Facades\Storage::disk('public')->exists(auth()->user()->signature_path);
-            @endphp
-            @if($hasBorrowerSig)
-                <div class="p-4 rounded-2xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                            <i data-lucide="signature" class="w-5 h-5"></i>
-                        </div>
-                        <div>
-                            <div class="text-xs font-black text-emerald-900 dark:text-emerald-200 flex items-center gap-1.5">
-                                <span>Tanda Tangan Digital Terpasang</span>
-                                <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-600"></i>
-                            </div>
-                            <p class="text-[11px] text-emerald-700 dark:text-emerald-400 font-medium mt-0.5">
-                                Tanda tangan digital dari profil Anda akan dibubuhkan secara otomatis pada berkas resmi Surat Peminjaman BMN.
-                            </p>
-                        </div>
+            <!-- Alur Draf & Pengiriman Informasi -->
+            <div class="p-4 rounded-2xl bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-400 flex items-center justify-center shrink-0">
+                        <i data-lucide="file-text" class="w-5 h-5"></i>
                     </div>
-                    <div class="flex items-center gap-3 self-end sm:self-center">
-                        <div class="p-1 bg-white dark:bg-slate-800 rounded-lg border border-emerald-200 dark:border-emerald-800 shadow-2xs">
-                            <img src="{{ Storage::url(auth()->user()->signature_path) }}" alt="TTD Peminjam" class="h-8 max-w-[120px] object-contain">
+                    <div>
+                        <div class="text-xs font-black text-blue-900 dark:text-blue-200 flex items-center gap-1.5">
+                            <span>Disimpan Sebagai Draf Peminjaman</span>
                         </div>
-                        <a href="{{ route('profile.show', ['tab' => 'signature']) }}" target="_blank"
-                           class="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 hover:underline">
-                            Ubah
-                        </a>
+                        <p class="text-[11px] text-blue-700 dark:text-blue-300 font-medium mt-0.5">
+                            Pengajuan akan diarahkan ke halaman detail pengajuan. Anda dapat menandatangani surat dan mengirim pengajuan secara resmi ke Pengelola BMN di halaman detail.
+                        </p>
                     </div>
                 </div>
-            @else
-                <div class="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-400 flex items-center justify-center shrink-0">
-                            <i data-lucide="alert-triangle" class="w-5 h-5"></i>
-                        </div>
-                        <div>
-                            <div class="text-xs font-black text-amber-900 dark:text-amber-200 flex items-center gap-1.5">
-                                <span>Tanda Tangan Digital Wajib Dibubuhkan</span>
-                            </div>
-                            <p class="text-[11px] text-amber-700 dark:text-amber-300 font-medium mt-0.5">
-                                Anda wajib memiliki tanda tangan digital sebelum mengirim pengajuan agar Surat Peminjaman resmi tidak memiliki tanda tangan kosong.
-                            </p>
-                        </div>
-                    </div>
-                    <a href="{{ route('profile.show', ['tab' => 'signature']) }}" target="_blank"
-                       class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shadow-xs transition flex items-center justify-center gap-1.5 shrink-0">
-                        <i data-lucide="pen-tool" class="w-3.5 h-3.5"></i>
-                        <span>Bubuhkan TTD di Profil</span>
-                    </a>
-                </div>
-            @endif
+            </div>
         </div>
 
         <!-- WIZARD NAVIGATION CONTROLS -->
@@ -637,20 +597,11 @@
                     <i data-lucide="arrow-right" class="w-4 h-4"></i>
                 </button>
 
-                @if($hasBorrowerSig)
-                    <button type="submit" x-show="step === 4"
-                            class="px-8 py-3 bg-[#0B63B5] hover:bg-[#0B4F8A] text-white text-xs font-black rounded-xl shadow-md shadow-blue-500/25 transition flex items-center gap-2">
-                        <i data-lucide="send" class="w-4 h-4"></i>
-                        <span>Kirim Pengajuan Peminjaman</span>
-                    </button>
-                @else
-                    <button type="button" x-show="step === 4" disabled
-                            title="Harap bubuhkan tanda tangan di profil terlebih dahulu"
-                            class="px-8 py-3 bg-slate-300 dark:bg-slate-700 text-slate-500 dark:text-slate-400 text-xs font-bold rounded-xl cursor-not-allowed flex items-center gap-2 shadow-inner">
-                        <i data-lucide="lock" class="w-4 h-4"></i>
-                        <span>Wajib Memiliki TTD Sebelum Mengirim</span>
-                    </button>
-                @endif
+                <button type="submit" x-show="step === 4"
+                        class="px-8 py-3 bg-[#0B63B5] hover:bg-[#0B4F8A] text-white text-xs font-black rounded-xl shadow-md shadow-blue-500/25 transition flex items-center gap-2">
+                    <i data-lucide="file-plus-2" class="w-4 h-4"></i>
+                    <span>Simpan Draf Pengajuan</span>
+                </button>
             </div>
         </div>
     </form>

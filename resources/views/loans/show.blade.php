@@ -338,6 +338,129 @@
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <!-- LEFT COLUMN: Details, Items, Actions -->
         <div class="lg:col-span-8 space-y-6">
+            @if(in_array($loan->status, ['DRAFT', 'NEEDS_REVISION']) && ($isOwner || $user->isAdmin()))
+                @php
+                    $hasBorrowerSig = !empty($loan->borrower_signature) && \Illuminate\Support\Facades\Storage::disk('public')->exists($loan->borrower_signature);
+                    if (!$hasBorrowerSig && !empty(auth()->user()->signature_path) && \Illuminate\Support\Facades\Storage::disk('public')->exists(auth()->user()->signature_path)) {
+                        $hasBorrowerSig = true;
+                    }
+                    $isRevision = ($loan->status === 'NEEDS_REVISION');
+                @endphp
+                <div class="rounded-3xl border-2 {{ $isRevision ? 'border-amber-300 dark:border-amber-700/80 bg-amber-50/70 dark:bg-amber-950/40' : 'border-[#0B63B5]/40 dark:border-blue-600/60 bg-blue-50/60 dark:bg-blue-950/40' }} p-6 shadow-sm space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                        <div class="flex items-start gap-3">
+                            <div class="w-10 h-10 rounded-2xl {{ $isRevision ? 'bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-400' : 'bg-blue-100 dark:bg-blue-900/60 text-[#0B63B5] dark:text-blue-400' }} flex items-center justify-center shrink-0 shadow-2xs">
+                                <i data-lucide="{{ $isRevision ? 'alert-triangle' : 'file-edit' }}" class="w-5 h-5"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-base font-black text-slate-900 dark:text-white">
+                                    {{ $isRevision ? 'Pengajuan Dikembalikan untuk Diperbaiki (Perlu Revisi)' : 'Draf Pengajuan Peminjaman BMN' }}
+                                </h3>
+                                <p class="text-xs text-slate-600 dark:text-slate-300 mt-0.5">
+                                    {{ $isRevision 
+                                        ? 'Pengelola BMN mengembalikan pengajuan ini. Anda dapat mengedit rincian draf pengajuan, memeriksa tanda tangan digital, dan mengirimkannya kembali.' 
+                                        : 'Pengajuan Anda saat ini tersimpan sebagai draf. Periksa kelengkapan, bubuhkan tanda tangan digital, lalu kirim ke Pengelola BMN.' }}
+                                </p>
+                            </div>
+                        </div>
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider {{ $isRevision ? 'bg-amber-200/80 dark:bg-amber-900/70 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700' : 'bg-blue-200/80 dark:bg-blue-900/70 text-blue-900 dark:text-blue-200 border border-blue-300 dark:border-blue-700' }} self-start shrink-0">
+                            <i data-lucide="{{ $isRevision ? 'undo-2' : 'file-text' }}" class="w-3.5 h-3.5"></i>
+                            <span>{{ $isRevision ? 'Perlu Revisi' : 'Draf Belum Terkirim' }}</span>
+                        </span>
+                    </div>
+
+                    @if($isRevision && !empty($loan->review_note))
+                        <div class="p-4 rounded-2xl bg-white/90 dark:bg-slate-900/90 border border-amber-200 dark:border-amber-800 text-xs space-y-1 shadow-2xs">
+                            <span class="font-bold text-amber-900 dark:text-amber-300 uppercase tracking-wider text-[10px] flex items-center gap-1.5">
+                                <i data-lucide="message-square" class="w-3.5 h-3.5 text-amber-600"></i>
+                                Catatan dari Pengelola BMN:
+                            </span>
+                            <p class="text-slate-800 dark:text-slate-200 font-medium whitespace-pre-line leading-relaxed">
+                                {{ $loan->review_note }}
+                            </p>
+                        </div>
+                    @endif
+
+                    <!-- Tanda Tangan Peminjam Status -->
+                    <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border {{ $hasBorrowerSig ? 'border-emerald-200 dark:border-emerald-800/60' : 'border-amber-200 dark:border-amber-800/60' }} flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+                        <div class="flex items-center gap-3 min-w-0">
+                            @if($hasBorrowerSig)
+                                <div class="w-24 h-12 bg-white signature-paper rounded-xl border border-emerald-200 dark:border-emerald-700 p-1 flex items-center justify-center shrink-0 shadow-2xs" style="background-color: #ffffff !important;">
+                                    <img src="{{ asset('storage/' . ($loan->borrower_signature ?: auth()->user()->signature_path)) }}" alt="TTD Peminjam" class="max-h-full max-w-full object-contain">
+                                </div>
+                                <div class="min-w-0 text-xs">
+                                    <div class="flex items-center gap-1.5 font-bold text-slate-800 dark:text-white">
+                                        <span>Tanda Tangan Peminjam Terpasang</span>
+                                        <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-600"></i>
+                                    </div>
+                                    <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                                        Tanda tangan sah atas nama <strong>{{ $loan->snap_full_name }}</strong>
+                                    </p>
+                                </div>
+                            @else
+                                <div class="w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-400 flex items-center justify-center shrink-0">
+                                    <i data-lucide="signature" class="w-6 h-6"></i>
+                                </div>
+                                <div class="min-w-0 text-xs">
+                                    <div class="font-bold text-amber-900 dark:text-amber-200">
+                                        Tanda Tangan Peminjam Belum Ada
+                                    </div>
+                                    <p class="text-[11px] text-amber-700 dark:text-amber-400 mt-0.5">
+                                        Wajib dibubuhkan sebelum mengirimkan berkas pengajuan ke Pengelola BMN.
+                                    </p>
+                                </div>
+                            @endif
+                        </div>
+
+                        <div class="shrink-0">
+                            @if($hasBorrowerSig)
+                                <button type="button" @click="openSigModal('borrower')"
+                                        class="px-3.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition shadow-2xs cursor-pointer flex items-center gap-1.5">
+                                    <i data-lucide="edit-3" class="w-3.5 h-3.5 text-emerald-600"></i>
+                                    <span>Ganti Tanda Tangan</span>
+                                </button>
+                            @else
+                                <button type="button" @click="openSigModal('borrower')"
+                                        class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shadow-sm transition cursor-pointer flex items-center gap-1.5">
+                                    <i data-lucide="pen-tool" class="w-3.5 h-3.5"></i>
+                                    <span>Bubuhkan Tanda Tangan</span>
+                                </button>
+                            @endif
+                        </div>
+                    </div>
+
+                    <!-- Tombol Aksi Peminjam (Edit Draf & Kirim Berkas) -->
+                    <div class="flex flex-wrap items-center gap-3 pt-1">
+                        <a href="{{ route('loans.edit', $loan->id) }}"
+                           class="px-5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold transition shadow-2xs flex items-center gap-2">
+                            <i data-lucide="edit-2" class="w-4 h-4 text-[#0B63B5]"></i>
+                            <span>Ubah / Edit Draf Pengajuan</span>
+                        </a>
+
+                        <form method="POST" action="{{ route('loans.submit', $loan->id) }}">
+                            @csrf
+                            @if($hasBorrowerSig)
+                                <button type="submit"
+                                        data-confirm="{{ $isRevision ? 'Apakah Anda yakin perbaikan draf telah selesai dan berkas siap dikirim ulang ke Pengelola BMN?' : 'Apakah Anda yakin berkas pengajuan peminjaman BMN ini sudah lengkap dan siap dikirimkan ke Pengelola BMN?' }}"
+                                        data-confirm-title="{{ $isRevision ? 'Kirim Ulang Pengajuan' : 'Kirim Pengajuan Peminjaman' }}"
+                                        data-confirm-btn="Ya, Kirim Sekarang"
+                                        data-confirm-type="primary"
+                                        class="px-6 py-2.5 bg-[#0B63B5] hover:bg-[#0B4F8A] text-white rounded-xl text-xs font-black shadow-md shadow-blue-500/20 transition flex items-center gap-2 cursor-pointer active:scale-95">
+                                    <i data-lucide="send" class="w-4 h-4"></i>
+                                    <span>{{ $isRevision ? 'Kirim Ulang Pengajuan ke Pengelola BMN' : 'Kirim Pengajuan ke Pengelola BMN' }}</span>
+                                </button>
+                            @else
+                                <button type="button" @click="openSigModal('borrower')"
+                                        class="px-6 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shadow-md transition flex items-center gap-2 cursor-pointer">
+                                    <i data-lucide="pen-tool" class="w-4 h-4"></i>
+                                    <span>Bubuhkan TTD & Kirim Pengajuan</span>
+                                </button>
+                            @endif
+                        </form>
+                    </div>
+                </div>
+            @endif
+
             <!-- Summary Card -->
             <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-6 shadow-sm space-y-5">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">

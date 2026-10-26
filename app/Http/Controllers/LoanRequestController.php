@@ -155,11 +155,6 @@ class LoanRequestController extends Controller
                 ->with('error', 'Silakan lengkapi data diri peminjam terlebih dahulu sebelum mengajukan peminjaman BMN.');
         }
 
-        if (empty($user->signature_path) || !Storage::disk('public')->exists($user->signature_path)) {
-            return redirect()->route('profile.show', ['tab' => 'signature'])
-                ->with('error', 'Anda wajib memiliki tanda tangan digital di profil Anda sebelum mengajukan peminjaman BMN agar Surat Peminjaman resmi tidak memiliki tanda tangan kosong.');
-        }
-
         $validated = $request->validate([
             'asset_ids' => 'required|array|min:1',
             'asset_ids.*' => 'required|uuid|exists:assets,id',
@@ -208,14 +203,16 @@ class LoanRequestController extends Controller
             }
             $employee->save();
 
-            // Buat loan_request dengan snapshot data diri peminjam & tanda tangan (BR-07)
+            $initialBorrowerSig = !empty($user->signature_path) && Storage::disk('public')->exists($user->signature_path) ? $user->signature_path : null;
+
+            // Buat loan_request dengan status DRAFT (SOP Tahap 1 Draf)
             $loan = LoanRequest::create([
                 'borrower_id' => $employee->id,
                 'loan_type' => $validated['loan_type'],
                 'start_date' => $validated['start_date'],
                 'end_date' => $validated['end_date'],
                 'status' => 'DRAFT',
-                'borrower_signature' => $user->signature_path,
+                'borrower_signature' => $initialBorrowerSig,
                 'snap_full_name' => $employee->full_name,
                 'snap_nip' => $employee->nip,
                 'snap_rank_grade' => $employee->rank_grade,
@@ -223,13 +220,15 @@ class LoanRequestController extends Controller
                 'snap_home_address' => $validated['home_address'],
             ]);
 
-            AuditLog::record(
-                'SIGN_LOAN_BORROWER',
-                'LoanRequest',
-                $loan->id,
-                null,
-                ['source' => 'profile_default', 'file' => $user->signature_path]
-            );
+            if ($initialBorrowerSig) {
+                AuditLog::record(
+                    'SIGN_LOAN_BORROWER',
+                    'LoanRequest',
+                    $loan->id,
+                    null,
+                    ['source' => 'profile_default', 'file' => $initialBorrowerSig]
+                );
+            }
 
             // Tambahkan item barang dengan snapshot data barang (BR-07)
             foreach ($validated['asset_ids'] as $assetId) {
@@ -250,16 +249,198 @@ class LoanRequestController extends Controller
                 ]);
             }
 
-            // Transisi ke SUBMITTED via state machine (cek bentrok & kunci barang)
-            LoanStateMachine::transition($loan, 'SUBMITTED', $user, 'Pengajuan baru diajukan oleh peminjam.');
+            AuditLog::record('CREATE_LOAN_DRAFT', 'LoanRequest', $loan->id, null, [
+                'loan_type' => $loan->loan_type,
+                'items_count' => count($validated['asset_ids']),
+            ]);
 
             DB::commit();
 
             return redirect()->route('loans.show', $loan->id)
-                ->with('success', 'Pengajuan peminjaman BMN berhasil dikirim! Menunggu telaah Pengelola BMN.');
+                ->with('success', 'Draf pengajuan peminjaman BMN berhasil dibuat. Silakan periksa rincian data Anda dan kirim pengajuan ke Pengelola BMN.');
         } catch (Exception $e) {
             DB::rollBack();
             return back()->withInput()->with('error', $e->getMessage());
+        }
+    }
+
+    /**
+     * Show form to edit loan draft (DRAFT or NEEDS_REVISION).
+     */
+    public function edit(string $id)
+    {
+        $loan = LoanRequest::with(['items.asset', 'borrower'])->findOrFail($id);
+        $user = Auth::user();
+
+        if ($loan->borrower_id !== $user->employee_id && !$user->isAdmin()) {
+            abort(403, 'Hanya peminjam bersangkutan yang dapat mengedit draf ini.');
+        }
+
+        if (!in_array($loan->status, ['DRAFT', 'NEEDS_REVISION'])) {
+            return redirect()->route('loans.show', $loan->id)
+                ->with('error', 'Pengajuan dengan status saat ini tidak dapat diedit.');
+        }
+
+        $employee = $user->employee;
+        $categories = AssetCategory::withCount('assets')->orderBy('label')->get();
+
+        // Ambil barang yang tersedia, ditambah barang yang saat ini sudah ada di dalam draf ini
+        $currentAssetIds = $loan->items->pluck('asset_id')->toArray();
+        $availableAssets = Asset::where(function ($q) use ($currentAssetIds) {
+            $q->where(function ($sub) {
+                $sub->whereIn('status', ['AVAILABLE', 'ON_LOAN'])->where('condition', 'BAIK');
+            })->orWhereIn('id', $currentAssetIds);
+        })->with(['category', 'loanItems' => function ($q) {
+            $q->whereHas('loanRequest', function ($sub) {
+                $sub->whereIn('status', [
+                    'SUBMITTED',
+                    'VERIFIED',
+                    'APPROVED',
+                    'BAST_ISSUED',
+                    'ACTIVE',
+                    'RETURN_REQUESTED',
+                    'RETURN_CHECKED',
+                ]);
+            })->with('loanRequest');
+        }])->orderBy('item_name')->get();
+
+        $frequentCategoryCodes = Cache::remember('bmn_popular_category_codes', now()->endOfDay(), function () {
+            return DB::table('loan_items')
+                ->join('assets', 'loan_items.asset_id', '=', 'assets.id')
+                ->where('loan_items.created_at', '>=', now()->subDays(60))
+                ->select('assets.category_code', DB::raw('count(*) as loan_count'))
+                ->groupBy('assets.category_code')
+                ->orderByDesc('loan_count')
+                ->limit(5)
+                ->pluck('category_code')
+                ->toArray();
+        });
+
+        $popularCategories = $categories->sortByDesc(function ($cat) use ($frequentCategoryCodes) {
+            $idx = array_search($cat->code, $frequentCategoryCodes);
+            return $idx !== false ? (100 - $idx) : ($cat->assets_count ?? 0);
+        })->take(5)->values();
+
+        return view('loans.edit', compact('loan', 'employee', 'categories', 'availableAssets', 'popularCategories'));
+    }
+
+    /**
+     * Update loan draft (DRAFT or NEEDS_REVISION).
+     */
+    public function update(Request $request, string $id)
+    {
+        $loan = LoanRequest::with('items')->findOrFail($id);
+        $user = Auth::user();
+
+        if ($loan->borrower_id !== $user->employee_id && !$user->isAdmin()) {
+            abort(403, 'Hanya peminjam bersangkutan yang dapat mengedit draf ini.');
+        }
+
+        if (!in_array($loan->status, ['DRAFT', 'NEEDS_REVISION'])) {
+            return redirect()->route('loans.show', $loan->id)
+                ->with('error', 'Pengajuan dengan status saat ini tidak dapat diedit.');
+        }
+
+        $validated = $request->validate([
+            'asset_ids' => 'required|array|min:1',
+            'asset_ids.*' => 'required|uuid|exists:assets,id',
+            'loan_type' => 'required|in:ANNUAL,SHORT_TERM',
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
+            'purposes' => 'required|array',
+            'purposes.*' => 'required|string|max:500',
+            'home_address' => 'required|string|max:500',
+        ], [
+            'asset_ids.required' => 'Pilih minimal satu barang BMN untuk diajukan.',
+            'end_date.after_or_equal' => 'Tanggal pengembalian tidak boleh sebelum tanggal peminjaman.',
+            'home_address.required' => 'Alamat rumah peminjam wajib diisi untuk kelengkapan dokumen.',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $employee = $user->employee;
+            if ($employee && $employee->home_address !== $validated['home_address']) {
+                $employee->home_address = $validated['home_address'];
+                $employee->save();
+            }
+
+            $loan->update([
+                'loan_type' => $validated['loan_type'],
+                'start_date' => $validated['start_date'],
+                'end_date' => $validated['end_date'],
+                'snap_home_address' => $validated['home_address'],
+            ]);
+
+            // Hapus item lama dan tambahkan item baru dengan snapshot
+            $loan->items()->delete();
+            foreach ($validated['asset_ids'] as $assetId) {
+                $asset = Asset::findOrFail($assetId);
+                $purpose = $validated['purposes'][$assetId] ?? 'Pelaksanaan tugas kedinasan';
+
+                LoanItem::create([
+                    'loan_request_id' => $loan->id,
+                    'asset_id' => $asset->id,
+                    'purpose' => $purpose,
+                    'condition_out' => 'Baik',
+                    'snap_item_name' => $asset->item_name,
+                    'snap_brand_model' => $asset->brand_model_combined,
+                    'snap_nup' => $asset->nup,
+                    'snap_year' => $asset->acquisition_year,
+                    'snap_value' => $asset->acquisition_value,
+                    'is_blocking' => false,
+                ]);
+            }
+
+            AuditLog::record('UPDATE_LOAN_DRAFT', 'LoanRequest', $loan->id, null, [
+                'loan_type' => $loan->loan_type,
+                'items_count' => count($validated['asset_ids']),
+            ]);
+
+            DB::commit();
+
+            return redirect()->route('loans.show', $loan->id)
+                ->with('success', 'Perubahan draf pengajuan peminjaman BMN berhasil disimpan.');
+        } catch (Exception $e) {
+            DB::rollBack();
+            return back()->withInput()->with('error', $e->getMessage());
+        }
+    }
+
+    /**
+     * Submit loan draft (DRAFT or NEEDS_REVISION -> SUBMITTED).
+     */
+    public function submit(Request $request, string $id)
+    {
+        $loan = LoanRequest::with('items')->findOrFail($id);
+        $user = Auth::user();
+
+        if ($loan->borrower_id !== $user->employee_id && !$user->isAdmin()) {
+            abort(403, 'Hanya peminjam bersangkutan yang dapat mengirimkan berkas pengajuan ini.');
+        }
+
+        if (!in_array($loan->status, ['DRAFT', 'NEEDS_REVISION'])) {
+            return redirect()->route('loans.show', $loan->id)
+                ->with('error', 'Hanya pengajuan berstatus Draf atau Perlu Perbaikan yang dapat dikirim ke Pengelola BMN.');
+        }
+
+        $borrowerSig = $loan->borrower_signature ?: ($user->signature_path ?? null);
+        if (empty($borrowerSig) || !Storage::disk('public')->exists($borrowerSig)) {
+            return redirect()->route('loans.show', $loan->id)
+                ->with('error', 'Anda wajib membubuhkan tanda tangan digital sebelum mengirim berkas pengajuan ke Pengelola BMN.');
+        }
+
+        if (empty($loan->borrower_signature)) {
+            $loan->borrower_signature = $borrowerSig;
+            $loan->save();
+        }
+
+        try {
+            LoanStateMachine::transition($loan, 'SUBMITTED', $user, 'Pengajuan resmi dikirim oleh peminjam.');
+            return redirect()->route('loans.show', $loan->id)
+                ->with('success', 'Pengajuan peminjaman BMN berhasil dikirim! Berkas saat ini sedang dalam antrean telaah Pengelola BMN.');
+        } catch (Exception $e) {
+            return back()->with('error', $e->getMessage());
         }
     }
 
