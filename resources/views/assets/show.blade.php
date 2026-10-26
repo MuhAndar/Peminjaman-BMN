@@ -70,10 +70,41 @@
             </div>
         </div>
 
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+            <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
+                <span class="text-slate-400 block mb-0.5">Jenis BMN</span>
+                <strong class="text-slate-800">{{ $asset->jenis_bmn ?? '-' }}</strong>
+            </div>
+            <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
+                <span class="text-slate-400 block mb-0.5">Nilai Buku</span>
+                <strong class="text-slate-800 tabular-nums">{{ $asset->formatted_nilai_buku }}</strong>
+            </div>
+            <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
+                <span class="text-slate-400 block mb-0.5">Lokasi Ruang</span>
+                <strong class="text-slate-800">{{ $asset->lokasi_ruang ?? 'Belum berlokasi' }}</strong>
+            </div>
+            <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
+                <span class="text-slate-400 block mb-0.5">Status Penggunaan</span>
+                <strong class="text-slate-800">{{ $asset->status_penggunaan ?? 'Aktif Operasional' }}</strong>
+            </div>
+        </div>
+
         @if($asset->plate_number)
             <div class="p-4 rounded-2xl bg-blue-50/60 border border-blue-200/80 text-xs">
                 <span class="text-slate-500 font-medium">Nomor Registrasi Kendaraan (Plat):</span>
                 <strong class="text-slate-900 text-sm ml-2 font-mono">{{ $asset->plate_number }}</strong>
+            </div>
+        @endif
+
+        @if($asset->no_psp || $asset->no_dokumen || $asset->no_bpkp || $asset->no_stnk)
+            <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs space-y-1">
+                <strong class="text-slate-800 block mb-1">Informasi Dokumen & Kepemilikan (SIMAN):</strong>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-slate-600">
+                    @if($asset->no_psp) <div><span class="text-slate-400">No PSP:</span> <span class="font-mono">{{ $asset->no_psp }}</span></div> @endif
+                    @if($asset->no_dokumen) <div><span class="text-slate-400">No Dokumen:</span> <span class="font-mono">{{ $asset->no_dokumen }}</span></div> @endif
+                    @if($asset->no_bpkp) <div><span class="text-slate-400">No BPKP:</span> <span class="font-mono">{{ $asset->no_bpkp }}</span></div> @endif
+                    @if($asset->no_stnk) <div><span class="text-slate-400">No STNK:</span> <span class="font-mono">{{ $asset->no_stnk }}</span></div> @endif
+                </div>
             </div>
         @endif
 

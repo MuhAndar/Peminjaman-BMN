@@ -85,8 +85,18 @@
                                     <i data-lucide="car" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400"></i>
                                 @elseif($asset->category_code === 'MOTORCYCLE')
                                     <i data-lucide="bike" class="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400"></i>
+                                @elseif($asset->category_code === 'MOBILE_PHONE')
+                                    <i data-lucide="smartphone" class="w-3.5 h-3.5 text-purple-600 dark:text-purple-400"></i>
+                                @elseif($asset->category_code === 'TIK')
+                                    <i data-lucide="monitor" class="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400"></i>
+                                @elseif($asset->category_code === 'NON_TIK')
+                                    <i data-lucide="armchair" class="w-3.5 h-3.5 text-amber-600 dark:text-amber-400"></i>
+                                @elseif($asset->category_code === 'ALAT_BESAR')
+                                    <i data-lucide="wrench" class="w-3.5 h-3.5 text-orange-600 dark:text-orange-400"></i>
+                                @elseif(in_array($asset->category_code, ['TANAH', 'GEDUNG', 'RUMAH_NEGARA']))
+                                    <i data-lucide="building-2" class="w-3.5 h-3.5 text-rose-600 dark:text-rose-400"></i>
                                 @else
-                                    <i data-lucide="package" class="w-3.5 h-3.5 text-purple-600 dark:text-purple-400"></i>
+                                    <i data-lucide="package" class="w-3.5 h-3.5 text-slate-600 dark:text-slate-400"></i>
                                 @endif
                                 {{ $asset->category->label ?? $asset->item_name }}
                             </span>
@@ -118,7 +128,7 @@
                             {{ $asset->item_name }}
                         </h3>
                         <p class="text-xs font-semibold text-slate-600 dark:text-slate-300 mt-0.5">
-                            {{ $asset->brand_model_combined }}
+                            {{ $asset->brand_model_combined ?: ($asset->jenis_bmn ?? '-') }}
                         </p>
 
                         <!-- Asset Specs Table -->
@@ -139,6 +149,12 @@
                                 <div class="flex justify-between">
                                     <span>Kode BMN:</span>
                                     <span class="font-medium text-slate-800 dark:text-slate-200 tabular-nums">{{ $asset->bmn_code }}</span>
+                                </div>
+                            @endif
+                            @if($asset->lokasi_ruang && $asset->lokasi_ruang !== 'Belum berlokasi' && $asset->lokasi_ruang !== '-')
+                                <div class="flex justify-between">
+                                    <span>Lokasi:</span>
+                                    <span class="font-medium text-slate-700 dark:text-slate-300 truncate max-w-[150px]" title="{{ $asset->lokasi_ruang }}">{{ $asset->lokasi_ruang }}</span>
                                 </div>
                             @endif
                             <div class="flex justify-between">

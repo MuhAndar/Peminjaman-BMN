@@ -74,9 +74,9 @@ class DataImportController extends Controller
             $highestColumn = $sheet->getHighestDataColumn();
             $highestColIndex = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::columnIndexFromString($highestColumn);
 
-            // Baca baris header (Baris 1)
+            // Baca baris header (Baris 1) hingga seluruh kolom berkas acuan
             $headers = [];
-            for ($col = 1; $col <= min($highestColIndex, 30); $col++) {
+            for ($col = 1; $col <= min($highestColIndex, 100); $col++) {
                 $cellVal = $sheet->getCell([$col, 1])->getFormattedValue();
                 if ($cellVal !== null && trim((string)$cellVal) !== '') {
                     $headers[] = trim((string)$cellVal);
@@ -205,69 +205,93 @@ class DataImportController extends Controller
                     $nup = $maxNup + 1;
                 }
 
-                // Kategori Aset
-                $rawCategory = strtolower(($normalized['jenisbmn'] ?? '') . ' ' . ($normalized['kategori'] ?? '') . ' ' . $itemName);
-                if (str_contains($rawCategory, 'mobil')) {
-                    $categoryCode = 'CAR';
-                } elseif (str_contains($rawCategory, 'motor') || str_contains($rawCategory, 'sepeda motor')) {
-                    $categoryCode = 'MOTORCYCLE';
-                } elseif (str_contains($rawCategory, 'telepon') || str_contains($rawCategory, 'hp') || str_contains($rawCategory, 'handphone')) {
-                    $categoryCode = 'MOBILE_PHONE';
-                } elseif (str_contains($rawCategory, 'laptop') || str_contains($rawCategory, 'komputer') || str_contains($rawCategory, 'pc') || str_contains($rawCategory, 'notebook')) {
-                    $categoryCode = 'LAPTOP';
-                } else {
-                    $catCodeClean = 'PERALATAN_KANTOR';
-                    \App\Models\AssetCategory::firstOrCreate(
-                        ['code' => $catCodeClean],
-                        ['label' => 'Peralatan & Perlengkapan Kantor', 'default_loan_type' => 'ANNUAL', 'requires_schedule_check' => false]
-                    );
-                    $categoryCode = $catCodeClean;
-                }
+                $jenisBmn = $normalized['jenisbmn'] ?? null;
+                $categoryCode = Asset::detectCategory($jenisBmn, $bmnCode, $itemName);
 
                 $brand = $normalized['merk'] ?? $normalized['brand'] ?? null;
+                if ($brand === '-') $brand = null;
                 $model = $normalized['tipe'] ?? $normalized['type'] ?? $normalized['model'] ?? null;
-                $plateNumber = $normalized['nopolisi'] ?? $normalized['platnomor'] ?? null;
+                if ($model === '-') $model = null;
 
-                $year = isset($normalized['tahun']) ? (int)$normalized['tahun'] : (isset($normalized['tahunperolehan']) ? (int)$normalized['tahunperolehan'] : (int)date('Y'));
-                if ($year < 1900 || $year > 2100) {
-                    $year = (int)date('Y');
-                }
+                $plateNumberRaw = trim((string)($normalized['nopolisi'] ?? $normalized['platnomor'] ?? ''));
+                $plateNumber = (!empty($plateNumberRaw) && $plateNumberRaw !== '-') ? $plateNumberRaw : null;
 
-                $valRaw = $normalized['nilaiperolehanrp'] ?? $normalized['nilaiperolehan'] ?? $normalized['nilai'] ?? '0';
-                $valNum = preg_replace('/[^0-9]/', '', (string)$valRaw);
-                $acqValue = !empty($valNum) ? (float)$valNum : 0;
+                $yearRaw = preg_replace('/[^0-9]/', '', (string)($normalized['tahun'] ?? $normalized['tahunperolehan'] ?? date('Y')));
+                $year = (!empty($yearRaw) && (int)$yearRaw > 1900 && (int)$yearRaw < 2100) ? (int)$yearRaw : (int)date('Y');
+
+                $valRaw = preg_replace('/[^0-9]/', '', (string)($normalized['nilaiperolehan'] ?? $normalized['nilaiperolehanrp'] ?? $normalized['nilai'] ?? '0'));
+                $acqValue = !empty($valRaw) ? (float)$valRaw : 0;
+
+                $bukuRaw = preg_replace('/[^0-9]/', '', (string)($normalized['nilaibuku'] ?? '0'));
+                $nilaiBuku = !empty($bukuRaw) ? (float)$bukuRaw : null;
 
                 $conditionRaw = strtoupper((string)($normalized['kondisi'] ?? 'BAIK'));
                 $condition = str_contains($conditionRaw, 'RUSAK') ? 'RUSAK' : (str_contains($conditionRaw, 'HILANG') ? 'TIDAK_LENGKAP_HILANG' : 'BAIK');
 
+                $tglPerolehan = $this->parseCleanDate($normalized['tanggalperolehan'] ?? null);
+                $tglPsp = $this->parseCleanDate($normalized['tanggalpsp'] ?? null);
+
+                $kodeSatker = $normalized['kodesatker'] ?? null;
+                $namaSatker = $normalized['namasatker'] ?? null;
+                $statusBmn = $normalized['statusbmn'] ?? 'Aktif';
+                $umurAset = $normalized['umuraset'] ?? null;
+                $intraExtra = $normalized['intraextra'] ?? null;
+                $hentiGuna = $normalized['hentiguna'] ?? null;
+                $noDokumen = $normalized['nodokumen'] ?? null;
+                if ($noDokumen === '-') $noDokumen = null;
+                $noBpkp = $normalized['nobpkp'] ?? null;
+                if ($noBpkp === '-') $noBpkp = null;
+                $statusPenggunaan = $normalized['statuspenggunaan'] ?? null;
+                $noPsp = $normalized['nopsp'] ?? null;
+                if ($noPsp === '-') $noPsp = null;
+                $alamat = $normalized['alamat'] ?? null;
+                if ($alamat === '-') $alamat = null;
+                $lokasiRuang = $normalized['lokasiruang'] ?? null;
+                $noStnk = $normalized['nostnk'] ?? null;
+                if ($noStnk === '-') $noStnk = null;
+                $namaPengguna = $normalized['namapengguna'] ?? null;
+                if ($namaPengguna === '-') $namaPengguna = null;
+
                 $asset = Asset::where('bmn_code', $bmnCode)->where('nup', $nup)->first();
+                $assetAttributes = [
+                    'category_code' => $categoryCode,
+                    'jenis_bmn' => $jenisBmn,
+                    'kode_satker' => $kodeSatker,
+                    'nama_satker' => $namaSatker,
+                    'bmn_code' => $bmnCode,
+                    'nup' => $nup,
+                    'item_name' => $itemName,
+                    'status_bmn' => $statusBmn,
+                    'brand' => $brand ?: ($asset?->brand),
+                    'model' => $model ?: ($asset?->model),
+                    'condition' => $condition,
+                    'umur_aset' => $umurAset,
+                    'intra_extra' => $intraExtra,
+                    'henti_guna' => $hentiGuna,
+                    'no_dokumen' => $noDokumen,
+                    'no_bpkp' => $noBpkp,
+                    'plate_number' => $plateNumber ?: ($asset?->plate_number),
+                    'tgl_perolehan' => $tglPerolehan ?: ($asset?->tgl_perolehan),
+                    'acquisition_year' => $year,
+                    'acquisition_value' => $acqValue ?: ($asset?->acquisition_value ?? 0),
+                    'nilai_buku' => $nilaiBuku ?: ($asset?->nilai_buku),
+                    'status_penggunaan' => $statusPenggunaan,
+                    'no_psp' => $noPsp,
+                    'tgl_psp' => $tglPsp,
+                    'alamat' => $alamat,
+                    'lokasi_ruang' => $lokasiRuang,
+                    'no_stnk' => $noStnk,
+                    'nama_pengguna' => $namaPengguna,
+                    'status' => ($condition === 'RUSAK' || $statusBmn === 'Hilang') ? 'NEEDS_FOLLOW_UP' : ($asset?->status ?? 'AVAILABLE'),
+                    'extra_attributes' => $row,
+                ];
+
                 if ($asset) {
-                    $asset->update([
-                        'category_code' => $categoryCode,
-                        'item_name' => $itemName,
-                        'brand' => $brand ?: $asset->brand,
-                        'model' => $model ?: $asset->model,
-                        'plate_number' => $plateNumber ?: $asset->plate_number,
-                        'acquisition_year' => $year,
-                        'acquisition_value' => $acqValue ?: $asset->acquisition_value,
-                        'condition' => $condition,
-                    ]);
+                    $asset->update($assetAttributes);
                     $updated++;
                 } else {
-                    Asset::create([
-                        'id' => (string)\Illuminate\Support\Str::uuid(),
-                        'category_code' => $categoryCode,
-                        'bmn_code' => $bmnCode,
-                        'nup' => $nup,
-                        'item_name' => $itemName,
-                        'brand' => $brand,
-                        'model' => $model,
-                        'plate_number' => $plateNumber,
-                        'acquisition_year' => $year,
-                        'acquisition_value' => $acqValue,
-                        'condition' => $condition,
-                        'status' => 'AVAILABLE',
-                    ]);
+                    $assetAttributes['id'] = (string)\Illuminate\Support\Str::uuid();
+                    Asset::create($assetAttributes);
                     $imported++;
                 }
             }
@@ -297,6 +321,15 @@ class DataImportController extends Controller
         ]);
     }
 
+    private function parseCleanDate($val): ?string
+    {
+        if (empty($val)) return null;
+        $val = trim((string)$val);
+        if ($val === '0001-01-01' || $val === '9999-12-31' || $val === '-') return null;
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $val)) return $val;
+        return null;
+    }
+
     /**
      * Download starter template .xlsx.
      */
@@ -304,9 +337,9 @@ class DataImportController extends Controller
     {
         $this->authorizeExport();
 
-        $starterKitFile = base_path('Starter Kit/Referensi Dokumen dan SOP BMN/Contoh Entry Form Peminjaman.xlsx');
-        if (file_exists($starterKitFile)) {
-            return response()->download($starterKitFile, 'Contoh_Entry_Form_Peminjaman_BMN.xlsx', [
+        $templateFile = base_path('Starter Kit/Referensi Dokumen dan SOP BMN/Template Entry Form Peminjaman.xlsx');
+        if (file_exists($templateFile)) {
+            return response()->download($templateFile, 'Template_Entry_Form_Peminjaman.xlsx', [
                 'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             ]);
         }

@@ -1446,5 +1446,57 @@ class NewFeaturesTest extends TestCase
             ->first();
         $this->assertNotNull($bastKembaliDoc);
     }
+
+    /**
+     * Verifikasi bahwa basis data inventaris BMN telah dirombak dan diisi dengan data resmi
+     * dari berkas Excel 'Entry Form Peminjaman' (1.213 barang lengkap dengan 8 Jenis BMN,
+     * kode satker, nilai buku, lokasi ruang, dan atribut SIMAN),
+     * serta tombol unduh acuan menyajikan 'Template Entry Form Peminjaman.xlsx'.
+     */
+    public function test_assets_database_restructured_and_seeded_from_entry_form(): void
+    {
+        // 1. Verifikasi jumlah master barang sebanyak 1.213 barang
+        $this->assertEquals(1213, Asset::count());
+
+        // 2. Verifikasi 8 Jenis BMN terdaftar
+        $jenisList = Asset::distinct()->pluck('jenis_bmn')->sort()->values()->toArray();
+        $expectedJenis = [
+            'ALAT ANGKUTAN BERMOTOR',
+            'ALAT BESAR',
+            'ASET TETAP LAINNYA',
+            'BANGUNAN DAN GEDUNG',
+            'MESIN PERALATAN KHUSUS TIK',
+            'MESIN PERALATAN NON TIK',
+            'RUMAH NEGARA',
+            'TANAH',
+        ];
+        $this->assertEquals($expectedJenis, $jenisList);
+
+        // 3. Verifikasi atribut-atribut spesifik SIMAN tersimpan
+        $firstLaptop = Asset::where('category_code', 'LAPTOP')->first();
+        $this->assertNotNull($firstLaptop);
+        $this->assertNotNull($firstLaptop->kode_satker);
+        $this->assertNotNull($firstLaptop->nama_satker);
+        $this->assertNotNull($firstLaptop->jenis_bmn);
+        $this->assertNotNull($firstLaptop->bmn_code);
+        $this->assertNotNull($firstLaptop->nup);
+
+        // 4. Verifikasi kendaraan bermotor memiliki nomor polisi
+        $vehicles = Asset::where('jenis_bmn', 'ALAT ANGKUTAN BERMOTOR')->get();
+        $this->assertCount(5, $vehicles);
+        foreach ($vehicles as $v) {
+            $this->assertNotNull($v->plate_number);
+            $this->assertNotEmpty($v->plate_number);
+        }
+
+        // 5. Verifikasi pengunduhan format acuan menyajikan Template_Entry_Form_Peminjaman.xlsx
+        $pengelola = User::where('role', 'PENGELOLA_BMN')->first();
+        $this->actingAs($pengelola);
+
+        $resTemplate = $this->get(route('kelola.import.template'));
+        $resTemplate->assertOk();
+        $disposition = $resTemplate->headers->get('content-disposition');
+        $this->assertStringContainsString('Template_Entry_Form_Peminjaman.xlsx', $disposition);
+    }
 }
 

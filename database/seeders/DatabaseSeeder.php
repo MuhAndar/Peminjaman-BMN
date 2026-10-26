@@ -55,6 +55,48 @@ class DatabaseSeeder extends Seeder
                 'default_loan_type' => 'ANNUAL',
                 'requires_schedule_check' => false,
             ],
+            [
+                'code' => 'TIK',
+                'label' => 'Peralatan TIK & Multimedia',
+                'default_loan_type' => 'ANNUAL',
+                'requires_schedule_check' => false,
+            ],
+            [
+                'code' => 'NON_TIK',
+                'label' => 'Peralatan Non-TIK & Sarana Kantor',
+                'default_loan_type' => 'ANNUAL',
+                'requires_schedule_check' => false,
+            ],
+            [
+                'code' => 'ALAT_BESAR',
+                'label' => 'Alat Besar & Mesin Operasional',
+                'default_loan_type' => 'ANNUAL',
+                'requires_schedule_check' => false,
+            ],
+            [
+                'code' => 'ASET_LAINNYA',
+                'label' => 'Aset Tetap Lainnya & Pustaka',
+                'default_loan_type' => 'ANNUAL',
+                'requires_schedule_check' => false,
+            ],
+            [
+                'code' => 'TANAH',
+                'label' => 'Tanah & Kawasan',
+                'default_loan_type' => 'ANNUAL',
+                'requires_schedule_check' => false,
+            ],
+            [
+                'code' => 'GEDUNG',
+                'label' => 'Bangunan Gedung Kantor',
+                'default_loan_type' => 'ANNUAL',
+                'requires_schedule_check' => false,
+            ],
+            [
+                'code' => 'RUMAH_NEGARA',
+                'label' => 'Rumah Negara',
+                'default_loan_type' => 'ANNUAL',
+                'requires_schedule_check' => false,
+            ],
         ];
 
         foreach ($categories as $cat) {
@@ -62,8 +104,7 @@ class DatabaseSeeder extends Seeder
         }
 
         // 3. Employees (Data fiktif terstruktur - 4 Pegawai)
-        $empPeminjam1 = Employee::create([
-            'nip' => '199005152019031005',
+        $empPeminjam1 = Employee::firstOrCreate(['nip' => '199005152019031005'], [
             'full_name' => 'Budi',
             'rank_grade' => 'Penata Muda Tk. I, III/b',
             'position' => 'Instruktur Ahli Pertama',
@@ -74,8 +115,7 @@ class DatabaseSeeder extends Seeder
             'is_active' => true,
         ]);
 
-        $empPengelola = Employee::create([
-            'nip' => '199803112025041003',
+        $empPengelola = Employee::firstOrCreate(['nip' => '199803112025041003'], [
             'full_name' => 'Muhammad Agung, S.Ds.',
             'rank_grade' => 'Penata Muda, III/a',
             'position' => 'Instruktur Ahli Pertama',
@@ -86,8 +126,7 @@ class DatabaseSeeder extends Seeder
             'is_active' => true,
         ]);
 
-        $empKetua = Employee::create([
-            'nip' => '198206082009012001',
+        $empKetua = Employee::firstOrCreate(['nip' => '198206082009012001'], [
             'full_name' => 'Olga Olivia Sombolayuk, SE',
             'rank_grade' => 'Penata Tk. I, III/d',
             'position' => 'Ketua Tim Keuangan dan Aset',
@@ -98,8 +137,7 @@ class DatabaseSeeder extends Seeder
             'is_active' => true,
         ]);
 
-        $empAdmin = Employee::create([
-            'nip' => '198501012010011001',
+        $empAdmin = Employee::firstOrCreate(['nip' => '198501012010011001'], [
             'full_name' => 'Administrator Sistem',
             'rank_grade' => 'Penata Tk. I, III/d',
             'position' => 'Administrator Sistem',
@@ -111,17 +149,13 @@ class DatabaseSeeder extends Seeder
         ]);
 
         // 4. Signatories
-        Signatory::create([
-            'role' => 'KETUA_TIM_KEUANGAN_ASET',
-            'employee_id' => $empKetua->id,
+        Signatory::firstOrCreate(['role' => 'KETUA_TIM_KEUANGAN_ASET', 'employee_id' => $empKetua->id], [
             'title_line' => 'Ketua Tim Keuangan dan Aset BBLSDM Komdigi Makassar,',
             'valid_from' => '2025-01-01',
             'valid_to' => null,
         ]);
 
-        Signatory::create([
-            'role' => 'PENGELOLA_ASET',
-            'employee_id' => $empPengelola->id,
+        Signatory::firstOrCreate(['role' => 'PENGELOLA_ASET', 'employee_id' => $empPengelola->id], [
             'title_line' => 'Pengelola Aset / Pihak Pertama BBLSDM Komdigi Makassar,',
             'valid_from' => '2025-01-01',
             'valid_to' => null,
@@ -154,9 +188,8 @@ class DatabaseSeeder extends Seeder
             return $path;
         };
 
-        User::create([
+        User::firstOrCreate(['email' => 'peminjam@komdigi.go.id'], [
             'name' => 'Budi (Peminjam)',
-            'email' => 'peminjam@komdigi.go.id',
             'password' => $defaultPassword,
             'employee_id' => $empPeminjam1->id,
             'role' => 'PEMINJAM',
@@ -164,9 +197,8 @@ class DatabaseSeeder extends Seeder
             'is_active' => true,
         ]);
 
-        User::create([
+        User::firstOrCreate(['email' => 'pengelola@komdigi.go.id'], [
             'name' => 'Muhammad Agung (Pengelola BMN)',
-            'email' => 'pengelola@komdigi.go.id',
             'password' => $defaultPassword,
             'employee_id' => $empPengelola->id,
             'role' => 'PENGELOLA_BMN',
@@ -174,9 +206,8 @@ class DatabaseSeeder extends Seeder
             'is_active' => true,
         ]);
 
-        User::create([
+        User::firstOrCreate(['email' => 'ketuatim@komdigi.go.id'], [
             'name' => 'Olga Olivia (Ketua Tim Keuangan & Aset)',
-            'email' => 'ketuatim@komdigi.go.id',
             'password' => $defaultPassword,
             'employee_id' => $empKetua->id,
             'role' => 'KETUA_TIM_ASET',
@@ -184,9 +215,8 @@ class DatabaseSeeder extends Seeder
             'is_active' => true,
         ]);
 
-        User::create([
+        User::firstOrCreate(['email' => 'admin@komdigi.go.id'], [
             'name' => 'Administrator Sistem',
-            'email' => 'admin@komdigi.go.id',
             'password' => $defaultPassword,
             'employee_id' => $empAdmin->id,
             'role' => 'ADMIN',
@@ -194,106 +224,7 @@ class DatabaseSeeder extends Seeder
             'is_active' => true,
         ]);
 
-        // 6. Assets (Barang BMN realistis fiktif)
-        $assets = [
-            [
-                'category_code' => 'LAPTOP',
-                'item_name' => 'Lap Top',
-                'brand' => 'Lenovo',
-                'model' => 'ThinkPad T14 Gen 3',
-                'bmn_code' => '3100102002',
-                'nup' => 12,
-                'acquisition_year' => 2023,
-                'acquisition_value' => 18500000,
-                'condition' => 'BAIK',
-                'status' => 'AVAILABLE',
-                'notes' => 'Kondisi mulus, kelengkapan adaptor charger original',
-            ],
-            [
-                'category_code' => 'LAPTOP',
-                'item_name' => 'Lap Top',
-                'brand' => 'Asus',
-                'model' => 'ExpertBook B5 Flip',
-                'bmn_code' => '3100102002',
-                'nup' => 15,
-                'acquisition_year' => 2024,
-                'acquisition_value' => 21000000,
-                'condition' => 'BAIK',
-                'status' => 'AVAILABLE',
-                'notes' => 'Layar sentuh + stylus pen',
-            ],
-            [
-                'category_code' => 'LAPTOP',
-                'item_name' => 'Lap Top',
-                'brand' => 'Dell',
-                'model' => 'Latitude 5430',
-                'bmn_code' => '3100102002',
-                'nup' => 18,
-                'acquisition_year' => 2023,
-                'acquisition_value' => 16200000,
-                'condition' => 'BAIK',
-                'status' => 'AVAILABLE',
-                'notes' => 'Lengkap tas laptop & charger',
-            ],
-            [
-                'category_code' => 'CAR',
-                'item_name' => 'Mobil Dinas',
-                'brand' => 'Toyota',
-                'model' => 'Innova Zenix 2.0 V',
-                'bmn_code' => '3020102003',
-                'nup' => 2,
-                'plate_number' => 'DD 1820 XAS',
-                'acquisition_year' => 2023,
-                'acquisition_value' => 420000000,
-                'condition' => 'BAIK',
-                'status' => 'AVAILABLE',
-                'notes' => 'Operasional dinas luar kota, servis rutin dealer resmi',
-            ],
-            [
-                'category_code' => 'CAR',
-                'item_name' => 'Mobil Dinas',
-                'brand' => 'Toyota',
-                'model' => 'Avanza 1.5 G MT',
-                'bmn_code' => '3020102003',
-                'nup' => 5,
-                'plate_number' => 'DD 1124 XX',
-                'acquisition_year' => 2022,
-                'acquisition_value' => 235000000,
-                'condition' => 'BAIK',
-                'status' => 'AVAILABLE',
-                'notes' => 'Operasional koordinasi dalam kota',
-            ],
-            [
-                'category_code' => 'MOBILE_PHONE',
-                'item_name' => 'Telepon Seluler',
-                'brand' => 'Samsung',
-                'model' => 'Galaxy A54 5G 256GB',
-                'bmn_code' => '3060201004',
-                'nup' => 8,
-                'acquisition_year' => 2023,
-                'acquisition_value' => 6200000,
-                'condition' => 'BAIK',
-                'status' => 'AVAILABLE',
-                'notes' => 'HP koordinasi media & publikasi',
-            ],
-            [
-                'category_code' => 'MOTORCYCLE',
-                'item_name' => 'Sepeda Motor Dinas',
-                'brand' => 'Honda',
-                'model' => 'Vario 160 CBS',
-                'bmn_code' => '3020104001',
-                'nup' => 3,
-                'plate_number' => 'DD 4521 AB',
-                'acquisition_year' => 2023,
-                'acquisition_value' => 28000000,
-                'condition' => 'BAIK',
-                'status' => 'AVAILABLE',
-                'notes' => 'Kurir & surat menyurat kantor',
-            ],
-        ];
-
-        foreach ($assets as $assetData) {
-            Asset::create($assetData);
-        }
+        // 6. Assets (Mengimpor seluruh data aset resmi dari Entry Form Peminjaman.xlsx)
+        $this->call(EntryFormAssetSeeder::class);
     }
 }

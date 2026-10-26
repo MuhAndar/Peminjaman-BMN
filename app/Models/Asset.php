@@ -12,24 +12,84 @@ class Asset extends Model
 
     protected $fillable = [
         'category_code',
-        'item_name',
-        'brand',
-        'model',
+        'jenis_bmn',
+        'kode_satker',
+        'nama_satker',
         'bmn_code',
         'nup',
+        'item_name',
+        'status_bmn',
+        'brand',
+        'model',
+        'condition',
+        'umur_aset',
+        'intra_extra',
+        'henti_guna',
+        'no_dokumen',
+        'no_bpkp',
         'plate_number',
+        'tgl_perolehan',
         'acquisition_year',
         'acquisition_value',
-        'condition',
+        'nilai_buku',
+        'status_penggunaan',
+        'no_psp',
+        'tgl_psp',
+        'alamat',
+        'lokasi_ruang',
+        'no_stnk',
+        'nama_pengguna',
         'status',
         'notes',
+        'extra_attributes',
     ];
 
     protected $casts = [
         'acquisition_year' => 'integer',
         'acquisition_value' => 'decimal:0',
+        'nilai_buku' => 'decimal:0',
         'nup' => 'integer',
+        'tgl_perolehan' => 'date',
+        'tgl_psp' => 'date',
+        'extra_attributes' => 'array',
     ];
+
+    public function getFormattedNilaiBukuAttribute(): string
+    {
+        return $this->nilai_buku ? 'Rp ' . number_format($this->nilai_buku, 0, ',', '.') : '-';
+    }
+
+    public static function detectCategory(?string $jenis, ?string $kodeBarang, ?string $namaBarang): string
+    {
+        $kode = preg_replace('/[^0-9]/', '', (string)$kodeBarang);
+        $nama = strtolower(trim((string)$namaBarang));
+        $jenis = strtoupper(trim((string)$jenis));
+
+        if ($kode === '3100102002' || str_contains($nama, 'lap top') || str_contains($nama, 'laptop') || str_contains($nama, 'notebook')) {
+            return 'LAPTOP';
+        }
+        if ($kode === '3060201004' || str_contains($nama, 'telepon seluler') || str_contains($nama, 'handphone') || str_contains($nama, 'hp')) {
+            return 'MOBILE_PHONE';
+        }
+        if ($kode === '3020102003' || str_contains($nama, 'mobil')) {
+            return 'CAR';
+        }
+        if ($kode === '3020104001' || $kode === '3020104002' || str_contains($nama, 'sepeda motor') || str_contains($nama, 'scooter') || str_contains($nama, 'motor')) {
+            return 'MOTORCYCLE';
+        }
+
+        return match ($jenis) {
+            'MESIN PERALATAN KHUSUS TIK' => 'TIK',
+            'MESIN PERALATAN NON TIK' => 'NON_TIK',
+            'ALAT ANGKUTAN BERMOTOR' => 'CAR',
+            'ALAT BESAR' => 'ALAT_BESAR',
+            'ASET TETAP LAINNYA' => 'ASET_LAINNYA',
+            'TANAH' => 'TANAH',
+            'BANGUNAN DAN GEDUNG' => 'GEDUNG',
+            'RUMAH NEGARA' => 'RUMAH_NEGARA',
+            default => 'NON_TIK',
+        };
+    }
 
     public function category()
     {
