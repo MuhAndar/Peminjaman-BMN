@@ -40,28 +40,6 @@ class AuthController extends Controller
         ])->onlyInput('email');
     }
 
-    /**
-     * Quick login helper for development & demonstration testing
-     */
-    public function quickLogin(Request $request, string $role)
-    {
-        // Proteksi Keamanan: Akses Quick Login hanya diizinkan di lingkungan lokal atau pengujian
-        abort_unless(app()->environment('local', 'testing'), 404);
-
-        $user = User::where('role', $role)->first();
-        if ($user) {
-            Auth::login($user);
-            $request->session()->regenerate();
-            AuditLog::record('AUTH_QUICK_LOGIN_DEMO', 'User', (string) $user->id, null, [
-                'name' => $user->name,
-                'email' => $user->email,
-                'role' => $user->role,
-            ]);
-            return redirect()->route('dashboard')->with('success', "Berhasil masuk sebagai {$user->name} ({$role})");
-        }
-        return redirect()->route('login')->withErrors(['email' => 'Akun peran tersebut tidak ditemukan.']);
-    }
-
     public function logout(Request $request)
     {
         if (Auth::check()) {

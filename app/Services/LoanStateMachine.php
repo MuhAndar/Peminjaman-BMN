@@ -11,6 +11,7 @@ use App\Models\User;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class LoanStateMachine
 {
@@ -40,6 +41,15 @@ class LoanStateMachine
                     }
                     self::checkConflict($loan);
 
+                    // GUARD: Tanda tangan peminjam wajib ada sebelum diajukan (Tahap 1)
+                    $borrowerSig = $loan->borrower_signature ?: ($actor->signature_path ?? null);
+                    if (empty($borrowerSig) || !Storage::disk('public')->exists($borrowerSig)) {
+                        throw new Exception('Pengajuan peminjaman wajib dibubuhi tanda tangan peminjam sebelum dapat diajukan ke Pengelola BMN.');
+                    }
+                    if (empty($loan->borrower_signature)) {
+                        $loan->borrower_signature = $borrowerSig;
+                    }
+
                     $loan->items()->update(['is_blocking' => true]);
                     $loan->submitted_at = Carbon::now('Asia/Makassar');
                     break;
@@ -57,6 +67,15 @@ class LoanStateMachine
                     break;
 
                 case 'APPROVED':
+                    // GUARD: Tanda tangan Ketua Tim wajib ada sebelum menyetujui (Tahap 4)
+                    $approverSig = $loan->approver_signature ?: ($actor->signature_path ?? null);
+                    if (empty($approverSig) || !Storage::disk('public')->exists($approverSig)) {
+                        throw new Exception('Persetujuan peminjaman dan penerbitan Surat Peminjaman wajib dibubuhi tanda tangan resmi Ketua Tim Keuangan dan Aset.');
+                    }
+                    if (empty($loan->approver_signature)) {
+                        $loan->approver_signature = $approverSig;
+                    }
+
                     $loan->decision_note = $note ?? 'Pengajuan peminjaman disetujui.';
                     // Terbitkan Surat Peminjaman bernomor atomik (BR-06)
                     $docNumber = DocumentNumberService::generateNextNumber('SURAT_PEMINJAMAN');
@@ -80,6 +99,15 @@ class LoanStateMachine
                     break;
 
                 case 'BAST_ISSUED':
+                    // GUARD: Tanda tangan Petugas Pengelola BMN wajib ada sebelum menerbitkan BAST (Tahap 5)
+                    $officerSig = $loan->officer_signature ?: ($actor->signature_path ?? null);
+                    if (empty($officerSig) || !Storage::disk('public')->exists($officerSig)) {
+                        throw new Exception('Penerbitan BAST Peminjaman wajib dibubuhi tanda tangan Petugas Pengelola BMN (Pihak Pertama).');
+                    }
+                    if (empty($loan->officer_signature)) {
+                        $loan->officer_signature = $officerSig;
+                    }
+
                     // Terbitkan BAST Peminjaman bernomor atomik
                     $docNumber = DocumentNumberService::generateNextNumber('BAST_PEMINJAMAN');
                     Document::create([

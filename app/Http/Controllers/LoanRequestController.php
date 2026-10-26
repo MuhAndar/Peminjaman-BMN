@@ -155,6 +155,11 @@ class LoanRequestController extends Controller
                 ->with('error', 'Silakan lengkapi data diri peminjam terlebih dahulu sebelum mengajukan peminjaman BMN.');
         }
 
+        if (empty($user->signature_path) || !Storage::disk('public')->exists($user->signature_path)) {
+            return redirect()->route('profile.show', ['tab' => 'signature'])
+                ->with('error', 'Anda wajib memiliki tanda tangan digital di profil Anda sebelum mengajukan peminjaman BMN agar Surat Peminjaman resmi tidak memiliki tanda tangan kosong.');
+        }
+
         $validated = $request->validate([
             'asset_ids' => 'required|array|min:1',
             'asset_ids.*' => 'required|uuid|exists:assets,id',
@@ -203,19 +208,28 @@ class LoanRequestController extends Controller
             }
             $employee->save();
 
-            // Buat loan_request dengan snapshot data diri peminjam (BR-07)
+            // Buat loan_request dengan snapshot data diri peminjam & tanda tangan (BR-07)
             $loan = LoanRequest::create([
                 'borrower_id' => $employee->id,
                 'loan_type' => $validated['loan_type'],
                 'start_date' => $validated['start_date'],
                 'end_date' => $validated['end_date'],
                 'status' => 'DRAFT',
+                'borrower_signature' => $user->signature_path,
                 'snap_full_name' => $employee->full_name,
                 'snap_nip' => $employee->nip,
                 'snap_rank_grade' => $employee->rank_grade,
                 'snap_position' => $employee->position,
                 'snap_home_address' => $validated['home_address'],
             ]);
+
+            AuditLog::record(
+                'SIGN_LOAN_BORROWER',
+                'LoanRequest',
+                $loan->id,
+                null,
+                ['source' => 'profile_default', 'file' => $user->signature_path]
+            );
 
             // Tambahkan item barang dengan snapshot data barang (BR-07)
             foreach ($validated['asset_ids'] as $assetId) {
@@ -357,6 +371,15 @@ class LoanRequestController extends Controller
 
         try {
             if ($action === 'approve_review') {
+                $officerSig = $loan->officer_signature ?: $user->signature_path;
+                if (!$officerSig || !Storage::disk('public')->exists($officerSig)) {
+                    return back()->with('error', 'Pengelola BMN wajib memiliki tanda tangan digital sebelum meneruskan berkas telaah ke Ketua Tim.');
+                }
+                if (empty($loan->officer_signature)) {
+                    $loan->officer_signature = $officerSig;
+                    $loan->save();
+                }
+
                 LoanStateMachine::transition(
                     $loan,
                     'UNDER_APPROVAL',
@@ -389,6 +412,15 @@ class LoanRequestController extends Controller
 
         $loan = LoanRequest::findOrFail($id);
         $user = Auth::user();
+
+        $officerSig = $loan->officer_signature ?: $user->signature_path;
+        if (!$officerSig || !Storage::disk('public')->exists($officerSig)) {
+            return back()->with('error', 'Petugas Pengelola BMN wajib memiliki tanda tangan digital sebelum menerbitkan BAST Peminjaman resmi.');
+        }
+        if (empty($loan->officer_signature)) {
+            $loan->officer_signature = $officerSig;
+            $loan->save();
+        }
 
         // Validasi ketersediaan foto fisik pendukung BAST Peminjaman
         $existingPhotosCount = $loan->photos()->where('stage', 'BAST_PEMINJAMAN')->count();
@@ -491,6 +523,15 @@ class LoanRequestController extends Controller
 
         $loan = LoanRequest::findOrFail($id);
         $user = Auth::user();
+
+        $officerSig = $loan->officer_signature ?: $user->signature_path;
+        if (!$officerSig || !Storage::disk('public')->exists($officerSig)) {
+            return back()->with('error', 'Petugas Pengelola BMN wajib memiliki tanda tangan digital sebelum menerbitkan BAST Pengembalian resmi.');
+        }
+        if (empty($loan->officer_signature)) {
+            $loan->officer_signature = $officerSig;
+            $loan->save();
+        }
 
         // Validasi ketersediaan foto fisik pendukung BAST Pengembalian
         $existingPhotosCount = $loan->photos()->where('stage', 'BAST_PENGEMBALIAN')->count();

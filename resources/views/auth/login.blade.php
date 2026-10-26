@@ -156,12 +156,9 @@
 
                     <!-- PASSWORD INPUT WITH SHOW/HIDE TOGGLE -->
                     <div x-data="{ showPass: false }">
-                        <div class="flex items-center justify-between mb-1.5">
-                            <label for="password" class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                                Kata Sandi
-                            </label>
-                            <span class="text-[11px] text-slate-400 font-medium">Bantuan login: Admin TI</span>
-                        </div>
+                        <label for="password" class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                            Kata Sandi
+                        </label>
                         <div class="relative">
                             <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                                 <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
@@ -202,15 +199,7 @@
 
             </div>
 
-            <!-- Bottom Mobile/Desktop Clean Footer -->
-            <div class="pt-4 border-t border-slate-100 dark:border-slate-800 text-center">
-                <p class="text-xs text-slate-400 dark:text-slate-500 font-medium">
-                    Balai Besar Pelatihan Sumber Daya Manusia Komunikasi dan Digital Makassar
-                </p>
-                <p class="text-[11px] text-slate-400/80 dark:text-slate-600 font-normal mt-0.5">
-                    Jl. Prof. Abdurrahman Basalamah II No 25 Makassar
-                </p>
-            </div>
+
 
         </div>
 

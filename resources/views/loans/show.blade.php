@@ -94,12 +94,15 @@
         }
         return smoothed;
     },
-    redrawCanvas() {
+    redrawCanvas(exportMode = false) {
         if (!this.ctx || !this.canvas) return;
         const rect = this.canvas.getBoundingClientRect();
         this.ctx.clearRect(0, 0, rect.width, rect.height);
-        this.ctx.strokeStyle = '#0F172A';
-        this.ctx.fillStyle = '#0F172A';
+
+        const inkColor = '#0F172A';
+
+        this.ctx.strokeStyle = inkColor;
+        this.ctx.fillStyle = inkColor;
         this.ctx.lineWidth = 2.5;
         this.ctx.lineCap = 'round';
         this.ctx.lineJoin = 'round';
@@ -133,6 +136,9 @@
     startDraw(e) {
         e.preventDefault();
         this.isDrawing = true;
+        const inkColor = '#0F172A';
+        this.ctx.strokeStyle = inkColor;
+        this.ctx.fillStyle = inkColor;
         const pos = this.getPos(e);
         this.currentStroke = [pos];
         this.ctx.beginPath();
@@ -143,6 +149,10 @@
         e.preventDefault();
         const pos = this.getPos(e);
         this.currentStroke.push(pos);
+
+        const inkColor = '#0F172A';
+        this.ctx.strokeStyle = inkColor;
+        this.ctx.fillStyle = inkColor;
 
         if (this.currentStroke.length >= 3) {
             const p1 = this.currentStroke[this.currentStroke.length - 2];
@@ -162,11 +172,9 @@
         this.isDrawing = false;
         if (this.currentStroke && this.currentStroke.length > 0) {
             let finalStroke = this.currentStroke;
-            if (this.smoothingEnabled && this.currentStroke.length > 2) {
+            if (this.currentStroke.length > 2) {
                 const filtered = this.filterPoints(this.currentStroke, 2);
                 finalStroke = this.chaikinSmooth(filtered, 2);
-                this.justCorrected = true;
-                setTimeout(() => { this.justCorrected = false; }, 900);
             }
             this.strokes.push(finalStroke);
             this.hasDrawn = true;
@@ -272,7 +280,9 @@
                 alert('Silakan goreskan tanda tangan pada papan gambar kanvas terlebih dahulu.');
                 return;
             }
+            this.redrawCanvas(true);
             document.getElementById('loan_sig_data_input').value = this.trimCanvas(this.canvas);
+            this.redrawCanvas(false);
         }
         document.getElementById('loan-sig-form').submit();
     },
@@ -649,7 +659,7 @@
                             <div class="p-4 rounded-2xl border {{ $loan->borrower_signature ? 'border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/25 dark:bg-emerald-950/20' : 'border-blue-200 dark:border-blue-800/60 bg-blue-50/25 dark:bg-blue-950/20' }} flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                 <div class="flex items-center gap-3.5 min-w-0">
                                     @if($loan->borrower_signature)
-                                        <div class="p-2 bg-white signature-paper rounded-xl border border-emerald-200 dark:border-emerald-700 shadow-2xs flex items-center justify-center shrink-0 w-28 h-14">
+                                        <div class="p-2 bg-white signature-paper rounded-xl border border-emerald-200 dark:border-emerald-700 shadow-2xs flex items-center justify-center shrink-0 w-28 h-14" style="background-color: #ffffff !important;">
                                             <img src="{{ asset('storage/' . $loan->borrower_signature) }}" class="max-h-11 max-w-full object-contain" alt="Tanda Tangan Peminjam">
                                         </div>
                                         <div class="min-w-0">
@@ -892,7 +902,7 @@
                         <div class="p-4 rounded-2xl border {{ $loan->borrower_signature ? 'border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/25 dark:bg-emerald-950/20' : 'border-blue-200 dark:border-blue-800/60 bg-blue-50/25 dark:bg-blue-950/20' }} flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                             <div class="flex items-center gap-3.5 min-w-0">
                                 @if($loan->borrower_signature)
-                                    <div class="p-2 bg-white signature-paper rounded-xl border border-emerald-200 dark:border-emerald-700 shadow-2xs flex items-center justify-center shrink-0 w-28 h-14">
+                                    <div class="p-2 bg-white signature-paper rounded-xl border border-emerald-200 dark:border-emerald-700 shadow-2xs flex items-center justify-center shrink-0 w-28 h-14" style="background-color: #ffffff !important;">
                                         <img src="{{ asset('storage/' . $loan->borrower_signature) }}" class="max-h-11 max-w-full object-contain" alt="Tanda Tangan Peminjam">
                                     </div>
                                     <div class="min-w-0">
@@ -937,7 +947,7 @@
                         <div class="p-4 rounded-2xl border {{ $loan->officer_signature ? 'border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/25 dark:bg-emerald-950/20' : 'border-indigo-200 dark:border-indigo-800/60 bg-indigo-50/25 dark:bg-indigo-950/20' }} flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                             <div class="flex items-center gap-3.5 min-w-0">
                                 @if($loan->officer_signature)
-                                    <div class="p-2 bg-white signature-paper rounded-xl border border-emerald-200 dark:border-emerald-700 shadow-2xs flex items-center justify-center shrink-0 w-28 h-14">
+                                    <div class="p-2 bg-white signature-paper rounded-xl border border-emerald-200 dark:border-emerald-700 shadow-2xs flex items-center justify-center shrink-0 w-28 h-14" style="background-color: #ffffff !important;">
                                         <img src="{{ asset('storage/' . $loan->officer_signature) }}" class="max-h-11 max-w-full object-contain" alt="Tanda Tangan Petugas">
                                     </div>
                                     <div class="min-w-0">
@@ -1202,7 +1212,61 @@
                         @csrf
                         @php
                             $bastPjmPhotos = $loan->photos()->where('stage', 'BAST_PEMINJAMAN')->get();
+                            $hasOfficerSig = !empty($loan->officer_signature) && \Illuminate\Support\Facades\Storage::disk('public')->exists($loan->officer_signature);
+                            if (!$hasOfficerSig && !empty(auth()->user()->signature_path) && \Illuminate\Support\Facades\Storage::disk('public')->exists(auth()->user()->signature_path)) {
+                                $hasOfficerSig = true;
+                            }
                         @endphp
+
+                        <!-- Status Tanda Tangan Petugas Pengelola BMN (Wajib) -->
+                        <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border {{ $hasOfficerSig ? 'border-emerald-200 dark:border-emerald-800/60' : 'border-amber-200 dark:border-amber-800/60' }} shadow-2xs space-y-3">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                                    <i data-lucide="signature" class="w-4 h-4 {{ $hasOfficerSig ? 'text-emerald-600' : 'text-amber-600' }}"></i>
+                                    Tanda Tangan Petugas Pengelola BMN (Pihak Pertama)
+                                </span>
+                                <span class="text-[10px] font-bold uppercase tracking-wider {{ $hasOfficerSig ? 'text-emerald-700 bg-emerald-50 border-emerald-200 dark:text-emerald-300 dark:bg-emerald-950/60 dark:border-emerald-800/60' : 'text-amber-700 bg-amber-50 border-amber-200 dark:text-amber-300 dark:bg-amber-950/60 dark:border-amber-800/60' }} px-2 py-0.5 rounded-full border">
+                                    {{ $hasOfficerSig ? 'Sudah Terpasang' : 'Wajib Dibubuhkan' }}
+                                </span>
+                            </div>
+
+                            @if($hasOfficerSig)
+                                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl bg-emerald-50/40 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/70">
+                                    <div class="flex items-center gap-3.5 min-w-0">
+                                        <div class="w-28 h-14 bg-white signature-paper border border-emerald-200 dark:border-emerald-700 rounded-xl p-1.5 flex items-center justify-center shrink-0 shadow-2xs" style="background-color: #ffffff !important;">
+                                            <img src="{{ asset('storage/' . ($loan->officer_signature ?: auth()->user()->signature_path)) }}" alt="TTD Petugas" class="max-h-full max-w-full object-contain">
+                                        </div>
+                                        <div class="text-xs min-w-0">
+                                            <span class="font-bold text-slate-900 dark:text-white block">Tanda Tangan Siap Dicetak</span>
+                                            <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Petugas: <strong>{{ auth()->user()->name }}</strong></p>
+                                        </div>
+                                    </div>
+                                    <button type="button" @click="openSigModal('officer')"
+                                            class="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition shadow-2xs cursor-pointer shrink-0">
+                                        <i data-lucide="edit-3" class="w-3.5 h-3.5 text-emerald-600"></i>
+                                        <span>Ganti TTD</span>
+                                    </button>
+                                </div>
+                            @else
+                                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-400 flex items-center justify-center shrink-0">
+                                            <i data-lucide="alert-circle" class="w-5 h-5"></i>
+                                        </div>
+                                        <div class="text-xs">
+                                            <p class="font-bold text-amber-900 dark:text-amber-200">Belum Ada Tanda Tangan Petugas</p>
+                                            <p class="text-[11px] text-amber-700 dark:text-amber-300 mt-0.5">BAST Peminjaman tidak boleh terbit tanpa tanda tangan resmi petugas penyerah barang.</p>
+                                        </div>
+                                    </div>
+                                    <button type="button" @click="openSigModal('officer')"
+                                            class="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-xs transition cursor-pointer shrink-0">
+                                        <i data-lucide="pen-tool" class="w-4 h-4"></i>
+                                        <span>Bubuhkan TTD Petugas</span>
+                                    </button>
+                                </div>
+                            @endif
+                        </div>
+
                         <div class="p-4 rounded-2xl bg-cyan-50/70 dark:bg-cyan-950/40 border border-cyan-200 dark:border-cyan-800/60 space-y-2">
                             <div class="flex items-center justify-between">
                                 <label class="block text-xs font-bold text-cyan-950 dark:text-cyan-200">Foto Fisik BMN Bukti Dukung BAST (Wajib Dilampirkan):</label>
@@ -1235,15 +1299,23 @@
                             </div>
                         </div>
 
-                        <button type="submit"
-                                data-confirm="Terbitkan dokumen Berita Acara Serah Terima (BAST) Peminjaman bernomor otomatis sekarang?"
-                                data-confirm-title="Terbitkan BAST Peminjaman"
-                                data-confirm-btn="Ya, Terbitkan BAST"
-                                data-confirm-type="primary"
-                                class="px-5 py-2.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-2 cursor-pointer">
-                            <i data-lucide="file-plus" class="w-4 h-4"></i>
-                            <span>Buat Dokumen BAST Peminjaman Bernomor</span>
-                        </button>
+                        @if($hasOfficerSig)
+                            <button type="submit"
+                                    data-confirm="Terbitkan dokumen Berita Acara Serah Terima (BAST) Peminjaman bernomor otomatis sekarang?"
+                                    data-confirm-title="Terbitkan BAST Peminjaman"
+                                    data-confirm-btn="Ya, Terbitkan BAST"
+                                    data-confirm-type="primary"
+                                    class="px-5 py-2.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-2 cursor-pointer">
+                                <i data-lucide="file-plus" class="w-4 h-4"></i>
+                                <span>Buat Dokumen BAST Peminjaman Bernomor</span>
+                            </button>
+                        @else
+                            <button type="button" @click="openSigModal('officer')"
+                                    class="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-2 cursor-pointer">
+                                <i data-lucide="pen-tool" class="w-4 h-4"></i>
+                                <span>Wajib Bubuhkan TTD Petugas Sebelum Terbitkan BAST</span>
+                            </button>
+                        @endif
                     </form>
                 </div>
             @endif
@@ -1544,7 +1616,7 @@
                  @click.stop>
                 <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
                     <div class="flex items-center gap-2.5">
-                        <div class="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-[#0B63B5] dark:text-blue-400 flex items-center justify-center">
+                        <div class="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-[#0B63B5] dark:text-blue-400 flex items-center justify-center shrink-0">
                             <i data-lucide="signature" class="w-5 h-5"></i>
                         </div>
                         <div>
@@ -1553,7 +1625,8 @@
                                 Menandatangani sebagai: <strong class="text-[#0B63B5] dark:text-blue-400" x-text="sigAs === 'borrower' ? 'Pihak Kedua (Peminjam)' : 'Pihak Pertama (Pengelola BMN)'"></strong>
                             </p>
                         </div>
-                    <button type="button" @click="sigModalOpen = false" class="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 p-1 rounded-lg cursor-pointer">
+                    </div>
+                    <button type="button" @click="sigModalOpen = false" class="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 p-1 rounded-lg cursor-pointer shrink-0">
                         <i data-lucide="x" class="w-5 h-5"></i>
                     </button>
                 </div>
@@ -1589,7 +1662,7 @@
                         @if(auth()->user()->signature_path)
                             <div class="p-4 rounded-2xl border-2 border-dashed border-emerald-200 dark:border-emerald-800/80 bg-emerald-50/30 dark:bg-emerald-950/20 text-center space-y-2">
                                 <span class="text-xs font-bold text-emerald-800 dark:text-emerald-400 block">Tanda tangan yang tersimpan di profil Anda:</span>
-                                <div class="p-2.5 bg-white signature-paper rounded-xl border border-dashed border-slate-300 dark:border-slate-400 inline-flex flex-col items-center justify-center min-h-[85px] max-w-[240px] shadow-2xs relative">
+                                <div class="p-2.5 bg-white signature-paper rounded-xl border border-dashed border-slate-300 dark:border-slate-400 inline-flex flex-col items-center justify-center min-h-[85px] max-w-[240px] shadow-2xs relative" style="background-color: #ffffff !important;">
                                     <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Ruang Dokumen (± 2,5 cm)</span>
                                     <img src="{{ asset('storage/' . auth()->user()->signature_path) }}" alt="TTD Profil" class="max-h-[60px] max-w-[155px] object-contain mx-auto">
                                 </div>
@@ -1614,10 +1687,6 @@
                                 <span>Goreskan Tanda Tangan:</span>
                             </span>
                             <div class="flex items-center gap-2">
-                                <span x-show="justCorrected" x-transition.opacity class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
-                                    <i data-lucide="sparkles" class="w-3 h-3 text-emerald-500"></i>
-                                    <span>Stroke Dihaluskan</span>
-                                </span>
                                 <button type="button" @click="undo()" class="text-slate-600 dark:text-slate-300 hover:text-slate-800 dark:hover:text-white font-bold flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 cursor-pointer" title="Batalkan goresan (Ctrl + Z)">
                                     <i data-lucide="undo" class="w-3 h-3"></i>
                                     <span>Undo <kbd class="text-[9px] text-slate-400 font-normal border border-slate-200 dark:border-slate-700 px-1 rounded">Ctrl+Z</kbd></span>
@@ -1641,10 +1710,11 @@
                                 </span>
                             </div>
 
-                            <div class="w-full max-w-[390px] mx-auto bg-white signature-paper rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-400 p-2.5 shadow-xs">
-                                <div class="relative w-full aspect-[5/2] rounded-lg overflow-hidden bg-slate-50/30">
+                            <div class="w-full max-w-[390px] mx-auto bg-white signature-paper rounded-xl border-2 border-dashed border-slate-300 p-2.5 shadow-xs transition-colors" style="background-color: #ffffff !important; border-color: #cbd5e1 !important;">
+                                <div class="relative w-full aspect-[5/2] rounded-lg overflow-hidden signature-canvas-pad border border-slate-300/80 shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)]" style="background-color: #f8fafc !important; border-color: #cbd5e1 !important;">
                                     <canvas id="loan-sig-pad"
-                                            class="w-full h-full cursor-crosshair touch-none block bg-transparent"
+                                            class="w-full h-full cursor-crosshair touch-none block"
+                                            style="background: transparent !important;"
                                             @mousedown="startDraw($event)"
                                             @mousemove="draw($event)"
                                             @mouseup="endDraw($event)"
@@ -1654,57 +1724,47 @@
                                             @touchend="endDraw($event)">
                                     </canvas>
 
-                                    <!-- Document Simulation Baseline -->
-                                    <div class="absolute left-3 right-3 bottom-4 border-b border-dashed border-slate-300 pointer-events-none flex justify-between text-[9px] text-slate-400 select-none">
-                                        <span>Ruang TTD (± 2,5 cm)</span>
-                                        <span>Garis Acuan</span>
-                                    </div>
-
-                                    <div x-show="!hasDrawn && strokes.length === 0" class="pointer-events-none absolute inset-0 flex items-center justify-center text-slate-400 text-xs font-medium">
+                                    <div x-show="!hasDrawn && strokes.length === 0" class="pointer-events-none absolute inset-0 flex items-center justify-center text-slate-400 text-xs font-medium" style="color: #94a3b8 !important;">
                                         Goreskan tanda tangan di sini
                                     </div>
                                 </div>
 
                                 <!-- Under-Signature Official Signatory Simulation -->
-                                <div class="pt-2 text-center border-t border-slate-100 mt-2 select-none">
-                                    <div class="text-xs font-bold text-slate-800 underline decoration-slate-400 underline-offset-2">
+                                <div class="pt-2 text-center border-t border-slate-200 mt-2 select-none" style="border-top-color: #e2e8f0 !important;">
+                                    <div class="text-xs font-bold text-slate-800 underline decoration-slate-400 underline-offset-2" style="color: #1e293b !important;">
                                         <span x-text="sigAs === 'borrower' ? '{{ $loan->snap_full_name }}' : '{{ auth()->user()->employee->full_name ?? auth()->user()->name }}'"></span>
                                     </div>
-                                    <div class="text-[10px] text-slate-500 font-medium mt-0.5">
+                                    <div class="text-[10px] text-slate-500 font-medium mt-0.5" style="color: #64748b !important;">
                                         <span x-text="sigAs === 'borrower' ? 'NIP. {{ \App\Helpers\FormatHelper::formatNip($loan->snap_nip) }}' : 'NIP. {{ \App\Helpers\FormatHelper::formatNip(auth()->user()->employee->nip ?? '') }}'"></span>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="flex items-center justify-between gap-2 pt-1 text-xs text-slate-500">
+                        <div class="pt-1 text-xs text-slate-500 dark:text-slate-400">
                             <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" name="save_to_profile" value="1" class="rounded border-slate-300 text-[#0B63B5] focus:ring-[#0B63B5]">
+                                <input type="checkbox" name="save_to_profile" value="1" class="rounded border-slate-300 dark:border-slate-700 text-[#0B63B5] focus:ring-[#0B63B5] dark:bg-slate-900">
                                 <span>Simpan juga tanda tangan ini ke profil saya</span>
-                            </label>
-                            <label class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 cursor-pointer select-none">
-                                <input type="checkbox" x-model="smoothingEnabled" class="rounded border-slate-300 text-[#0B63B5] focus:ring-[#0B63B5] w-3 h-3">
-                                <span>Koreksi Halus</span>
                             </label>
                         </div>
                     </div>
 
                     <!-- Tab 3: Unggah Berkas -->
                     <div x-show="sigTab === 'file'" class="space-y-3">
-                        <label class="block text-xs font-bold text-slate-700">Pilih Berkas Gambar Tanda Tangan (PNG / JPG transparan disarankan):</label>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">Pilih Berkas Gambar Tanda Tangan (PNG / JPG transparan disarankan):</label>
                         <input type="file" name="signature_file" accept="image/png,image/jpeg,image/jpg"
-                               class="w-full p-2.5 rounded-xl border border-slate-300 text-xs bg-slate-50 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-[#0B63B5] file:text-white hover:file:bg-[#0B4F8A]">
+                               class="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-xs bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-[#0B63B5] file:text-white hover:file:bg-[#0B4F8A]">
 
-                        <label class="flex items-center gap-2 cursor-pointer pt-1">
-                            <input type="checkbox" name="save_to_profile" value="1" class="rounded border-slate-300 text-[#0B63B5] focus:ring-[#0B63B5]">
-                            <span class="text-xs text-slate-600">Simpan juga berkas ini ke profil saya</span>
+                        <label class="flex items-center gap-2 cursor-pointer pt-1 text-xs text-slate-600 dark:text-slate-400">
+                            <input type="checkbox" name="save_to_profile" value="1" class="rounded border-slate-300 dark:border-slate-700 text-[#0B63B5] focus:ring-[#0B63B5] dark:bg-slate-900">
+                            <span>Simpan juga berkas ini ke profil saya</span>
                         </label>
                     </div>
 
                     <!-- Actions -->
-                    <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+                    <div class="flex items-center justify-center gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
                         <button type="button" @click="sigModalOpen = false"
-                                class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 text-xs font-bold transition cursor-pointer">
+                                class="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-bold transition cursor-pointer">
                             Batal
                         </button>
                         <button type="button" @click="submitSig()"

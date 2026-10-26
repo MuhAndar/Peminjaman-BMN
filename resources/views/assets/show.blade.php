@@ -28,13 +28,24 @@
             </div>
 
             <div class="flex items-center gap-2">
-                @if($asset->isAvailable())
+                @php
+                    $opStatus = $asset->operational_status;
+                @endphp
+                @if($opStatus['code'] === 'AVAILABLE')
                     <span class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
                         Tersedia (Kondisi Baik)
                     </span>
+                @elseif($opStatus['code'] === 'PENDING_APPROVAL')
+                    <span class="px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-[#0B63B5] border border-blue-200">
+                        Dalam proses pengajuan
+                    </span>
+                @elseif($opStatus['code'] === 'ON_LOAN')
+                    <span class="px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                        Sedang Dipinjam
+                    </span>
                 @else
-                    <span class="px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                        Status: {{ $asset->status }}
+                    <span class="px-3 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-700 border border-rose-200">
+                        {{ $opStatus['label'] }}
                     </span>
                 @endif
             </div>

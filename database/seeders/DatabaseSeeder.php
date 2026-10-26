@@ -130,12 +130,37 @@ class DatabaseSeeder extends Seeder
         // 5. Users
         $defaultPassword = Hash::make('password');
 
+        \Illuminate\Support\Facades\Storage::disk('public')->makeDirectory('signatures');
+        $createDummySig = function ($filename) {
+            $path = 'signatures/' . $filename;
+            if (!\Illuminate\Support\Facades\Storage::disk('public')->exists($path)) {
+                $img = imagecreatetruecolor(300, 120);
+                imagesavealpha($img, true);
+                $trans = imagecolorallocatealpha($img, 0, 0, 0, 127);
+                imagefill($img, 0, 0, $trans);
+                $ink = imagecolorallocate($img, 15, 23, 42);
+                imagesetthickness($img, 3);
+                $points = [[30, 75], [50, 35], [70, 85], [95, 45], [120, 65], [150, 40], [180, 80], [210, 50], [240, 60], [270, 75]];
+                for ($i = 0; $i < count($points) - 1; $i++) {
+                    imageline($img, $points[$i][0], $points[$i][1], $points[$i+1][0], $points[$i+1][1], $ink);
+                }
+                imageline($img, 25, 90, 275, 88, $ink);
+                ob_start();
+                imagepng($img);
+                $contents = ob_get_clean();
+                imagedestroy($img);
+                \Illuminate\Support\Facades\Storage::disk('public')->put($path, $contents);
+            }
+            return $path;
+        };
+
         User::create([
             'name' => 'Budi (Peminjam)',
             'email' => 'peminjam@komdigi.go.id',
             'password' => $defaultPassword,
             'employee_id' => $empPeminjam1->id,
             'role' => 'PEMINJAM',
+            'signature_path' => $createDummySig('dummy_peminjam.png'),
             'is_active' => true,
         ]);
 
@@ -145,6 +170,7 @@ class DatabaseSeeder extends Seeder
             'password' => $defaultPassword,
             'employee_id' => $empPengelola->id,
             'role' => 'PENGELOLA_BMN',
+            'signature_path' => $createDummySig('dummy_pengelola.png'),
             'is_active' => true,
         ]);
 
@@ -154,6 +180,7 @@ class DatabaseSeeder extends Seeder
             'password' => $defaultPassword,
             'employee_id' => $empKetua->id,
             'role' => 'KETUA_TIM_ASET',
+            'signature_path' => $createDummySig('dummy_ketuatim.png'),
             'is_active' => true,
         ]);
 
@@ -163,6 +190,7 @@ class DatabaseSeeder extends Seeder
             'password' => $defaultPassword,
             'employee_id' => $empAdmin->id,
             'role' => 'ADMIN',
+            'signature_path' => $createDummySig('dummy_admin.png'),
             'is_active' => true,
         ]);
 

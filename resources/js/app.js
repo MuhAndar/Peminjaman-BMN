@@ -33,7 +33,14 @@ document.addEventListener('htmx:configRequest', (event) => {
 });
 
 // 2. Inisialisasi ulang Alpine.js dan Lucide Icons saat konten halaman berganti via HTMX
+document.addEventListener('htmx:beforeSwap', (event) => {
+    if (window.Alpine && (event.detail.target === document.body || event.detail.target.tagName === 'BODY')) {
+        Alpine.destroyTree(document.body);
+    }
+});
+
 document.addEventListener('htmx:afterSwap', (event) => {
+    document.documentElement.classList.remove('preload-no-transition');
     if (window.Alpine) {
         Alpine.initTree(event.detail.target);
     }

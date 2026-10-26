@@ -136,7 +136,7 @@
                             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl bg-emerald-50/40 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/70">
                                 <div class="flex items-center gap-3.5 min-w-0">
                                     <!-- Thumbnail Spesimen TTD: Selalu White Paper Surface agar Tinta Hitam Tajam & Jelas di Mode Gelap -->
-                                    <div class="w-28 h-14 bg-white signature-paper border border-emerald-200 dark:border-emerald-700 rounded-xl p-1.5 flex items-center justify-center shrink-0 shadow-2xs">
+                                    <div class="w-28 h-14 bg-white signature-paper border border-emerald-200 dark:border-emerald-700 rounded-xl p-1.5 flex items-center justify-center shrink-0 shadow-2xs" style="background-color: #ffffff !important;">
                                         <img :src="sigPreviewUrl" alt="Pratinjau TTD" class="max-h-full max-w-full object-contain">
                                     </div>
                                     <div class="text-xs min-w-0">
@@ -184,12 +184,8 @@
                                class="w-full p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-emerald-300 dark:border-emerald-700/70 text-xs text-slate-900 dark:text-slate-200 outline-none focus:ring-2 focus:ring-emerald-200 dark:focus:ring-emerald-800 placeholder-slate-400 dark:placeholder-slate-500">
                     </div>
 
-                    <button type="submit"
+                    <button type="button"
                             @click="handleApprovalClick($event)"
-                            data-confirm="Apakah Anda yakin ingin MENYETUJUI pengajuan peminjaman ini? Surat Peminjaman bernomor otomatis akan langsung diterbitkan beserta tanda tangan resmi Anda."
-                            data-confirm-title="Persetujuan Peminjaman BMN"
-                            data-confirm-btn="Ya, Setujui & Terbitkan"
-                            data-confirm-type="success"
                             class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5 cursor-pointer">
                         <i data-lucide="badge-check" class="w-4 h-4"></i>
                         <span>Setujui & Terbitkan Surat Peminjaman</span>
@@ -246,7 +242,7 @@
                                     @if(auth()->user()->signature_path)
                                         <div class="p-4 rounded-2xl border-2 border-dashed border-emerald-200 dark:border-emerald-800/80 bg-emerald-50/30 dark:bg-emerald-950/20 text-center space-y-2">
                                             <span class="text-xs font-bold text-emerald-800 dark:text-emerald-400 block">Tanda tangan yang tersimpan di profil Anda:</span>
-                                            <div class="p-2.5 bg-white signature-paper rounded-xl border border-dashed border-slate-300 dark:border-slate-400 inline-flex flex-col items-center justify-center min-h-[85px] max-w-[240px] shadow-2xs relative">
+                                            <div class="p-2.5 bg-white signature-paper rounded-xl border border-dashed border-slate-300 dark:border-slate-400 inline-flex flex-col items-center justify-center min-h-[85px] max-w-[240px] shadow-2xs relative" style="background-color: #ffffff !important;">
                                                 <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Ruang Dokumen (± 2,5 cm)</span>
                                                 <img src="{{ asset('storage/' . auth()->user()->signature_path) }}" alt="TTD Profil" class="max-h-[60px] max-w-[155px] object-contain mx-auto">
                                             </div>
@@ -271,10 +267,6 @@
                                             <span>Goreskan Tanda Tangan:</span>
                                         </span>
                                         <div class="flex items-center gap-2">
-                                            <span x-show="justCorrected" x-transition.opacity class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
-                                                <i data-lucide="sparkles" class="w-3 h-3 text-emerald-500"></i>
-                                                <span>Stroke Dihaluskan</span>
-                                            </span>
                                             <button type="button" @click="undo()" class="text-slate-600 dark:text-slate-300 hover:text-slate-800 dark:hover:text-white font-bold flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 cursor-pointer shadow-2xs" title="Batalkan goresan (Ctrl + Z)">
                                                 <i data-lucide="undo" class="w-3 h-3"></i>
                                                 <span>Undo <kbd class="text-[9px] text-slate-400 font-normal border border-slate-200 dark:border-slate-700 px-1 rounded">Ctrl+Z</kbd></span>
@@ -298,10 +290,11 @@
                                             </span>
                                         </div>
 
-                                        <div class="w-full max-w-[390px] mx-auto bg-white signature-paper rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-400 p-2.5 shadow-xs">
-                                            <div class="relative w-full aspect-[5/2] rounded-lg overflow-hidden bg-slate-50/30">
+                                        <div class="w-full max-w-[390px] mx-auto bg-white signature-paper rounded-xl border-2 border-dashed border-slate-300 p-2.5 shadow-xs transition-colors" style="background-color: #ffffff !important; border-color: #cbd5e1 !important;">
+                                            <div class="relative w-full aspect-[5/2] rounded-lg overflow-hidden signature-canvas-pad border border-slate-300/80 shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)]" style="background-color: #f8fafc !important; border-color: #cbd5e1 !important;">
                                                 <canvas id="ketua-sig-pad"
-                                                        class="w-full h-full cursor-crosshair touch-none block bg-transparent"
+                                                        class="w-full h-full cursor-crosshair touch-none block"
+                                                        style="background: transparent !important;"
                                                         @mousedown="startDraw($event)"
                                                         @mousemove="draw($event)"
                                                         @mouseup="endDraw($event)"
@@ -311,38 +304,27 @@
                                                         @touchend="endDraw($event)">
                                                 </canvas>
 
-                                                <!-- Garis Acuan Dokumen -->
-                                                <div class="absolute left-3 right-3 bottom-4 border-b border-dashed border-slate-300 pointer-events-none flex justify-between text-[9px] text-slate-400 select-none">
-                                                    <span>Ruang TTD (± 2,5 cm)</span>
-                                                    <span>Garis Acuan</span>
-                                                </div>
-
-                                                <div x-show="!hasDrawn && strokes.length === 0" class="pointer-events-none absolute inset-0 flex items-center justify-center text-slate-400 text-xs font-medium">
+                                                <div x-show="!hasDrawn && strokes.length === 0" class="pointer-events-none absolute inset-0 flex items-center justify-center text-slate-400 text-xs font-medium" style="color: #94a3b8 !important;">
                                                     Goreskan tanda tangan di sini
                                                 </div>
                                             </div>
 
                                             <!-- Under-Signature Official Signatory Simulation -->
-                                            <div class="pt-2 text-center border-t border-slate-100 mt-2 select-none">
-                                                <div class="text-xs font-bold text-slate-800 underline decoration-slate-400 underline-offset-2">
+                                            <div class="pt-2 text-center border-t border-slate-200 mt-2 select-none" style="border-top-color: #e2e8f0 !important;">
+                                                <div class="text-xs font-bold text-slate-800 underline decoration-slate-400 underline-offset-2" style="color: #1e293b !important;">
                                                     {{ auth()->user()->employee->full_name ?? auth()->user()->name }}
                                                 </div>
-                                                <div class="text-[10px] text-slate-500 font-medium mt-0.5">
+                                                <div class="text-[10px] text-slate-500 font-medium mt-0.5" style="color: #64748b !important;">
                                                     NIP. {{ \App\Helpers\FormatHelper::formatNip(auth()->user()->employee->nip ?? '') }}
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
 
-                                    <!-- Checkbox: Default KOSONG / UNCHECKED sesuai permintaan user (Wording ringkas selaras Pengelola & User) -->
-                                    <div class="flex items-center justify-between gap-2 pt-1 text-xs text-slate-500 dark:text-slate-400">
+                                    <div class="pt-1 text-xs text-slate-500 dark:text-slate-400">
                                         <label class="flex items-center gap-2 cursor-pointer select-none">
                                             <input type="checkbox" x-model="modalSaveToProfile" class="rounded border-slate-300 dark:border-slate-700 text-[#0B63B5] focus:ring-[#0B63B5]">
                                             <span>Simpan juga tanda tangan ini ke profil saya</span>
-                                        </label>
-                                        <label class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 dark:text-slate-300 cursor-pointer select-none">
-                                            <input type="checkbox" x-model="smoothingEnabled" class="rounded border-slate-300 dark:border-slate-700 text-[#0B63B5] focus:ring-[#0B63B5] w-3 h-3">
-                                            <span>Koreksi Halus</span>
                                         </label>
                                     </div>
                                 </div>
@@ -369,7 +351,7 @@
                                 </div>
 
                                 <!-- Footer Buttons (Batal & Bubuhkan ke Dokumen) -->
-                                <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">
+                                <div class="flex items-center justify-center gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
                                     <button type="button" @click="sigModalOpen = false"
                                             class="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-bold transition cursor-pointer">
                                         Batal
@@ -552,6 +534,9 @@ function ketuaTimApproval() {
         startDraw(e) {
             e.preventDefault();
             this.isDrawing = true;
+            const inkColor = '#0F172A';
+            this.ctx.strokeStyle = inkColor;
+            this.ctx.fillStyle = inkColor;
             const pos = this.getPos(e);
             this.currentStroke = [pos];
             this.ctx.beginPath();
@@ -564,7 +549,9 @@ function ketuaTimApproval() {
             const pos = this.getPos(e);
             this.currentStroke.push(pos);
 
-            this.ctx.strokeStyle = '#0F172A';
+            const inkColor = '#0F172A';
+            this.ctx.strokeStyle = inkColor;
+            this.ctx.fillStyle = inkColor;
             this.ctx.lineWidth = 2.5;
             this.ctx.lineCap = 'round';
             this.ctx.lineJoin = 'round';
@@ -588,11 +575,9 @@ function ketuaTimApproval() {
             this.isDrawing = false;
             if (this.currentStroke && this.currentStroke.length > 0) {
                 let finalStroke = this.currentStroke;
-                if (this.smoothingEnabled && this.currentStroke.length > 2) {
+                if (this.currentStroke.length > 2) {
                     const filtered = this.filterPoints(this.currentStroke, 2);
                     finalStroke = this.chaikinSmooth(filtered, 2);
-                    this.justCorrected = true;
-                    setTimeout(() => { this.justCorrected = false; }, 900);
                 }
                 this.strokes.push(finalStroke);
                 this.hasDrawn = true;
@@ -638,12 +623,15 @@ function ketuaTimApproval() {
             return current;
         },
 
-        redrawCanvas() {
+        redrawCanvas(exportMode = false) {
             if (!this.ctx || !this.canvas) return;
             const rect = this.canvas.getBoundingClientRect();
             this.ctx.clearRect(0, 0, rect.width, rect.height);
-            this.ctx.strokeStyle = '#0F172A';
-            this.ctx.fillStyle = '#0F172A';
+
+            const inkColor = '#0F172A';
+
+            this.ctx.strokeStyle = inkColor;
+            this.ctx.fillStyle = inkColor;
             this.ctx.lineWidth = 2.5;
             this.ctx.lineCap = 'round';
             this.ctx.lineJoin = 'round';
@@ -773,7 +761,9 @@ function ketuaTimApproval() {
                     alert('Silakan goreskan tanda tangan pada papan gambar kanvas terlebih dahulu.');
                     return;
                 }
+                this.redrawCanvas(true);
                 const trimmed = this.trimCanvas(this.canvas);
+                this.redrawCanvas(false);
                 this.sigData = trimmed;
                 this.sigPreviewUrl = trimmed;
                 this.sigSource = 'pad';
@@ -868,14 +858,26 @@ function ketuaTimApproval() {
         },
 
         handleApprovalClick(e) {
+            e.preventDefault();
             if (!this.sigPreviewUrl || !this.sigSource) {
-                e.preventDefault();
-                e.stopImmediatePropagation();
-                alert('Tanda tangan digital Ketua Tim wajib dibubuhkan sebelum menyetujui pengajuan. Silakan bubuhkan tanda tangan Anda.');
+                alert('Tanda tangan digital Ketua Tim wajib dibubuhkan sebelum menyetujui pengajuan. Silakan bubuhkan tanda tangan Anda terlebih dahulu.');
                 this.openSigModal();
                 return false;
             }
-            this.clearDraftStorage();
+
+            window.dispatchEvent(new CustomEvent('open-confirm-modal', {
+                detail: {
+                    title: 'Persetujuan Peminjaman BMN',
+                    message: 'Apakah Anda yakin ingin MENYETUJUI pengajuan peminjaman ini? Surat Peminjaman bernomor otomatis akan langsung diterbitkan beserta tanda tangan resmi Anda.',
+                    confirmText: 'Ya, Setujui & Terbitkan',
+                    cancelText: 'Batal',
+                    type: 'success',
+                    callback: () => {
+                        this.clearDraftStorage();
+                        document.getElementById('approval-form').submit();
+                    }
+                }
+            }));
         }
     };
 }

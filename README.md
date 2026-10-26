@@ -253,7 +253,7 @@ Semua akun demo menggunakan kata sandi default: **`password`**
 | **Ketua Tim Aset** | Olga Olivia, S.E., M.M. | `ketuatim@komdigi.go.id` | Persetujuan Pengajuan (*Approve/Revise/Reject*) |
 | **Administrator** | Administrator Sistem | `admin@komdigi.go.id` | Log Aktivitas & Audit, Manajemen Pengguna, Master Pejabat |
 
-> 💡 **Fitur Cepat:** Anda juga dapat beralih peran secara instan melalui widget **Ganti Akun Demo** di pojok kanan atas tanpa perlu mengetik kata sandi.
+> 🔒 **Keamanan Produksi:** Otentikasi ditegakkan secara penuh melalui formulir login dengan proteksi sesi aman dan jejak audit aktivitas (*audit trail*).
 
 ---
 

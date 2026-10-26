@@ -152,10 +152,10 @@
                                         {{ $meta['label'] }}
                                     </span>
                                 </td>
-                                <td class="py-4 px-6 text-right">
-                                    <a href="{{ route('loans.show', $loan->id) }}" class="inline-flex items-center gap-1 bg-[#0B63B5] hover:bg-[#0B4F8A] text-white text-xs font-bold px-3 py-1.5 rounded-xl transition shadow-sm">
+                                <td class="py-4 px-6 text-right whitespace-nowrap">
+                                    <a href="{{ route('loans.show', $loan->id) }}" class="inline-flex items-center gap-1.5 text-xs font-bold text-[#0B63B5] dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 px-3.5 py-1.5 rounded-xl border border-blue-100 dark:border-blue-900/40 transition shadow-2xs whitespace-nowrap">
                                         <span>Buka Berkas</span>
-                                        <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                                        <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
                                     </a>
                                 </td>
                             </tr>
@@ -189,9 +189,9 @@
 
                         <div class="pt-1 flex items-center justify-between">
                             <span class="text-[11px] font-mono text-slate-400">#{{ substr($loan->id, 0, 8) }}</span>
-                            <a href="{{ route('loans.show', $loan->id) }}" class="inline-flex items-center gap-1 bg-[#0B63B5] text-white text-xs font-bold px-3 py-1.5 rounded-lg transition">
+                            <a href="{{ route('loans.show', $loan->id) }}" class="inline-flex items-center gap-1 text-xs font-bold text-[#0B63B5] dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 px-3 py-1.5 rounded-xl border border-blue-100 dark:border-blue-900/40 transition shadow-2xs">
                                 <span>Buka Berkas</span>
-                                <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                                <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
                             </a>
                         </div>
                     </div>

@@ -20,49 +20,26 @@ class BmnDocumentService
         $signatoryPengelola = Signatory::where('role', 'PENGELOLA_ASET')->with('employee.user')->first();
         $suratPeminjamanDoc = $loan->documents()->where('doc_type', 'SURAT_PEMINJAMAN')->where('status', 'ISSUED')->first();
 
-        $borrowerSignatureBase64 = null;
-        if (!empty($loan->borrower_signature)) {
-            if (str_starts_with($loan->borrower_signature, 'data:image')) {
-                $borrowerSignatureBase64 = $loan->borrower_signature;
-            } elseif (\Illuminate\Support\Facades\Storage::disk('public')->exists($loan->borrower_signature)) {
-                $content = \Illuminate\Support\Facades\Storage::disk('public')->get($loan->borrower_signature);
-                $mime = \Illuminate\Support\Facades\Storage::disk('public')->mimeType($loan->borrower_signature) ?: 'image/png';
-                $borrowerSignatureBase64 = 'data:' . $mime . ';base64,' . base64_encode($content);
-            }
+        $borrowerSignatureBase64 = self::formatSignatureAsBase64($loan->borrower_signature);
+        if (!$borrowerSignatureBase64 && $loan->borrower?->user?->signature_path) {
+            $borrowerSignatureBase64 = self::formatSignatureAsBase64($loan->borrower->user->signature_path);
         }
 
-        $officerSignatureBase64 = null;
-        if (!empty($loan->officer_signature)) {
-            if (str_starts_with($loan->officer_signature, 'data:image')) {
-                $officerSignatureBase64 = $loan->officer_signature;
-            } elseif (\Illuminate\Support\Facades\Storage::disk('public')->exists($loan->officer_signature)) {
-                $content = \Illuminate\Support\Facades\Storage::disk('public')->get($loan->officer_signature);
-                $mime = \Illuminate\Support\Facades\Storage::disk('public')->mimeType($loan->officer_signature) ?: 'image/png';
-                $officerSignatureBase64 = 'data:' . $mime . ';base64,' . base64_encode($content);
+        $officerSignatureBase64 = self::formatSignatureAsBase64($loan->officer_signature);
+        if (!$officerSignatureBase64) {
+            $pengelolaUser = $signatoryPengelola?->employee?->user ?? \App\Models\User::where('role', 'PENGELOLA_BMN')->whereNotNull('signature_path')->first();
+            if ($pengelolaUser?->signature_path) {
+                $officerSignatureBase64 = self::formatSignatureAsBase64($pengelolaUser->signature_path);
             }
         }
 
         $ketuaSignatureBase64 = null;
         if (in_array($loan->status, ['APPROVED', 'BAST_ISSUED', 'ACTIVE', 'RETURN_REQUESTED', 'RETURN_CHECKED', 'RETURNED'])) {
-            if (!empty($loan->approver_signature)) {
-                if (str_starts_with($loan->approver_signature, 'data:image')) {
-                    $ketuaSignatureBase64 = $loan->approver_signature;
-                } elseif (\Illuminate\Support\Facades\Storage::disk('public')->exists($loan->approver_signature)) {
-                    $content = \Illuminate\Support\Facades\Storage::disk('public')->get($loan->approver_signature);
-                    $mime = \Illuminate\Support\Facades\Storage::disk('public')->mimeType($loan->approver_signature) ?: 'image/png';
-                    $ketuaSignatureBase64 = 'data:' . $mime . ';base64,' . base64_encode($content);
-                }
-            }
-
+            $ketuaSignatureBase64 = self::formatSignatureAsBase64($loan->approver_signature);
             if (!$ketuaSignatureBase64) {
-                $ketuaUser = $signatoryKetua && $signatoryKetua->employee ? $signatoryKetua->employee->user : null;
-                if (!$ketuaUser) {
-                    $ketuaUser = \App\Models\User::where('role', 'KETUA_TIM_ASET')->whereNotNull('signature_path')->first();
-                }
-                if ($ketuaUser && !empty($ketuaUser->signature_path) && \Illuminate\Support\Facades\Storage::disk('public')->exists($ketuaUser->signature_path)) {
-                    $content = \Illuminate\Support\Facades\Storage::disk('public')->get($ketuaUser->signature_path);
-                    $mime = \Illuminate\Support\Facades\Storage::disk('public')->mimeType($ketuaUser->signature_path) ?: 'image/png';
-                    $ketuaSignatureBase64 = 'data:' . $mime . ';base64,' . base64_encode($content);
+                $ketuaUser = $signatoryKetua?->employee?->user ?? \App\Models\User::where('role', 'KETUA_TIM_ASET')->whereNotNull('signature_path')->first();
+                if ($ketuaUser?->signature_path) {
+                    $ketuaSignatureBase64 = self::formatSignatureAsBase64($ketuaUser->signature_path);
                 }
             }
         }
@@ -133,5 +110,24 @@ class BmnDocumentService
         $pdf->setPaper('a4', 'portrait');
 
         return $pdf->stream($filename);
+    }
+
+    private static function formatSignatureAsBase64(?string $signature): ?string
+    {
+        if (empty($signature)) {
+            return null;
+        }
+
+        if (str_starts_with($signature, 'data:image')) {
+            return $signature;
+        }
+
+        if (\Illuminate\Support\Facades\Storage::disk('public')->exists($signature)) {
+            $content = \Illuminate\Support\Facades\Storage::disk('public')->get($signature);
+            $mime = \Illuminate\Support\Facades\Storage::disk('public')->mimeType($signature) ?: 'image/png';
+            return 'data:' . $mime . ';base64,' . base64_encode($content);
+        }
+
+        return null;
     }
 }

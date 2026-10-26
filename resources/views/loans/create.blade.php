@@ -2,6 +2,9 @@
 
 @section('title', 'Ajukan Peminjaman BMN Baru')
 @section('content')
+@php
+    $hasBorrowerSig = !empty(auth()->user()->signature_path) && \Illuminate\Support\Facades\Storage::disk('public')->exists(auth()->user()->signature_path);
+@endphp
 <div class="space-y-6" x-data="{
     step: 1,
     selectedAssets: {{ $selectedAssetId ? json_encode([(string)$selectedAssetId]) : '[]' }},
@@ -137,7 +140,9 @@
     </div>
 
     <!-- MAIN FORM (POST) -->
-    <form method="POST" action="{{ route('loans.store') }}" id="loanForm" class="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-8 shadow-sm space-y-6">
+    <form method="POST" action="{{ route('loans.store') }}" id="loanForm"
+          @submit="if (!{{ $hasBorrowerSig ? 'true' : 'false' }}) { $event.preventDefault(); alert('Anda wajib memiliki tanda tangan digital di profil sebelum mengajukan peminjaman.'); return false; }"
+          class="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-8 shadow-sm space-y-6">
         @csrf
 
         <!-- STEP 1: PILIH BARANG BMN -->
@@ -242,8 +247,9 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 max-h-[500px] overflow-y-auto pr-1">
                 @foreach($availableAssets as $asset)
                     @php
-                        $isLoaned = $asset->is_currently_loaned;
-                        $activeLoan = $asset->active_loan;
+                        $opStatus = $asset->operational_status;
+                        $isSelectable = $opStatus['is_selectable'];
+                        $activeLoan = $opStatus['loan'];
                         $isOverdue = false;
                         $loanPeriodCompact = '';
                         $loanEndDateStr = '';
@@ -262,8 +268,8 @@
                         }
                     @endphp
 
-                    <div x-show="filterAsset('{{ addslashes($asset->item_name) }}', '{{ addslashes($asset->brand_model_combined) }}', '{{ $asset->nup }}', '{{ $asset->category_code }}', '{{ addslashes($asset->category->label ?? '') }}', '{{ addslashes($asset->plate_number ?? '') }}', {{ $isLoaned ? 'true' : 'false' }})"
-                         @if(!$isLoaned)
+                    <div x-show="filterAsset('{{ addslashes($asset->item_name) }}', '{{ addslashes($asset->brand_model_combined) }}', '{{ $asset->nup }}', '{{ $asset->category_code }}', '{{ addslashes($asset->category->label ?? '') }}', '{{ addslashes($asset->plate_number ?? '') }}', {{ !$isSelectable ? 'true' : 'false' }})"
+                         @if($isSelectable)
                              @click="toggleAsset('{{ $asset->id }}')"
                              :class="isSelected('{{ $asset->id }}') ? 'border-[#0B63B5] dark:border-blue-500 bg-blue-50/50 dark:bg-blue-950/40 shadow-sm ring-1 ring-[#0B63B5]/30' : 'border-slate-200 dark:border-slate-700/80 hover:border-slate-300 dark:hover:border-slate-600 bg-white dark:bg-[#1E293B]'"
                              class="p-4 rounded-2xl border cursor-pointer transition flex items-start gap-3 select-none h-full"
@@ -271,9 +277,9 @@
                              class="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-100/90 dark:bg-[#0F172A]/90 text-slate-500 dark:text-slate-400 cursor-not-allowed select-none flex items-start gap-3 shadow-2xs h-full"
                          @endif>
 
-                        <!-- Checkbox (disabled jika barang sedang dipinjam) -->
+                        <!-- Checkbox (tidak bisa dicek jika barang sedang dalam proses pengajuan atau dipinjam) -->
                         <input type="checkbox" name="asset_ids[]" value="{{ $asset->id }}"
-                               @if(!$isLoaned)
+                               @if($isSelectable)
                                    :checked="isSelected('{{ $asset->id }}')"
                                    class="mt-1 w-4 h-4 text-[#0B63B5] rounded border-slate-300 focus:ring-blue-500 pointer-events-none shrink-0"
                                @else
@@ -285,21 +291,21 @@
                             <div class="flex items-start justify-between gap-2.5">
                                 <!-- Kolom Kiri: Nama Barang & Spesifikasi -->
                                 <div class="min-w-0 flex-1">
-                                    <h3 class="font-bold text-sm {{ $isLoaned ? 'text-slate-700 dark:text-slate-300' : 'text-slate-900 dark:text-white' }} truncate" title="{{ $asset->item_name }}">
+                                    <h3 class="font-bold text-sm {{ !$isSelectable ? 'text-slate-700 dark:text-slate-300' : 'text-slate-900 dark:text-white' }} truncate" title="{{ $asset->item_name }}">
                                         {{ $asset->item_name }}
                                     </h3>
-                                    <p class="text-xs font-medium {{ $isLoaned ? 'text-slate-500 dark:text-slate-400' : 'text-slate-700 dark:text-slate-300' }} mt-0.5 truncate" title="{{ $asset->brand_model_combined }}">
+                                    <p class="text-xs font-medium {{ !$isSelectable ? 'text-slate-500 dark:text-slate-400' : 'text-slate-700 dark:text-slate-300' }} mt-0.5 truncate" title="{{ $asset->brand_model_combined }}">
                                         {{ $asset->brand_model_combined }}
                                     </p>
 
-                                    <div class="mt-2 text-[11px] {{ $isLoaned ? 'text-slate-500 dark:text-slate-400' : 'text-slate-500 dark:text-slate-400' }} space-y-0.5">
+                                    <div class="mt-2 text-[11px] text-slate-500 dark:text-slate-400 space-y-0.5">
                                         @if($asset->plate_number)
-                                            <div>Plat: <strong class="{{ $isLoaned ? 'text-slate-700 dark:text-slate-200' : 'text-slate-700 dark:text-slate-200' }}">{{ $asset->plate_number }}</strong></div>
+                                            <div>Plat: <strong class="text-slate-700 dark:text-slate-200">{{ $asset->plate_number }}</strong></div>
                                         @endif
                                         @if($asset->nup)
-                                            <div>NUP: <strong class="{{ $isLoaned ? 'text-slate-700 dark:text-slate-200' : 'text-slate-700 dark:text-slate-200' }}">{{ $asset->nup }}</strong> &bull; Thn: {{ $asset->acquisition_year }}</div>
+                                            <div>NUP: <strong class="text-slate-700 dark:text-slate-200">{{ $asset->nup }}</strong> &bull; Thn: {{ $asset->acquisition_year }}</div>
                                         @endif
-                                        <div>Nilai: <span class="tabular-nums font-semibold {{ $isLoaned ? 'text-slate-700 dark:text-slate-300' : 'text-slate-800 dark:text-slate-200' }}">{{ $asset->formatted_value }}</span></div>
+                                        <div>Nilai: <span class="tabular-nums font-semibold {{ !$isSelectable ? 'text-slate-700 dark:text-slate-300' : 'text-slate-800 dark:text-slate-200' }}">{{ $asset->formatted_value }}</span></div>
                                     </div>
                                 </div>
 
@@ -311,7 +317,14 @@
                                     </span>
 
                                     <!-- 2. Status & Informasi Tanggal -->
-                                    @if($isLoaned)
+                                    @if($opStatus['code'] === 'PENDING_APPROVAL')
+                                        <!-- Barang sedang diajukan tapi belum terbit surat peminjaman: Tidak bisa dicek -->
+                                        <span class="inline-flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950/70 text-[#0B63B5] dark:text-blue-300 border border-blue-200 dark:border-blue-800/80 shadow-2xs">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-[#0B63B5]"></span>
+                                            <span>Dalam proses pengajuan</span>
+                                        </span>
+                                    @elseif($opStatus['code'] === 'ON_LOAN')
+                                        <!-- Barang sudah terbit Surat Peminjaman: Sedang Dipinjam & tampilkan tanggal -->
                                         @if($isOverdue)
                                             <span class="inline-flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950/70 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800/80 shadow-2xs">
                                                 <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>
@@ -331,17 +344,20 @@
                                                 </div>
                                             @endif
                                         @endif
-                                    @else
+                                    @elseif($opStatus['code'] === 'AVAILABLE')
                                         <!-- Badge Tersedia untuk Keseimbangan Grid -->
                                         <span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/80">
                                             <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                                             <span>Tersedia</span>
                                         </span>
+                                    @else
+                                        <span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200/80 dark:border-rose-800/80">
+                                            <span>{{ $opStatus['label'] }}</span>
+                                        </span>
                                     @endif
                                 </div>
                             </div>
                         </div>
-                    </div>
                 @endforeach
             </div>
 
@@ -530,6 +546,59 @@
                     "Apabila terjadi kehilangan atau kerusakan atas barang inventaris tersebut yang menimbulkan kerugian negara, saya bertanggung jawab mutlak dan tunduk pada peraturan yang berlaku, seperti yang telah diatur dalam <strong>Undang-Undang RI No. 1 Tahun 2004 tanggal 14 Januari 2004</strong>."
                 </p>
             </div>
+
+            <!-- Validasi Tanda Tangan Digital Peminjam -->
+            @php
+                $hasBorrowerSig = auth()->user()->signature_path && \Illuminate\Support\Facades\Storage::disk('public')->exists(auth()->user()->signature_path);
+            @endphp
+            @if($hasBorrowerSig)
+                <div class="p-4 rounded-2xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                            <i data-lucide="signature" class="w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs font-black text-emerald-900 dark:text-emerald-200 flex items-center gap-1.5">
+                                <span>Tanda Tangan Digital Terpasang</span>
+                                <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-600"></i>
+                            </div>
+                            <p class="text-[11px] text-emerald-700 dark:text-emerald-400 font-medium mt-0.5">
+                                Tanda tangan digital dari profil Anda akan dibubuhkan secara otomatis pada berkas resmi Surat Peminjaman BMN.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3 self-end sm:self-center">
+                        <div class="p-1 bg-white dark:bg-slate-800 rounded-lg border border-emerald-200 dark:border-emerald-800 shadow-2xs">
+                            <img src="{{ Storage::url(auth()->user()->signature_path) }}" alt="TTD Peminjam" class="h-8 max-w-[120px] object-contain">
+                        </div>
+                        <a href="{{ route('profile.show', ['tab' => 'signature']) }}" target="_blank"
+                           class="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 hover:underline">
+                            Ubah
+                        </a>
+                    </div>
+                </div>
+            @else
+                <div class="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-400 flex items-center justify-center shrink-0">
+                            <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs font-black text-amber-900 dark:text-amber-200 flex items-center gap-1.5">
+                                <span>Tanda Tangan Digital Wajib Dibubuhkan</span>
+                            </div>
+                            <p class="text-[11px] text-amber-700 dark:text-amber-300 font-medium mt-0.5">
+                                Anda wajib memiliki tanda tangan digital sebelum mengirim pengajuan agar Surat Peminjaman resmi tidak memiliki tanda tangan kosong.
+                            </p>
+                        </div>
+                    </div>
+                    <a href="{{ route('profile.show', ['tab' => 'signature']) }}" target="_blank"
+                       class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shadow-xs transition flex items-center justify-center gap-1.5 shrink-0">
+                        <i data-lucide="pen-tool" class="w-3.5 h-3.5"></i>
+                        <span>Bubuhkan TTD di Profil</span>
+                    </a>
+                </div>
+            @endif
         </div>
 
         <!-- WIZARD NAVIGATION CONTROLS -->
@@ -567,11 +636,20 @@
                     <i data-lucide="arrow-right" class="w-4 h-4"></i>
                 </button>
 
-                <button type="submit" x-show="step === 4"
-                        class="px-8 py-3 bg-[#0B63B5] hover:bg-[#0B4F8A] text-white text-xs font-black rounded-xl shadow-md shadow-blue-500/25 transition flex items-center gap-2">
-                    <i data-lucide="send" class="w-4 h-4"></i>
-                    <span>Kirim Pengajuan Peminjaman</span>
-                </button>
+                @if($hasBorrowerSig)
+                    <button type="submit" x-show="step === 4"
+                            class="px-8 py-3 bg-[#0B63B5] hover:bg-[#0B4F8A] text-white text-xs font-black rounded-xl shadow-md shadow-blue-500/25 transition flex items-center gap-2">
+                        <i data-lucide="send" class="w-4 h-4"></i>
+                        <span>Kirim Pengajuan Peminjaman</span>
+                    </button>
+                @else
+                    <button type="button" x-show="step === 4" disabled
+                            title="Harap bubuhkan tanda tangan di profil terlebih dahulu"
+                            class="px-8 py-3 bg-slate-300 dark:bg-slate-700 text-slate-500 dark:text-slate-400 text-xs font-bold rounded-xl cursor-not-allowed flex items-center gap-2 shadow-inner">
+                        <i data-lucide="lock" class="w-4 h-4"></i>
+                        <span>Wajib Memiliki TTD Sebelum Mengirim</span>
+                    </button>
+                @endif
             </div>
         </div>
     </form>

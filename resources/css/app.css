@@ -118,18 +118,33 @@
     color: #FFFFFF !important;
   }
 
-  /* Official Signature & Document Paper Surface (Preserve White Background for Crisp Black Ink) */
+  /* Official Signature & Document Paper Surface (Preserve White Background for Crisp Black Ink in Light & Dark Mode) */
+  .signature-paper,
   html.dark .signature-paper {
     background-color: #FFFFFF !important;
     border-color: #CBD5E1 !important;
   }
-  html.dark .signature-paper span,
-  html.dark .signature-paper div,
-  html.dark .signature-paper p {
-    color: #334155 !important;
+  .signature-canvas-pad,
+  html.dark .signature-canvas-pad {
+    background-color: #F8FAFC !important;
+    border-color: #CBD5E1 !important;
   }
+  .signature-paper span,
+  .signature-paper div:not(.signature-canvas-pad),
+  .signature-paper p,
+  html.dark .signature-paper span,
+  html.dark .signature-paper div:not(.signature-canvas-pad),
+  html.dark .signature-paper p {
+    color: #1E293B !important;
+  }
+  .signature-paper canvas,
+  html.dark .signature-paper canvas {
+    background-color: transparent !important;
+  }
+  .signature-paper img,
   html.dark .signature-paper img {
     filter: none !important;
+    background-color: transparent !important;
   }
 
   /* Inputs, selects, and textareas */

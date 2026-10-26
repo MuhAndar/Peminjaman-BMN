@@ -102,13 +102,15 @@
         }
         return smoothed;
     },
-    redrawCanvas() {
+    redrawCanvas(exportMode = false) {
         if (!this.ctx || !this.canvas) return;
         const rect = this.canvas.getBoundingClientRect();
         this.ctx.clearRect(0, 0, rect.width, rect.height);
 
-        this.ctx.strokeStyle = '#0F172A';
-        this.ctx.fillStyle = '#0F172A';
+        const inkColor = '#0F172A';
+
+        this.ctx.strokeStyle = inkColor;
+        this.ctx.fillStyle = inkColor;
         this.ctx.lineWidth = 2.5;
         this.ctx.lineCap = 'round';
         this.ctx.lineJoin = 'round';
@@ -143,6 +145,9 @@
     startDraw(e) {
         e.preventDefault();
         this.isDrawing = true;
+        const inkColor = '#0F172A';
+        this.ctx.strokeStyle = inkColor;
+        this.ctx.fillStyle = inkColor;
         const pos = this.getPos(e);
         this.currentStroke = [pos];
         this.ctx.beginPath();
@@ -153,6 +158,10 @@
         e.preventDefault();
         const pos = this.getPos(e);
         this.currentStroke.push(pos);
+
+        const inkColor = '#0F172A';
+        this.ctx.strokeStyle = inkColor;
+        this.ctx.fillStyle = inkColor;
 
         if (this.currentStroke.length >= 3) {
             const p1 = this.currentStroke[this.currentStroke.length - 2];
@@ -173,11 +182,9 @@
 
         if (this.currentStroke && this.currentStroke.length > 0) {
             let finalStroke = this.currentStroke;
-            if (this.smoothingEnabled && this.currentStroke.length > 2) {
+            if (this.currentStroke.length > 2) {
                 const filtered = this.filterPoints(this.currentStroke, 2);
                 finalStroke = this.chaikinSmooth(filtered, 2);
-                this.justCorrected = true;
-                setTimeout(() => { this.justCorrected = false; }, 900);
             }
             this.strokes.push(finalStroke);
             this.hasDrawn = true;
@@ -274,7 +281,9 @@
             alert('Silakan goreskan tanda tangan Anda pada papan gambar terlebih dahulu.');
             return;
         }
+        this.redrawCanvas(true);
         const dataUrl = this.trimCanvas(this.canvas);
+        this.redrawCanvas(false);
         document.getElementById('signature_data_input').value = dataUrl;
         document.getElementById('pad-form').submit();
     }
@@ -455,7 +464,7 @@
 
                 @if($user->signature_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($user->signature_path))
                     <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 flex flex-col items-center justify-center space-y-3">
-                        <div class="p-3 bg-white signature-paper rounded-xl border border-dashed border-slate-300 dark:border-slate-400 w-full max-w-[260px] flex flex-col items-center justify-center min-h-[85px] shadow-2xs relative">
+                        <div class="p-3 bg-white signature-paper rounded-xl border border-dashed border-slate-300 dark:border-slate-400 w-full max-w-[260px] flex flex-col items-center justify-center min-h-[85px] shadow-2xs relative" style="background-color: #ffffff !important;">
                             <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Ukuran Dokumen (± 2,5 cm)</span>
                             <img src="{{ asset('storage/' . $user->signature_path) }}" alt="Tanda Tangan {{ $user->name }}" class="max-h-[66px] max-w-[165px] object-contain">
                         </div>
@@ -758,21 +767,11 @@
                 <div x-show="activeTab === 'pad'"
                      @keydown.window="if (($event.ctrlKey || $event.metaKey) && $event.key.toLowerCase() === 'z' && activeTab === 'pad') { $event.preventDefault(); undo(); }"
                      class="space-y-4">
-                    <div class="flex items-center justify-between text-xs pb-1">
+                    <div class="text-xs pb-1">
                         <span class="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
                             <i data-lucide="edit-3" class="w-3.5 h-3.5 text-[#0B63B5] dark:text-blue-400"></i>
                             <span>Goreskan Tanda Tangan:</span>
                         </span>
-                        <div class="flex items-center gap-2">
-                            <span x-show="justCorrected" x-transition.opacity class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800 shadow-2xs">
-                                <i data-lucide="sparkles" class="w-3 h-3 text-emerald-500"></i>
-                                <span>Stroke Dihaluskan Otomatis</span>
-                            </span>
-                            <label class="inline-flex items-center gap-1.5 text-[11px] font-bold text-slate-600 dark:text-slate-300 cursor-pointer select-none bg-slate-100 dark:bg-slate-800 hover:bg-slate-200/80 dark:hover:bg-slate-700 px-2.5 py-1 rounded-lg transition border border-slate-200/60 dark:border-slate-700">
-                                <input type="checkbox" x-model="smoothingEnabled" class="rounded border-slate-300 dark:border-slate-600 text-[#0B63B5] focus:ring-[#0B63B5] w-3.5 h-3.5">
-                                <span>Koreksi Stroke Halus (Chaikin Smoothing)</span>
-                            </label>
-                        </div>
                     </div>
 
                     <!-- KOTAK TANDA TANGAN PROPORSIONAL DENGAN UKURAN DOKUMEN BMN (± 2,5 CM / RASIO 2.5 : 1) -->
@@ -789,8 +788,8 @@
                         </div>
 
                         <!-- Canvas Box with Strict Document Aspect Ratio (2.5 : 1) -->
-                        <div class="w-full max-w-[420px] mx-auto bg-white signature-paper rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-400 p-3 shadow-xs">
-                            <div class="relative w-full aspect-[5/2] rounded-xl overflow-hidden bg-slate-50/30">
+                        <div class="w-full max-w-[420px] mx-auto bg-white signature-paper rounded-2xl border-2 border-dashed border-slate-300 p-3 shadow-xs transition-colors" style="background-color: #ffffff !important; border-color: #cbd5e1 !important;">
+                            <div class="relative w-full aspect-[5/2] rounded-xl overflow-hidden signature-canvas-pad border border-slate-300/80 shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)]" style="background-color: #f8fafc !important; border-color: #cbd5e1 !important;">
                                 <canvas id="signature-pad"
                                         @mousedown="startDraw($event)"
                                         @mousemove="draw($event)"
@@ -799,25 +798,20 @@
                                         @touchstart="startDraw($event)"
                                         @touchmove="draw($event)"
                                         @touchend="endDraw($event)"
-                                        class="w-full h-full cursor-crosshair touch-none block bg-transparent"></canvas>
+                                        class="w-full h-full cursor-crosshair touch-none block"
+                                        style="background: transparent !important;"></canvas>
 
-                                <!-- Baseline Guide -->
-                                <div class="absolute left-4 right-4 bottom-5 border-b border-dashed border-slate-300 pointer-events-none flex justify-between text-[10px] text-slate-400 select-none">
-                                    <span>Ruang TTD (± 2,5 cm)</span>
-                                    <span>Garis Acuan</span>
-                                </div>
-
-                                <div x-show="!hasDrawn && strokes.length === 0" class="pointer-events-none absolute inset-0 flex items-center justify-center text-slate-400 text-xs font-medium">
+                                <div x-show="!hasDrawn && strokes.length === 0" class="pointer-events-none absolute inset-0 flex items-center justify-center text-slate-400 text-xs font-medium" style="color: #94a3b8 !important;">
                                     <span>Goreskan tanda tangan di sini</span>
                                 </div>
                             </div>
 
                             <!-- Under-Signature Official Signatory Simulation -->
-                            <div class="pt-2.5 pb-1 text-center border-t border-slate-100 mt-2.5 select-none">
-                                <div class="text-xs font-bold text-slate-800 underline decoration-slate-400 underline-offset-2">
+                            <div class="pt-2.5 pb-1 text-center border-t border-slate-200 mt-2.5 select-none" style="border-top-color: #e2e8f0 !important;">
+                                <div class="text-xs font-bold text-slate-800 underline decoration-slate-400 underline-offset-2" style="color: #1e293b !important;">
                                     {{ $user->employee->full_name ?? $user->name }}
                                 </div>
-                                <div class="text-[10px] text-slate-500 font-medium mt-0.5">
+                                <div class="text-[10px] text-slate-500 font-medium mt-0.5" style="color: #64748b !important;">
                                     NIP. {{ \App\Helpers\FormatHelper::formatNip($user->employee->nip ?? '') }}
                                 </div>
                             </div>

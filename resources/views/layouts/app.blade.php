@@ -99,8 +99,21 @@
             transition: none !important;
         }
 
-        /* Saat sidebar-collapsed aktif di html, kunci layout langsung di 5rem (80px) */
+        /* Ukuran sidebar dan padding konten desktop (>= 1024px) */
         @media (min-width: 1024px) {
+            /* 1. Default Keadaan Diperbesar (w-64 / 256px) */
+            aside#bmn-sidebar {
+                width: 16rem !important; /* 256px */
+            }
+            #bmn-content-wrapper {
+                padding-left: 16rem !important; /* 256px */
+            }
+            aside#bmn-sidebar .sidebar-chevron-wrapper {
+                transition: rotate 300ms cubic-bezier(0.4, 0, 0.2, 1);
+                rotate: 0deg;
+            }
+
+            /* 2. Keadaan Di-minimize / Diperkecil (w-20 / 80px) */
             html.sidebar-collapsed aside#bmn-sidebar {
                 width: 5rem !important; /* 80px */
             }
@@ -115,8 +128,8 @@
                 padding-left: 0 !important;
                 padding-right: 0 !important;
             }
-            html.sidebar-collapsed aside#bmn-sidebar .sidebar-chevron-icon {
-                transform: rotate(180deg) !important;
+            html.sidebar-collapsed aside#bmn-sidebar .sidebar-chevron-wrapper {
+                rotate: 180deg;
             }
         }
 
@@ -155,6 +168,7 @@
           sidebarMobileOpen: false,
           darkMode: document.documentElement.classList.contains('dark'),
           toggleCollapse() {
+              document.documentElement.classList.remove('preload-no-transition');
               this.sidebarCollapsed = !this.sidebarCollapsed;
               localStorage.setItem('bmn_sidebar_collapsed', this.sidebarCollapsed);
               if (this.sidebarCollapsed) {
@@ -204,12 +218,17 @@
 
         <!-- Desktop Collapse / Expand Arrow Button (Di Antara Logo dan Beranda) -->
         <button type="button"
+                id="sidebar-toggle-btn"
                 @click="toggleCollapse()"
                 class="hidden lg:flex absolute -right-3.5 top-[50px] z-50 w-7 h-7 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-[#0B63B5] dark:hover:border-blue-400 text-slate-500 dark:text-slate-400 hover:text-[#0B63B5] dark:hover:text-blue-400 rounded-full shadow-md items-center justify-center transition-all duration-200 focus:outline-none hover:scale-110 active:scale-95 cursor-pointer"
                 :title="sidebarCollapsed ? 'Perlebar Sidebar (Expand)' : 'Perkecil Sidebar (Minimize)'">
-            <i data-lucide="chevron-left"
-               class="sidebar-chevron-icon w-4 h-4 transition-transform duration-300"
-               :class="sidebarCollapsed ? 'rotate-180' : ''"></i>
+            <span class="sidebar-chevron-wrapper inline-flex items-center justify-center transition-transform duration-300 ease-in-out"
+                  :class="sidebarCollapsed ? 'rotate-180' : 'rotate-0'">
+                <!-- Panah mengarah ke kiri (<) saat diperbesar; berputar 180° mengarah ke kanan (>) saat diminimize -->
+                <svg class="w-4 h-4 pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="m15 18-6-6 6-6"/>
+                </svg>
+            </span>
         </button>
 
         <!-- Sidebar Header (Brand Logo) -->
@@ -780,7 +799,7 @@
 
     <!-- CONTENT AREA WRAPPER (Offsets fixed sidebar) -->
     <div id="bmn-content-wrapper"
-         class="flex-1 flex flex-col min-h-screen lg:transition-[padding] lg:duration-300 lg:ease-in-out"
+         class="flex-1 flex flex-col min-h-screen lg:pl-64 lg:transition-[padding] lg:duration-300 lg:ease-in-out"
          :class="sidebarCollapsed ? 'lg:pl-20' : 'lg:pl-64'">
 
         <!-- TOP HEADER BAR -->
@@ -899,24 +918,7 @@
                                 </a>
                             </div>
 
-                            <!-- Demo Role Quick Switcher -->
-                            <div class="px-3 py-2 bg-slate-50/80 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-800">
-                                <span class="text-[10px] font-bold tracking-wider text-slate-400 dark:text-slate-500 uppercase block mb-1.5">Ganti Akun Demo (Uji Alur SOP):</span>
-                                <div class="grid grid-cols-2 gap-1.5" hx-boost="false">
-                                    <a href="{{ route('login.quick', 'PEMINJAM') }}" class="text-[11px] font-semibold p-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400 text-center transition">
-                                        Peminjam
-                                    </a>
-                                    <a href="{{ route('login.quick', 'PENGELOLA_BMN') }}" class="text-[11px] font-semibold p-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400 text-center transition">
-                                        Pengelola
-                                    </a>
-                                    <a href="{{ route('login.quick', 'KETUA_TIM_ASET') }}" class="text-[11px] font-semibold p-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400 text-center transition">
-                                        Ketua Tim
-                                    </a>
-                                    <a href="{{ route('login.quick', 'ADMIN') }}" class="text-[11px] font-semibold p-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400 text-center transition">
-                                        Admin
-                                    </a>
-                                </div>
-                            </div>
+
 
                             <form method="POST" action="{{ route('logout') }}" class="p-1" hx-boost="false">
                                 @csrf
@@ -1160,7 +1162,7 @@
                     </div>
                 </div>
 
-                <div class="mt-6 flex flex-col-reverse sm:flex-row items-center justify-end gap-2.5">
+                <div class="mt-6 flex flex-col-reverse sm:flex-row items-center justify-center gap-3">
                     <button type="button" @click="close()"
                             class="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs hover:bg-slate-50 dark:hover:bg-slate-800 transition">
                         <span x-text="cancelText"></span>

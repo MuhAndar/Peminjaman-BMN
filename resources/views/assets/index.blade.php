@@ -91,13 +91,24 @@
                                 {{ $asset->category->label ?? $asset->item_name }}
                             </span>
 
-                            @if($isAvailable)
+                            @php
+                                $opStatus = $asset->operational_status;
+                            @endphp
+                            @if($opStatus['code'] === 'AVAILABLE')
                                 <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                                     Tersedia
                                 </span>
+                            @elseif($opStatus['code'] === 'PENDING_APPROVAL')
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 dark:bg-blue-950/70 text-[#0B63B5] dark:text-blue-300 border border-blue-200 dark:border-blue-800/80">
+                                    Dalam proses pengajuan
+                                </span>
+                            @elseif($opStatus['code'] === 'ON_LOAN')
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/80">
+                                    Sedang Dipinjam
+                                </span>
                             @else
                                 <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
-                                    {{ $asset->status === 'ON_LOAN' ? 'Dipinjam' : 'Tidak Tersedia' }}
+                                    {{ $opStatus['label'] }}
                                 </span>
                             @endif
                         </div>
@@ -131,7 +142,7 @@
                                 </div>
                             @endif
                             <div class="flex justify-between">
-                                <span>Tahun / Nilai:</span>
+                                <span class="text-slate-500">Tahun / Nilai:</span>
                                 <span class="text-slate-800 dark:text-slate-200 font-semibold tabular-nums">{{ $asset->acquisition_year }} &bull; {{ $asset->formatted_value }}</span>
                             </div>
                         </div>
@@ -145,7 +156,7 @@
 
                     <!-- Action Button -->
                     <div class="mt-5 pt-3 border-t border-slate-100 dark:border-slate-800">
-                        @if($isAvailable)
+                        @if($asset->isAvailable())
                             <a href="{{ route('loans.create', ['asset_id' => $asset->id]) }}"
                                class="w-full py-2 bg-[#0B63B5] hover:bg-[#0B4F8A] text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm">
                                 <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
@@ -153,7 +164,7 @@
                             </a>
                         @else
                             <button disabled class="w-full py-2 bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 rounded-xl text-xs font-bold cursor-not-allowed">
-                                Sedang Dipinjam
+                                {{ $opStatus['label'] }}
                             </button>
                         @endif
                     </div>

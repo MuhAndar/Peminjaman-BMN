@@ -27,8 +27,8 @@ class NewFeaturesTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->seed();
         Storage::fake('public');
+        $this->seed();
     }
 
     /**
@@ -125,8 +125,8 @@ class NewFeaturesTest extends TestCase
         $this->actingAs($peminjamUser);
 
         // Unggah foto BAST Peminjaman (uji ketahanan array berkas bila ada input kosong)
-        $photo1 = UploadedFile::fake()->image('bast_serah_terima_1.jpg', 800, 600);
-        $photo2 = UploadedFile::fake()->image('bast_serah_terima_2.png', 800, 600);
+        $photo1 = UploadedFile::fake()->create('bast_serah_terima_1.jpg', 200, 'image/jpeg');
+        $photo2 = UploadedFile::fake()->create('bast_serah_terima_2.png', 200, 'image/png');
         $emptyFile = new UploadedFile('', '', null, UPLOAD_ERR_NO_FILE, true);
 
         $response = $this->post(route('loans.photos.upload', $loan->id), [
@@ -286,7 +286,10 @@ class NewFeaturesTest extends TestCase
             ['3.05.01.05.003', '4', 'Printer Epson L3210', 'L3210 EcoTank', '2022', '2400000'],
         ]);
 
-        $tempFilePath = tempnam(sys_get_temp_dir(), 'test_bmn_') . '.xlsx';
+        $tempFilePath = storage_path('framework/testing/test_bmn_' . uniqid() . '.xlsx');
+        if (!is_dir(dirname($tempFilePath))) {
+            mkdir(dirname($tempFilePath), 0777, true);
+        }
         $writer = new Xlsx($spreadsheet);
         $writer->save($tempFilePath);
 
@@ -909,6 +912,126 @@ class NewFeaturesTest extends TestCase
         $response->assertSee('Email Terdaftar');
         $response->assertSee('Gunakan email terdaftar dan kata sandi Anda untuk mengakses layanan BMN.');
         $response->assertSee('Masuk ke Sistem');
+    }
+
+    public function test_authenticated_layout_has_no_demo_account_switcher_and_quick_route_is_disabled(): void
+    {
+        $peminjam = User::where('role', 'PEMINJAM')->first();
+        $response = $this->actingAs($peminjam)->get(route('dashboard'));
+        $response->assertOk();
+        $response->assertDontSee('Ganti Akun Demo (Uji Alur SOP):');
+        $response->assertDontSee('login/quick');
+        $response->assertSee('Profil & Tanda Tangan Saya', false);
+        $response->assertSee('Keluar Sistem');
+
+        // Route quick login harus tidak ditemukan (404)
+        $quickResponse = $this->get('/login/quick/ADMIN');
+        $quickResponse->assertNotFound();
+    }
+
+    /**
+     * Uji penegakan tanda tangan digital (gatekeeper) pada seluruh peran:
+     * - Peminjam wajib punya TTD sebelum mengirim pengajuan (loans.store)
+     * - Pengelola wajib punya TTD sebelum meneruskan telaah (kelola.review)
+     * - Pengelola wajib punya TTD sebelum menerbitkan BAST Peminjaman (loans.issue-bast)
+     * - Pengelola wajib punya TTD sebelum menerbitkan BAST Pengembalian (loans.return.check)
+     */
+    public function test_all_roles_strictly_prevented_from_progressing_workflow_without_digital_signature(): void
+    {
+        $peminjam = User::where('role', 'PEMINJAM')->first();
+        $pengelola = User::where('role', 'PENGELOLA_BMN')->first();
+        $asset = Asset::where('status', 'AVAILABLE')->first();
+
+        // 1. Peminjam tanpa TTD tidak boleh mengirim pengajuan
+        $peminjam->signature_path = null;
+        $peminjam->save();
+
+        $this->actingAs($peminjam);
+        $resStore = $this->post(route('loans.store'), [
+            'loan_type' => 'SHORT_TERM',
+            'start_date' => Carbon::now()->addDays(1)->toDateString(),
+            'end_date' => Carbon::now()->addDays(3)->toDateString(),
+            'home_address' => 'Jl. Racing Centre No. 1 Makassar',
+            'asset_ids' => [$asset->id],
+            'purposes' => [$asset->id => 'Uji proteksi TTD'],
+        ]);
+        $resStore->assertRedirect(route('profile.show', ['tab' => 'signature']));
+        $resStore->assertSessionHas('error');
+
+        // Kembalikan TTD peminjam dan buat pengajuan sah
+        $peminjam->signature_path = 'signatures/dummy_peminjam.png';
+        $peminjam->save();
+        $this->post(route('loans.store'), [
+            'loan_type' => 'SHORT_TERM',
+            'start_date' => Carbon::now()->addDays(1)->toDateString(),
+            'end_date' => Carbon::now()->addDays(3)->toDateString(),
+            'home_address' => 'Jl. Racing Centre No. 1 Makassar',
+            'asset_ids' => [$asset->id],
+            'purposes' => [$asset->id => 'Uji proteksi TTD valid'],
+        ]);
+
+        $loan = LoanRequest::where('borrower_id', $peminjam->employee_id)->latest()->first();
+        $this->assertNotNull($loan);
+        $this->assertEquals('signatures/dummy_peminjam.png', $loan->borrower_signature);
+
+        // 2. Pengelola tanpa TTD tidak boleh meneruskan telaah (approve_review)
+        $pengelola->signature_path = null;
+        $pengelola->save();
+        $loan->officer_signature = null;
+        $loan->save();
+
+        $this->actingAs($pengelola);
+        $resReview = $this->post(route('kelola.review', $loan->id), [
+            'action' => 'approve_review',
+            'note' => 'Dokumen lengkap',
+        ]);
+        $resReview->assertSessionHas('error');
+        $this->assertEquals('SUBMITTED', $loan->fresh()->status);
+
+        // Kembalikan TTD pengelola dan teruskan telaah
+        $pengelola->signature_path = 'signatures/dummy_pengelola.png';
+        $pengelola->save();
+
+        $this->post(route('kelola.review', $loan->id), [
+            'action' => 'approve_review',
+            'note' => 'Dokumen lengkap dan valid',
+        ]);
+        $this->assertEquals('UNDER_APPROVAL', $loan->fresh()->status);
+        $this->assertEquals('signatures/dummy_pengelola.png', $loan->fresh()->officer_signature);
+    }
+
+    /**
+     * Verifikasi tata letak desktop sidebar tidak memotong halaman dan struktur tombol panah toggle (< vs >).
+     */
+    public function test_sidebar_layout_and_toggle_arrow_structure(): void
+    {
+        $user = User::where('role', 'PEMINJAM')->first();
+        $this->actingAs($user);
+
+        $response = $this->get(route('loans.index'));
+        $response->assertOk();
+
+        // 1. Verifikasi konten pembungkus memiliki lg:pl-64 secara statis agar tidak terpotong saat navigasi
+        $response->assertSee('id="bmn-content-wrapper"', false);
+        $response->assertSee('lg:pl-64', false);
+        $response->assertSee(":class=\"sidebarCollapsed ? 'lg:pl-20' : 'lg:pl-64'\"", false);
+
+        // 2. Verifikasi aturan CSS inline untuk ukuran default 16rem dan collapsed 5rem
+        $response->assertSee('aside#bmn-sidebar {', false);
+        $response->assertSee('width: 16rem !important;', false);
+        $response->assertSee('#bmn-content-wrapper {', false);
+        $response->assertSee('padding-left: 16rem !important;', false);
+        $response->assertSee('html.sidebar-collapsed aside#bmn-sidebar {', false);
+        $response->assertSee('width: 5rem !important;', false);
+        $response->assertSee('html.sidebar-collapsed #bmn-content-wrapper {', false);
+        $response->assertSee('padding-left: 5rem !important;', false);
+
+        // 3. Verifikasi tombol panah toggle navbar
+        $response->assertSee('id="sidebar-toggle-btn"', false);
+        $response->assertSee('sidebar-chevron-wrapper', false);
+        $response->assertSee(":class=\"sidebarCollapsed ? 'rotate-180' : 'rotate-0'\"", false);
+        // SVG chevron-left yang berputar 180° menjadi chevron-right
+        $response->assertSee('<path d="m15 18-6-6 6-6"/>', false);
     }
 }
 
