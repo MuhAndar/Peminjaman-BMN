@@ -346,4 +346,81 @@ class LoanStateMachine
             throw new Exception("Bentrok jadwal peminjaman (BR-02): {$conflictDetails}.");
         }
     }
+
+    /**
+     * Override administratif oleh Admin untuk me-rollback status pengajuan ke posisi alur manapun.
+     */
+    public static function rollbackByAdmin(LoanRequest $loan, string $targetStatus, User $admin, string $reason): void
+    {
+        if (!$admin->isAdmin()) {
+            throw new Exception('Hanya Administrator Sistem yang memiliki wewenang melakukan rollback pengajuan.');
+        }
+
+        $validStatuses = [
+            'DRAFT',
+            'SUBMITTED',
+            'NEEDS_REVISION',
+            'UNDER_APPROVAL',
+            'APPROVED',
+            'BAST_ISSUED',
+            'ACTIVE',
+            'RETURN_REQUESTED',
+            'RETURN_CHECKED',
+            'RETURNED',
+            'CANCELLED',
+        ];
+
+        if (!in_array($targetStatus, $validStatuses)) {
+            throw new Exception("Status tujuan '{$targetStatus}' tidak valid.");
+        }
+
+        $previousStatus = $loan->status;
+        if ($previousStatus === $targetStatus) {
+            throw new Exception("Pengajuan saat ini sudah berada pada status '{$targetStatus}'.");
+        }
+
+        DB::transaction(function () use ($loan, $targetStatus, $admin, $reason, $previousStatus) {
+            // 1. Sinkronisasi status barang / asset
+            if (in_array($targetStatus, ['ACTIVE', 'BAST_ISSUED', 'RETURN_REQUESTED', 'RETURN_CHECKED'])) {
+                $loan->items()->update(['is_blocking' => true]);
+                foreach ($loan->items as $item) {
+                    if ($item->asset) {
+                        $item->asset->update(['status' => 'IN_USE']);
+                    }
+                }
+            } else {
+                $loan->items()->update(['is_blocking' => false]);
+                if (in_array($targetStatus, ['DRAFT', 'SUBMITTED', 'NEEDS_REVISION', 'UNDER_APPROVAL', 'APPROVED', 'RETURNED', 'CANCELLED'])) {
+                    foreach ($loan->items as $item) {
+                        if ($item->asset) {
+                            $item->asset->update(['status' => 'AVAILABLE']);
+                        }
+                    }
+                }
+            }
+
+            // 2. Update status pengajuan
+            $loan->status = $targetStatus;
+            $loan->save();
+
+            // 3. Catat riwayat status
+            LoanStatusHistory::create([
+                'loan_request_id' => $loan->id,
+                'from_status' => $previousStatus,
+                'to_status' => $targetStatus,
+                'actor_id' => $admin->id,
+                'note' => 'ROLLBACK OLEH ADMIN: ' . $reason,
+                'created_at' => Carbon::now('Asia/Makassar'),
+            ]);
+
+            // 4. Catat Audit Log
+            AuditLog::record(
+                'ADMIN_ROLLBACK_LOAN',
+                'LoanRequest',
+                $loan->id,
+                ['status' => $previousStatus],
+                ['status' => $targetStatus, 'reason' => $reason]
+            );
+        });
+    }
 }

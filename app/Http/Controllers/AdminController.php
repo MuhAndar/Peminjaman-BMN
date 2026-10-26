@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Helpers\FormatHelper;
 use App\Models\AppSetting;
 use App\Models\AuditLog;
+use App\Models\LoanRequest;
 use App\Models\Signatory;
 use App\Models\User;
+use App\Services\LoanStateMachine;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -340,5 +342,109 @@ class AdminController extends Controller
             'Content-Disposition' => 'attachment; filename="' . $filename . '"',
             'Cache-Control' => 'max-age=0, no-cache',
         ]);
+    }
+
+    /**
+     * Halaman Monitoring Seluruh Pengajuan BMN & Kontrol Rollback (Khusus Admin).
+     */
+    public function loans(Request $request)
+    {
+        $this->authorizeAdmin();
+
+        $todayMakassar = Carbon::now('Asia/Makassar')->toDateString();
+        $baseQuery = LoanRequest::with(['borrower.user', 'items.asset', 'documents', 'photos']);
+
+        // KPI Statistics
+        $stats = [
+            'total' => LoanRequest::count(),
+            'active' => LoanRequest::where('status', 'ACTIVE')->count(),
+            'pending' => LoanRequest::whereIn('status', ['SUBMITTED', 'UNDER_APPROVAL', 'APPROVED', 'BAST_ISSUED', 'RETURN_REQUESTED'])->count(),
+            'overdue' => LoanRequest::whereIn('status', ['ACTIVE', 'RETURN_REQUESTED'])->where('end_date', '<', $todayMakassar)->count(),
+            'returned' => LoanRequest::where('status', 'RETURNED')->count(),
+        ];
+
+        $statusFilter = $request->query('status', 'all');
+        $query = (clone $baseQuery)->orderBy('created_at', 'desc');
+
+        if ($statusFilter === 'active') {
+            $query->where('status', 'ACTIVE');
+        } elseif ($statusFilter === 'pending') {
+            $query->whereIn('status', ['SUBMITTED', 'UNDER_APPROVAL', 'APPROVED', 'BAST_ISSUED', 'RETURN_REQUESTED']);
+        } elseif ($statusFilter === 'returned') {
+            $query->where('status', 'RETURNED');
+        } elseif ($statusFilter === 'overdue') {
+            $query->whereIn('status', ['ACTIVE', 'RETURN_REQUESTED'])->where('end_date', '<', $todayMakassar);
+        } elseif ($statusFilter !== 'all') {
+            $query->where('status', $statusFilter);
+        }
+
+        if ($request->filled('search')) {
+            $search = trim($request->query('search'));
+            $query->where(function ($q) use ($search) {
+                $q->where('id', 'like', "%{$search}%")
+                    ->orWhere('snap_full_name', 'like', "%{$search}%")
+                    ->orWhere('snap_nip', 'like', "%{$search}%")
+                    ->orWhereHas('items', function ($sub) use ($search) {
+                        $sub->where('snap_item_name', 'like', "%{$search}%")
+                            ->orWhere('snap_brand_model', 'like', "%{$search}%")
+                            ->orWhere('snap_nup', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('documents', function ($doc) use ($search) {
+                        $doc->where('doc_number', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        $loans = $query->paginate(20)->withQueryString();
+
+        return view('admin.loans.index', compact('loans', 'stats', 'statusFilter'));
+    }
+
+    /**
+     * Eksekusi Rollback Alur Pengajuan oleh Administrator.
+     */
+    public function rollbackLoan(Request $request, string $id)
+    {
+        $this->authorizeAdmin();
+
+        $loan = LoanRequest::findOrFail($id);
+        $user = auth()->user();
+
+        $request->validate([
+            'target_status' => 'required|in:DRAFT,SUBMITTED,NEEDS_REVISION,UNDER_APPROVAL,APPROVED,BAST_ISSUED,ACTIVE,RETURN_REQUESTED,RETURN_CHECKED,RETURNED,CANCELLED',
+            'reason' => 'required|string|min:5|max:500',
+        ], [
+            'target_status.required' => 'Pilih status tujuan rollback alur.',
+            'target_status.in' => 'Status alur tujuan tidak valid.',
+            'reason.required' => 'Wajib mengisi alasan rollback alur untuk dokumentasi audit.',
+            'reason.min' => 'Alasan rollback minimal 5 karakter.',
+        ]);
+
+        $targetStatus = $request->input('target_status');
+        $reason = $request->input('reason');
+
+        try {
+            LoanStateMachine::rollbackByAdmin($loan, $targetStatus, $user, $reason);
+
+            $statusLabels = [
+                'DRAFT' => 'Draf Pengajuan (Dapat Diedit Ulang Peminjam)',
+                'SUBMITTED' => 'Ditelaah Ulang (Antrean Telaah Pengelola)',
+                'NEEDS_REVISION' => 'Perlu Perbaikan Dokumen',
+                'UNDER_APPROVAL' => 'Disposisi Ulang (Antrean Persetujuan Ketua Tim)',
+                'APPROVED' => 'Disetujui (Menunggu Penerbitan BAST Ulang)',
+                'BAST_ISSUED' => 'Penerbitan BAST Ulang (Menunggu Tanda Tangan BAST)',
+                'ACTIVE' => 'Peminjaman Aktif (Sedang Dipinjam)',
+                'RETURN_REQUESTED' => 'Pengembalian Diajukan (Menunggu Cek Fisik Pengembalian)',
+                'RETURN_CHECKED' => 'Pemeriksaan Selesai (Menunggu BAST Kembali)',
+                'RETURNED' => 'Selesai / Dikembalikan ke Gudang',
+                'CANCELLED' => 'Dibatalkan',
+            ];
+
+            $targetLabel = $statusLabels[$targetStatus] ?? $targetStatus;
+
+            return back()->with('success', "Pengajuan BMN milik {$loan->snap_full_name} berhasil di-rollback ke posisi: {$targetLabel}.");
+        } catch (\Exception $e) {
+            return back()->with('error', 'Gagal melakukan rollback: ' . $e->getMessage());
+        }
     }
 }

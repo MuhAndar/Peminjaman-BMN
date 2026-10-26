@@ -1563,5 +1563,156 @@ class NewFeaturesTest extends TestCase
         $responseCreate->assertSee('Pilih Barang BMN yang Tersedia');
         $responseCreate->assertSee('goToPage');
     }
+
+    /**
+     * Test BAST Pengembalian berhasil memproses foto Base64, mengubah status, dan menerbitkan BAST_PENGEMBALIAN.
+     */
+    public function test_process_return_check_with_base64_photos_and_generates_bast_pengembalian(): void
+    {
+        $borrower = Employee::first();
+        $pengelola = User::where('role', 'PENGELOLA_BMN')->first();
+        $ketuaTim = User::where('role', 'KETUA_TIM_ASET')->first();
+
+        $loan = $this->createActiveLoan($borrower, $pengelola, $ketuaTim);
+        $this->assertEquals('ACTIVE', $loan->status);
+
+        // Peminjam mengajukan pengembalian
+        LoanStateMachine::transition($loan, 'RETURN_REQUESTED', $borrower->user);
+        $loan->refresh();
+        $this->assertEquals('RETURN_REQUESTED', $loan->status);
+
+        // Pengelola melakukan pemeriksaan fisik dengan mengunggah foto via Base64
+        $this->actingAs($pengelola);
+
+        // 1x1 transparent PNG data URI
+        $dummyBase64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
+
+        $itemsConditions = [];
+        foreach ($loan->items as $item) {
+            $itemsConditions[$item->id] = 'Baik';
+        }
+
+        $response = $this->from(route('loans.show', $loan->id))->post(route('kelola.process-return-check', $loan->id), [
+            'conditions' => $itemsConditions,
+            'check_notes' => 'Pemeriksaan fisik selesai, barang dalam kondisi prima.',
+            'photos_base64' => [$dummyBase64],
+            'photos_names' => ['foto_kondisi_kembali.png'],
+        ]);
+
+        $response->assertRedirect(route('loans.show', $loan->id));
+        $response->assertSessionHas('success');
+
+        $loan->refresh();
+        $this->assertEquals('RETURN_CHECKED', $loan->status);
+
+        // Verifikasi foto tersimpan di loan_photos dengan stage BAST_PENGEMBALIAN
+        $this->assertDatabaseHas('loan_photos', [
+            'loan_request_id' => $loan->id,
+            'stage' => 'BAST_PENGEMBALIAN',
+        ]);
+
+        // Verifikasi dokumen BAST_PENGEMBALIAN terbit otomatis
+        $this->assertDatabaseHas('documents', [
+            'loan_request_id' => $loan->id,
+            'doc_type' => 'BAST_PENGEMBALIAN',
+        ]);
+
+        // Pengelola menyelesaikan pengembalian menjadi RETURNED
+        LoanStateMachine::transition($loan, 'RETURNED', $pengelola);
+        $loan->refresh();
+        $this->assertEquals('RETURNED', $loan->status);
+    }
+
+    /**
+     * Test akses halaman Monitoring & Rollback Admin dan pembatasan otorisasi RBAC.
+     */
+    public function test_admin_monitoring_page_access_and_authorization(): void
+    {
+        $admin = User::where('role', 'ADMIN')->first();
+        $peminjam = User::where('role', 'PEMINJAM')->first();
+
+        // 1. Peminjam tidak boleh mengakses halaman monitoring admin (403)
+        $this->actingAs($peminjam);
+        $responseForbidden = $this->get(route('admin.loans.index'));
+        $responseForbidden->assertForbidden();
+
+        // 2. Admin dapat mengakses halaman monitoring
+        $this->actingAs($admin);
+        $responseAdmin = $this->get(route('admin.loans.index'));
+        $responseAdmin->assertOk();
+        $responseAdmin->assertSee('Kontrol Alur Pengajuan BMN');
+        $responseAdmin->assertSee('Total Pengajuan');
+        $responseAdmin->assertSee('Rollback');
+
+        // 3. Verifikasi filter query
+        $responseActive = $this->get(route('admin.loans.index', ['status' => 'ACTIVE']));
+        $responseActive->assertOk();
+    }
+
+    /**
+     * Test Admin dapat me-rollback pengajuan ke berbagai alur (DRAFT, SUBMITTED, dll) secara aman.
+     */
+    public function test_admin_can_rollback_loan_to_any_stage(): void
+    {
+        $admin = User::where('role', 'ADMIN')->first();
+        $peminjam = User::where('role', 'PEMINJAM')->first();
+        $pengelola = User::where('role', 'PENGELOLA_BMN')->first();
+        $ketuaTim = User::where('role', 'KETUA_TIM_ASET')->first();
+
+        $loan = $this->createActiveLoan($peminjam->employee, $pengelola, $ketuaTim);
+        $this->assertEquals('ACTIVE', $loan->status);
+
+        // 1. Peminjam tidak boleh melakukan rollback (403)
+        $this->actingAs($peminjam);
+        $resForbidden = $this->post(route('admin.loans.rollback', $loan->id), [
+            'target_status' => 'SUBMITTED',
+            'reason' => 'Mencoba rollback ilegal tanpa izin admin',
+        ]);
+        $resForbidden->assertForbidden();
+
+        // 2. Admin melakukan rollback ke DITELAAH ULANG (SUBMITTED)
+        $this->actingAs($admin);
+        $resRollback = $this->post(route('admin.loans.rollback', $loan->id), [
+            'target_status' => 'SUBMITTED',
+            'reason' => 'Perlu pengecekan ulang berkas permohonan dinas luar kota',
+        ]);
+
+        $resRollback->assertRedirect();
+        $resRollback->assertSessionHas('success');
+
+        $loan->refresh();
+        $this->assertEquals('SUBMITTED', $loan->status);
+
+        // Verifikasi riwayat status tercatat
+        $this->assertDatabaseHas('loan_status_history', [
+            'loan_request_id' => $loan->id,
+            'from_status' => 'ACTIVE',
+            'to_status' => 'SUBMITTED',
+            'actor_id' => $admin->id,
+        ]);
+
+        // Verifikasi audit log tercatat ADMIN_ROLLBACK_LOAN
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'ADMIN_ROLLBACK_LOAN',
+            'actor_id' => $admin->id,
+        ]);
+
+        // 3. Admin melakukan rollback lebih jauh ke DRAFT (Pengajuan Ulang oleh Peminjam)
+        $resRollbackDraft = $this->post(route('admin.loans.rollback', $loan->id), [
+            'target_status' => 'DRAFT',
+            'reason' => 'Pemohon diminta merevisi seluruh jadwal dan rincian barang',
+        ]);
+
+        $resRollbackDraft->assertRedirect();
+        $loan->refresh();
+        $this->assertEquals('DRAFT', $loan->status);
+
+        // Pastikan status barang inventaris kembali AVAILABLE dan blocking dilepas
+        foreach ($loan->items as $item) {
+            $item->refresh();
+            $this->assertFalse((bool)$item->is_blocking);
+            $this->assertEquals('AVAILABLE', $item->asset->status);
+        }
+    }
 }
 

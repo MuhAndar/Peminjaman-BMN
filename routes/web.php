@@ -85,6 +85,8 @@ Route::middleware('auth')->group(function () {
 
     // Administrasi Sistem & Log Aktivitas Forensik (Khusus Admin)
     Route::prefix('admin')->name('admin.')->group(function () {
+        Route::get('/monitoring-pengajuan', [\App\Http\Controllers\AdminController::class, 'loans'])->name('loans.index');
+        Route::post('/monitoring-pengajuan/{id}/rollback', [\App\Http\Controllers\AdminController::class, 'rollbackLoan'])->name('loans.rollback');
         Route::get('/log-aktivitas', [\App\Http\Controllers\AdminController::class, 'auditLogs'])->name('activity-logs');
         Route::get('/audit-logs', [\App\Http\Controllers\AdminController::class, 'auditLogs'])->name('audit-logs');
         Route::get('/log-aktivitas/export', [\App\Http\Controllers\AdminController::class, 'exportAuditLogs'])->name('activity-logs.export');

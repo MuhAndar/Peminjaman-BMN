@@ -555,7 +555,8 @@
                     </div>
                 </a>
 
-                <!-- Audit Aktivitas Peminjaman (Pengelola) -->
+                <!-- Audit Aktivitas Peminjaman (Pengelola Khusus) -->
+                @if(auth()->user()->role === \App\Models\User::ROLE_PENGELOLA_BMN)
                 <a href="{{ route('audit.loans') }}"
                    class="sidebar-center-on-collapse flex items-center rounded-xl h-11 transition-colors group relative select-none cursor-pointer {{ request()->routeIs('audit.*') ? 'bg-blue-50 text-[#0B63B5] font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium' }}"
                    :class="sidebarCollapsed && !sidebarMobileOpen ? 'justify-center px-0' : 'px-3 gap-3'">
@@ -581,6 +582,7 @@
                         <span class="relative z-10">Audit Peminjaman BMN</span>
                     </div>
                 </a>
+                @endif
             </div>
             @endif
 
@@ -633,7 +635,8 @@
                     </div>
                 </a>
 
-                <!-- Audit Aktivitas Peminjaman (Ketua Tim) -->
+                <!-- Audit Aktivitas Peminjaman (Ketua Tim Khusus) -->
+                @if(auth()->user()->role === \App\Models\User::ROLE_KETUA_TIM_ASET)
                 <a href="{{ route('audit.loans') }}"
                    class="sidebar-center-on-collapse flex items-center rounded-xl h-11 transition-colors group relative select-none cursor-pointer {{ request()->routeIs('audit.*') ? 'bg-blue-50 text-[#0B63B5] font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium' }}"
                    :class="sidebarCollapsed && !sidebarMobileOpen ? 'justify-center px-0' : 'px-3 gap-3'">
@@ -659,6 +662,7 @@
                         <span class="relative z-10">Audit Peminjaman BMN</span>
                     </div>
                 </a>
+                @endif
             </div>
             @endif
 
@@ -671,6 +675,36 @@
                      class="sidebar-hide-on-collapse px-3 pt-2.5 pb-1 text-[11px] font-bold uppercase tracking-wider text-slate-400 truncate whitespace-nowrap">
                     Administrasi & Audit
                 </div>
+
+                <!-- 0. Monitoring & Rollback Pengajuan (Admin Kendali Penuh) -->
+                <a href="{{ route('admin.loans.index') }}"
+                   class="sidebar-center-on-collapse flex items-center justify-between rounded-xl h-11 transition-colors group relative select-none cursor-pointer {{ request()->routeIs('admin.loans.*') ? 'bg-blue-50 text-[#0B63B5] font-bold border border-blue-200/80 shadow-2xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium' }}"
+                   :class="sidebarCollapsed && !sidebarMobileOpen ? 'justify-center px-0' : 'px-3'">
+                    <div class="flex items-center gap-3 truncate">
+                        <div class="w-6 h-6 flex items-center justify-center shrink-0">
+                            <i data-lucide="git-pull-request" class="w-5 h-5 {{ request()->routeIs('admin.loans.*') ? 'text-[#0B63B5]' : 'text-slate-500 group-hover:text-slate-800' }}"></i>
+                        </div>
+                        <span x-show="!sidebarCollapsed || sidebarMobileOpen"
+                              x-transition:enter="transition-opacity duration-150 delay-100"
+                              x-transition:enter-start="opacity-0"
+                              x-transition:enter-end="opacity-100"
+                              x-transition:leave="transition-opacity duration-75"
+                              x-transition:leave-start="opacity-100"
+                              x-transition:leave-end="opacity-0"
+                              class="sidebar-hide-on-collapse truncate whitespace-nowrap text-sm">
+                            Monitoring & Rollback
+                        </span>
+                    </div>
+                    <span x-show="!sidebarCollapsed || sidebarMobileOpen" class="sidebar-hide-on-collapse px-1.5 py-0.5 text-[9px] bg-amber-100 text-amber-800 rounded-md font-bold uppercase">Kendali</span>
+
+                    <!-- Floating Tooltip -->
+                    <div x-show="sidebarCollapsed && !sidebarMobileOpen"
+                         x-cloak
+                         class="absolute left-full top-1/2 -translate-y-1/2 ml-3.5 px-3 py-1.5 bg-slate-900/95 text-white text-xs font-semibold rounded-xl shadow-xl whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0 transition-all duration-150 z-50 flex items-center gap-1.5">
+                        <span class="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 bg-slate-900/95 rotate-45"></span>
+                        <span class="relative z-10">Monitoring & Rollback Pengajuan</span>
+                    </div>
+                </a>
 
                 <!-- 1. Audit Aktivitas Peminjaman (Khusus Peminjaman BMN Tanpa Data Sensitif) -->
                 <a href="{{ route('audit.loans') }}"
@@ -909,6 +943,8 @@
                                         Persetujuan Ketua Tim
                                     @elseif(request()->routeIs('persetujuan.show') || request()->routeIs('approval.show'))
                                         Telaah Pengajuan
+                                    @elseif(request()->routeIs('admin.loans.*'))
+                                        Monitoring & Rollback Pengajuan
                                     @elseif(request()->routeIs('audit.loans'))
                                         Audit Peminjaman
                                     @elseif(request()->routeIs('admin.users'))
@@ -1064,7 +1100,15 @@
             </a>
 
             <!-- 3. Kanan: Riwayat / Tugas Sesuai Role -->
-            @if(auth()->user()->isPengelola())
+            @if(auth()->user()->isAdmin())
+            <a href="{{ route('admin.loans.index') }}"
+               class="flex flex-col items-center justify-center h-full transition active:scale-95 group select-none {{ request()->routeIs('admin.loans.*') ? 'text-[#0B63B5] dark:text-blue-400 font-extrabold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 font-semibold' }}">
+                <div class="p-1 rounded-xl transition {{ request()->routeIs('admin.loans.*') ? 'bg-blue-50 dark:bg-blue-950/60' : '' }}">
+                    <i data-lucide="git-pull-request" class="w-5 h-5"></i>
+                </div>
+                <span class="text-[10px] tracking-tight mt-0.5">Monitoring</span>
+            </a>
+            @elseif(auth()->user()->role === \App\Models\User::ROLE_PENGELOLA_BMN)
             <a href="{{ route('kelola.queue') }}"
                class="flex flex-col items-center justify-center h-full transition active:scale-95 group select-none {{ (request()->routeIs('kelola.*') && !request()->routeIs('kelola.import.*')) ? 'text-[#0B63B5] dark:text-blue-400 font-extrabold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 font-semibold' }}">
                 <div class="p-1 rounded-xl transition {{ (request()->routeIs('kelola.*') && !request()->routeIs('kelola.import.*')) ? 'bg-blue-50 dark:bg-blue-950/60' : '' }}">
@@ -1072,21 +1116,13 @@
                 </div>
                 <span class="text-[10px] tracking-tight mt-0.5">Antrean</span>
             </a>
-            @elseif(auth()->user()->isKetuaTim())
+            @elseif(auth()->user()->role === \App\Models\User::ROLE_KETUA_TIM_ASET)
             <a href="{{ route('persetujuan.index') }}"
                class="flex flex-col items-center justify-center h-full transition active:scale-95 group select-none {{ (request()->routeIs('persetujuan.*') || request()->routeIs('approval.*')) ? 'text-[#0B63B5] dark:text-blue-400 font-extrabold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 font-semibold' }}">
                 <div class="p-1 rounded-xl transition {{ (request()->routeIs('persetujuan.*') || request()->routeIs('approval.*')) ? 'bg-blue-50 dark:bg-blue-950/60' : '' }}">
                     <i data-lucide="check-square" class="w-5 h-5"></i>
                 </div>
                 <span class="text-[10px] tracking-tight mt-0.5">Persetujuan</span>
-            </a>
-            @elseif(auth()->user()->isAdmin())
-            <a href="{{ route('audit.loans') }}"
-               class="flex flex-col items-center justify-center h-full transition active:scale-95 group select-none {{ request()->routeIs('audit.*') ? 'text-[#0B63B5] dark:text-blue-400 font-extrabold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 font-semibold' }}">
-                <div class="p-1 rounded-xl transition {{ request()->routeIs('audit.*') ? 'bg-blue-50 dark:bg-blue-950/60' : '' }}">
-                    <i data-lucide="clipboard-check" class="w-5 h-5"></i>
-                </div>
-                <span class="text-[10px] tracking-tight mt-0.5">Audit BMN</span>
             </a>
             @else
             <a href="{{ route('loans.index') }}"

@@ -8,6 +8,7 @@ use App\Models\AuditLog;
 use App\Models\LoanItem;
 use App\Models\LoanPhoto;
 use App\Models\LoanRequest;
+use App\Models\User;
 use App\Services\LoanStateMachine;
 use Carbon\Carbon;
 use Exception;
@@ -713,32 +714,18 @@ class LoanRequestController extends Controller
 
         // Validasi ketersediaan foto fisik pendukung BAST Peminjaman (maksimal 5 foto)
         $existingPhotosCount = $loan->photos()->where('stage', 'BAST_PEMINJAMAN')->count();
-        $rawFiles = (array)$request->file('photos', []);
+        $photosBase64 = (array) $request->input('photos_base64', []);
+        $photosNames = (array) $request->input('photos_names', []);
+        $rawFiles = (array) $request->file('photos', []);
         $validFiles = array_values(array_filter($rawFiles, fn($f) => $f instanceof \Illuminate\Http\UploadedFile && $f->isValid()));
+        $totalNew = count($photosBase64) + count($validFiles);
 
-        if ($existingPhotosCount === 0 && empty($validFiles)) {
+        if ($existingPhotosCount === 0 && $totalNew === 0) {
             return back()->with('error', 'Dokumentasi foto fisik BMN wajib dilampirkan sebelum menerbitkan BAST Peminjaman agar dokumen memiliki bukti dukung fisik.');
         }
 
         try {
-            // Simpan foto dokumentasi fisik BMN (maksimal 5 foto terlampir)
-            if (!empty($validFiles)) {
-                $maxAllowed = max(1, 5 - $existingPhotosCount);
-                $filesToSave = array_slice($validFiles, 0, $maxAllowed);
-                foreach ($filesToSave as $photoFile) {
-                    $fileName = 'loan_photos/' . $loan->id . '/' . time() . '_' . Str::random(6) . '.' . $photoFile->getClientOriginalExtension();
-                    $path = $photoFile->storeAs('loan_photos/' . $loan->id, basename($fileName), 'public');
-
-                    LoanPhoto::create([
-                        'loan_request_id' => $loan->id,
-                        'stage' => 'BAST_PEMINJAMAN',
-                        'file_path' => $path,
-                        'original_name' => $photoFile->getClientOriginalName(),
-                        'caption' => 'Foto fisik BMN saat penerbitan BAST Peminjaman',
-                        'uploaded_by' => $user->id,
-                    ]);
-                }
-            }
+            $this->saveLoanPhotos($loan, $user, 'BAST_PEMINJAMAN', $photosBase64, $photosNames, $validFiles);
 
             LoanStateMachine::transition(
                 $loan,
@@ -767,25 +754,12 @@ class LoanRequestController extends Controller
         $user = Auth::user();
 
         try {
-            // Simpan foto dokumentasi jika dilampirkan
-            if ($request->hasFile('photos')) {
-                foreach ($request->file('photos') as $photoFile) {
-                    if (!$photoFile || !$photoFile->isValid()) {
-                        continue;
-                    }
-                    $fileName = 'loan_photos/' . $loan->id . '/' . time() . '_' . Str::random(6) . '.' . $photoFile->getClientOriginalExtension();
-                    $path = $photoFile->storeAs('loan_photos/' . $loan->id, basename($fileName), 'public');
-
-                    LoanPhoto::create([
-                        'loan_request_id' => $loan->id,
-                        'stage' => 'BAST_PEMINJAMAN',
-                        'file_path' => $path,
-                        'original_name' => $photoFile->getClientOriginalName(),
-                        'caption' => 'Foto dokumentasi serah terima BAST Peminjaman',
-                        'uploaded_by' => $user->id,
-                    ]);
-                }
-            }
+            // Simpan foto dokumentasi jika dilampirkan (Base64 atau biner)
+            $photosBase64 = (array) $request->input('photos_base64', []);
+            $photosNames = (array) $request->input('photos_names', []);
+            $rawFiles = (array) $request->file('photos', []);
+            $validFiles = array_values(array_filter($rawFiles, fn($f) => $f instanceof \Illuminate\Http\UploadedFile && $f->isValid()));
+            $this->saveLoanPhotos($loan, $user, 'BAST_PEMINJAMAN', $photosBase64, $photosNames, $validFiles, 'Foto serah terima fisik BAST Peminjaman');
 
             LoanStateMachine::transition(
                 $loan,
@@ -824,34 +798,21 @@ class LoanRequestController extends Controller
 
         // Validasi ketersediaan foto fisik pendukung BAST Pengembalian (maksimal 5 foto)
         $existingPhotosCount = $loan->photos()->where('stage', 'BAST_PENGEMBALIAN')->count();
-        $rawFiles = (array)$request->file('photos', []);
+        $photosBase64 = (array) $request->input('photos_base64', []);
+        $photosNames = (array) $request->input('photos_names', []);
+        $rawFiles = (array) $request->file('photos', []);
         $validFiles = array_values(array_filter($rawFiles, fn($f) => $f instanceof \Illuminate\Http\UploadedFile && $f->isValid()));
+        $totalNew = count($photosBase64) + count($validFiles);
 
-        if ($existingPhotosCount === 0 && empty($validFiles)) {
+        if ($existingPhotosCount === 0 && $totalNew === 0) {
             return back()->with('error', 'Dokumentasi foto fisik pengembalian BMN wajib dilampirkan sebelum menerbitkan BAST Pengembalian agar kondisi akhir tercatat valid.');
         }
 
         $itemsCondition = $request->input('items', []);
 
         try {
-            // Simpan foto dokumentasi fisik BMN (maksimal 5 foto terlampir)
-            if (!empty($validFiles)) {
-                $maxAllowed = max(1, 5 - $existingPhotosCount);
-                $filesToSave = array_slice($validFiles, 0, $maxAllowed);
-                foreach ($filesToSave as $photoFile) {
-                    $fileName = 'loan_photos/' . $loan->id . '/' . time() . '_' . Str::random(6) . '.' . $photoFile->getClientOriginalExtension();
-                    $path = $photoFile->storeAs('loan_photos/' . $loan->id, basename($fileName), 'public');
-
-                    LoanPhoto::create([
-                        'loan_request_id' => $loan->id,
-                        'stage' => 'BAST_PENGEMBALIAN',
-                        'file_path' => $path,
-                        'original_name' => $photoFile->getClientOriginalName(),
-                        'caption' => 'Foto dokumentasi fisik saat pengembalian BMN',
-                        'uploaded_by' => $user->id,
-                    ]);
-                }
-            }
+            // Simpan foto dokumentasi fisik BMN (Base64 atau biner)
+            $this->saveLoanPhotos($loan, $user, 'BAST_PENGEMBALIAN', $photosBase64, $photosNames, $validFiles, 'Foto dokumentasi fisik saat pengembalian BMN');
 
             LoanStateMachine::transition(
                 $loan,
@@ -909,49 +870,18 @@ class LoanRequestController extends Controller
             abort(403, 'Peran Anda tidak diizinkan untuk mengunggah foto dokumentasi.');
         }
 
-        $rawFiles = (array) $request->file('photos');
-        $cleanFiles = array_values(array_filter($rawFiles, function ($f) {
-            return $f instanceof \Illuminate\Http\UploadedFile && $f->isValid();
-        }));
-
-        $validator = \Illuminate\Support\Facades\Validator::make([
-            'stage' => $request->input('stage'),
-            'caption' => $request->input('caption'),
-            'photos' => $cleanFiles,
-        ], [
-            'stage' => 'required|in:BAST_PEMINJAMAN,BAST_PENGEMBALIAN,GENERAL',
-            'caption' => 'nullable|string|max:255',
-            'photos' => 'required|array|min:1',
-            'photos.*' => 'image|mimes:jpeg,png,jpg,webp|max:10240',
-        ], [
-            'photos.required' => 'Pilih minimal 1 berkas foto.',
-            'photos.*.image' => 'Berkas harus berupa gambar.',
-            'photos.*.max' => 'Ukuran maksimal berkas foto adalah 10 MB.',
-        ]);
-
-        if ($validator->fails()) {
-            return back()->withErrors($validator)->withInput();
-        }
-
-        $stage = $request->input('stage');
+        $stage = $request->input('stage', 'GENERAL');
         $caption = $request->input('caption');
-        $uploadedCount = 0;
+        $photosBase64 = (array) $request->input('photos_base64', []);
+        $photosNames = (array) $request->input('photos_names', []);
+        $rawFiles = (array) $request->file('photos', []);
+        $cleanFiles = array_values(array_filter($rawFiles, fn($f) => $f instanceof \Illuminate\Http\UploadedFile && $f->isValid()));
 
-        foreach ($cleanFiles as $photoFile) {
-            $fileName = 'loan_photos/' . $loan->id . '/' . time() . '_' . Str::random(6) . '.' . $photoFile->getClientOriginalExtension();
-            $path = $photoFile->storeAs('loan_photos/' . $loan->id, basename($fileName), 'public');
-
-            LoanPhoto::create([
-                'loan_request_id' => $loan->id,
-                'stage' => $stage,
-                'file_path' => $path,
-                'original_name' => $photoFile->getClientOriginalName(),
-                'caption' => $caption,
-                'uploaded_by' => $user->id,
-            ]);
-
-            $uploadedCount++;
+        if (empty($photosBase64) && empty($cleanFiles)) {
+            return back()->with('error', 'Pilih minimal 1 berkas foto dokumentasi.');
         }
+
+        $uploadedCount = $this->saveLoanPhotos($loan, $user, $stage, $photosBase64, $photosNames, $cleanFiles, $caption, 5);
 
         AuditLog::record(
             'UPLOAD_LOAN_PHOTOS',
@@ -962,6 +892,62 @@ class LoanRequestController extends Controller
         );
 
         return back()->with('success', "{$uploadedCount} foto dokumentasi BAST berhasil diunggah.");
+    }
+
+    /**
+     * Simpan kumpulan foto dokumentasi fisik BMN baik dari Base64 (kompresi klien) maupun berkas biner.
+     */
+    private function saveLoanPhotos(LoanRequest $loan, User $user, string $stage, array $photosBase64, array $photosNames, array $validFiles, ?string $caption = null, int $maxTotal = 5): int
+    {
+        $existingCount = $loan->photos()->where('stage', $stage)->count();
+        $savedCount = 0;
+        $maxAllowed = max(0, $maxTotal - $existingCount);
+
+        // 1. Simpan dari input Base64 (kompresi kanvas di sisi klien)
+        foreach ($photosBase64 as $idx => $b64String) {
+            if ($savedCount >= $maxAllowed) break;
+            if (empty($b64String) || !is_string($b64String) || !str_contains($b64String, 'base64,')) continue;
+
+            $parts = explode('base64,', $b64String);
+            $imgData = base64_decode(end($parts));
+            if ($imgData === false) continue;
+
+            $origName = $photosNames[$idx] ?? ('foto_' . strtolower($stage) . '_' . ($savedCount + 1) . '.jpg');
+            $fileName = time() . '_' . Str::random(8) . '.jpg';
+            $storagePath = 'loan_photos/' . $loan->id . '/' . $fileName;
+
+            Storage::disk('public')->put($storagePath, $imgData);
+
+            LoanPhoto::create([
+                'loan_request_id' => $loan->id,
+                'stage' => $stage,
+                'file_path' => $storagePath,
+                'original_name' => $origName,
+                'caption' => $caption ?: ($stage === 'BAST_PENGEMBALIAN' ? 'Foto dokumentasi fisik saat pengembalian BMN' : 'Foto fisik BMN saat penerbitan BAST'),
+                'uploaded_by' => $user->id,
+            ]);
+            $savedCount++;
+        }
+
+        // 2. Simpan dari file biner UploadedFile
+        foreach ($validFiles as $photoFile) {
+            if ($savedCount >= $maxAllowed) break;
+            $ext = $photoFile->getClientOriginalExtension() ?: 'jpg';
+            $fileName = time() . '_' . Str::random(8) . '.' . $ext;
+            $path = $photoFile->storeAs('loan_photos/' . $loan->id, $fileName, 'public');
+
+            LoanPhoto::create([
+                'loan_request_id' => $loan->id,
+                'stage' => $stage,
+                'file_path' => $path,
+                'original_name' => $photoFile->getClientOriginalName(),
+                'caption' => $caption ?: ($stage === 'BAST_PENGEMBALIAN' ? 'Foto dokumentasi fisik saat pengembalian BMN' : 'Foto fisik BMN saat penerbitan BAST'),
+                'uploaded_by' => $user->id,
+            ]);
+            $savedCount++;
+        }
+
+        return $savedCount;
     }
 
     /**

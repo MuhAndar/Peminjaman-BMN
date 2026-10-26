@@ -290,9 +290,6 @@
         this.photoStage = stage;
         this.photoModalOpen = true;
         this.previewPhotos = [];
-        this.photoDataTransfer = new DataTransfer();
-        const targetInput = document.getElementById('bmn_loan_photos_input');
-        if (targetInput) targetInput.files = this.photoDataTransfer.files;
         this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
     },
     openLightbox(url, title, meta) {
@@ -301,53 +298,75 @@
         this.activePhotoMeta = meta;
         this.lightboxOpen = true;
     },
-    photoDataTransfer: new DataTransfer(),
     previewPhotos: [],
-    handlePhotoSelect(e) {
+    isCompressingModal: false,
+    async handlePhotoSelect(e) {
         const input = e.target;
         const files = Array.from(input.files || []);
         if (files.length === 0) return;
         const maxPhotos = 5;
+        this.isCompressingModal = true;
 
         for (const f of files) {
             if (this.previewPhotos.length >= maxPhotos) {
                 alert('Maksimal total 5 foto dokumentasi BAST.');
                 break;
             }
-            this.photoDataTransfer.items.add(f);
-            this.previewPhotos.push({
-                file: f,
-                name: f.name,
-                size: (f.size / 1024).toFixed(0) + ' KB',
-                url: URL.createObjectURL(f)
-            });
+            try {
+                const b64 = await this.compressClientImage(f, 1280, 0.85);
+                this.previewPhotos.push({
+                    id: Date.now() + Math.random(),
+                    file: f,
+                    name: f.name || 'foto_bmn.jpg',
+                    size: (b64.length * 0.75 / 1024).toFixed(0) + ' KB',
+                    base64: b64,
+                    url: b64
+                });
+            } catch (err) {
+                console.error('Kompresi foto gagal:', err);
+            }
         }
-
-        const targetInput = document.getElementById('bmn_loan_photos_input');
-        if (targetInput) {
-            targetInput.files = this.photoDataTransfer.files;
-        }
+        this.isCompressingModal = false;
         input.value = '';
         this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
     },
+    compressClientImage(file, maxDim, quality) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                const img = new Image();
+                img.onload = () => {
+                    let w = img.width;
+                    let h = img.height;
+                    if (w > maxDim || h > maxDim) {
+                        if (w > h) {
+                            h = Math.round((h * maxDim) / w);
+                            w = maxDim;
+                        } else {
+                            w = Math.round((w * maxDim) / h);
+                            h = maxDim;
+                        }
+                    }
+                    const canvas = document.createElement('canvas');
+                    canvas.width = w;
+                    canvas.height = h;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, w, h);
+                    resolve(canvas.toDataURL('image/jpeg', quality));
+                };
+                img.onerror = reject;
+                img.src = evt.target.result;
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    },
     removePreviewPhoto(idx) {
         this.previewPhotos.splice(idx, 1);
-        const dt = new DataTransfer();
-        this.previewPhotos.forEach(p => dt.items.add(p.file));
-        this.photoDataTransfer = dt;
-        const targetInput = document.getElementById('bmn_loan_photos_input');
-        if (targetInput) {
-            targetInput.files = dt.files;
-        }
         this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
     },
     clearAllPreviewPhotos() {
         this.previewPhotos = [];
-        this.photoDataTransfer = new DataTransfer();
-        const targetInput = document.getElementById('bmn_loan_photos_input');
-        if (targetInput) {
-            targetInput.files = this.photoDataTransfer.files;
-        }
         this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
     }
 }">
@@ -1632,52 +1651,15 @@
                     @endphp
 
                     <form method="POST" action="{{ route('kelola.issue-bast', $loan->id) }}" enctype="multipart/form-data" class="space-y-4"
-                          x-data="{
-                              existingPhotos: {{ $bastPjmPhotos->count() }},
-                              dt: new DataTransfer(),
-                              filesList: [],
-                              maxPhotos: 5,
-                              handleFiles(input) {
-                                  const files = Array.from(input.files || []);
-                                  if (files.length === 0) return;
-                                  for (const f of files) {
-                                      if (this.existingPhotos + this.filesList.length >= this.maxPhotos) {
-                                          alert('Maksimal total 5 foto fisik dokumentasi BAST.');
-                                          break;
-                                      }
-                                      this.dt.items.add(f);
-                                      this.filesList.push({
-                                          file: f,
-                                          url: URL.createObjectURL(f)
-                                      });
-                                  }
-                                  const targetInput = document.getElementById('issue_bast_photos_input');
-                                  if (targetInput) targetInput.files = this.dt.files;
-                                  input.value = '';
-                                  this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
-                              },
-                              removeFile(idx) {
-                                  this.filesList.splice(idx, 1);
-                                  const newDt = new DataTransfer();
-                                  this.filesList.forEach(item => newDt.items.add(item.file));
-                                  this.dt = newDt;
-                                  const targetInput = document.getElementById('issue_bast_photos_input');
-                                  if (targetInput) targetInput.files = newDt.files;
-                                  this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
-                              },
-                              clearAll() {
-                                  this.filesList = [];
-                                  this.dt = new DataTransfer();
-                                  const targetInput = document.getElementById('issue_bast_photos_input');
-                                  if (targetInput) targetInput.files = this.dt.files;
-                                  this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
-                              },
-                              get canSubmit() {
-                                  return (this.existingPhotos > 0 || this.filesList.length > 0);
-                              }
-                          }">
+                          x-data="bastPhotoUploader({{ $bastPjmPhotos->count() }}, 5)">
                         @csrf
                         <input type="file" id="issue_bast_photos_input" name="photos[]" multiple class="hidden">
+                        <template x-for="(item, idx) in filesList" :key="item.id">
+                            <div>
+                                <input type="hidden" name="photos_base64[]" :value="item.base64">
+                                <input type="hidden" name="photos_names[]" :value="item.name">
+                            </div>
+                        </template>
 
                         <!-- Status Tanda Tangan Petugas Pengelola BMN (Wajib) -->
                         <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border {{ $hasOfficerSig ? 'border-emerald-200 dark:border-emerald-800/60' : 'border-amber-200 dark:border-amber-800/60' }} shadow-2xs space-y-3">
@@ -1891,52 +1873,15 @@
                     @endphp
 
                     <form method="POST" action="{{ route('kelola.process-return-check', $loan->id) }}" enctype="multipart/form-data" class="space-y-4"
-                          x-data="{
-                              existingPhotos: {{ $bastKblPhotos->count() }},
-                              dt: new DataTransfer(),
-                              filesList: [],
-                              maxPhotos: 5,
-                              handleFiles(input) {
-                                  const files = Array.from(input.files || []);
-                                  if (files.length === 0) return;
-                                  for (const f of files) {
-                                      if (this.existingPhotos + this.filesList.length >= this.maxPhotos) {
-                                          alert('Maksimal total 5 foto fisik pengembalian yang dapat dipilih.');
-                                          break;
-                                      }
-                                      this.dt.items.add(f);
-                                      this.filesList.push({
-                                          file: f,
-                                          url: URL.createObjectURL(f)
-                                      });
-                                  }
-                                  const targetInput = document.getElementById('return_check_photos_input');
-                                  if (targetInput) targetInput.files = this.dt.files;
-                                  input.value = '';
-                                  this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
-                              },
-                              removeFile(idx) {
-                                  this.filesList.splice(idx, 1);
-                                  const newDt = new DataTransfer();
-                                  this.filesList.forEach(item => newDt.items.add(item.file));
-                                  this.dt = newDt;
-                                  const targetInput = document.getElementById('return_check_photos_input');
-                                  if (targetInput) targetInput.files = newDt.files;
-                                  this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
-                              },
-                              clearAll() {
-                                  this.filesList = [];
-                                  this.dt = new DataTransfer();
-                                  const targetInput = document.getElementById('return_check_photos_input');
-                                  if (targetInput) targetInput.files = this.dt.files;
-                                  this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
-                              },
-                              get canSubmit() {
-                                  return (this.existingPhotos > 0 || this.filesList.length > 0);
-                              }
-                          }">
+                          x-data="bastPhotoUploader({{ $bastKblPhotos->count() }}, 5)">
                         @csrf
                         <input type="file" id="return_check_photos_input" name="photos[]" multiple class="hidden">
+                        <template x-for="(item, idx) in filesList" :key="item.id">
+                            <div>
+                                <input type="hidden" name="photos_base64[]" :value="item.base64">
+                                <input type="hidden" name="photos_names[]" :value="item.name">
+                            </div>
+                        </template>
                         @foreach($loan->items as $item)
                             <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
                                 <div class="font-bold text-xs text-slate-900">{{ $item->snap_item_name }} ({{ $item->snap_brand_model }})</div>
@@ -2424,8 +2369,14 @@
 
                 <form method="POST" action="{{ route('loans.photos.upload', $loan->id) }}" enctype="multipart/form-data" class="space-y-4">
                     @csrf
-                    <!-- Berkas Input Nyata yang Dikirimkan ke Server (Tersinkronisasi Otomatis Lewat DataTransfer) -->
+                    <!-- Berkas Input Nyata yang Dikirimkan ke Server (Didukung Base64 & UploadedFile) -->
                     <input type="file" id="bmn_loan_photos_input" name="photos[]" multiple class="hidden">
+                    <template x-for="(p, idx) in previewPhotos" :key="p.id">
+                        <div>
+                            <input type="hidden" name="photos_base64[]" :value="p.base64">
+                            <input type="hidden" name="photos_names[]" :value="p.name">
+                        </div>
+                    </template>
 
                     <!-- Stage Selector -->
                     <div>
@@ -2514,10 +2465,10 @@
                             Batal
                         </button>
                         <button type="submit"
-                                :disabled="previewPhotos.length === 0"
+                                :disabled="previewPhotos.length === 0 || isCompressingModal"
                                 class="px-5 py-2.5 bg-purple-700 hover:bg-purple-800 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-xl text-xs font-bold shadow-md transition flex items-center gap-1.5 cursor-pointer">
                             <i data-lucide="upload" class="w-4 h-4"></i>
-                            <span>Unggah Foto Dokumentasi</span>
+                            <span x-text="isCompressingModal ? 'Memproses Foto...' : 'Unggah Foto Dokumentasi'"></span>
                         </button>
                     </div>
                 </form>
@@ -2549,6 +2500,84 @@
 </div>
 
 <script>
+    function bastPhotoUploader(existingCount = 0, maxCount = 5) {
+        return {
+            existingPhotos: existingCount,
+            maxPhotos: maxCount,
+            filesList: [],
+            isCompressing: false,
+            async handleFiles(input) {
+                const files = Array.from(input.files || []);
+                if (files.length === 0) return;
+                this.isCompressing = true;
+                for (const f of files) {
+                    if (this.existingPhotos + this.filesList.length >= this.maxPhotos) {
+                        alert('Maksimal total ' + this.maxPhotos + ' foto dokumentasi fisik BAST.');
+                        break;
+                    }
+                    try {
+                        const b64 = await this.compressClientImage(f, 1280, 0.85);
+                        this.filesList.push({
+                            id: Date.now() + Math.random(),
+                            file: f,
+                            name: f.name || 'foto_bmn.jpg',
+                            size: (b64.length * 0.75 / 1024).toFixed(0) + ' KB',
+                            base64: b64,
+                            url: b64
+                        });
+                    } catch (err) {
+                        console.error('Kompresi foto gagal:', err);
+                    }
+                }
+                this.isCompressing = false;
+                input.value = '';
+                this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
+            },
+            compressClientImage(file, maxDim, quality) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = (evt) => {
+                        const img = new Image();
+                        img.onload = () => {
+                            let w = img.width;
+                            let h = img.height;
+                            if (w > maxDim || h > maxDim) {
+                                if (w > h) {
+                                h = Math.round((h * maxDim) / w);
+                                w = maxDim;
+                            } else {
+                                h = Math.round((w * maxDim) / h);
+                                w = maxDim;
+                            }
+                        }
+                        const canvas = document.createElement('canvas');
+                        canvas.width = w;
+                        canvas.height = h;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, w, h);
+                        resolve(canvas.toDataURL('image/jpeg', quality));
+                    };
+                    img.onerror = reject;
+                    img.src = evt.target.result;
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        },
+        removeFile(idx) {
+            this.filesList.splice(idx, 1);
+            this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
+        },
+        clearAll() {
+            this.filesList = [];
+            this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
+        },
+        get canSubmit() {
+            return (this.existingPhotos > 0 || this.filesList.length > 0) && !this.isCompressing;
+        }
+    };
+}
+
     function updateFileCount(input, targetId) {
         const el = document.getElementById(targetId);
         if (!el) return;
