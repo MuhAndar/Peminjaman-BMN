@@ -23,6 +23,20 @@
     selectedCategory: '',
     hideUnavailable: false,
 
+    setLoanType(type) {
+        this.loanType = type;
+        if (type === 'ANNUAL') {
+            const yr = this.startDate ? new Date(this.startDate).getFullYear() : new Date().getFullYear();
+            this.endDate = `${yr}-12-31`;
+        } else if (type === 'SHORT_TERM') {
+            if (this.startDate) {
+                const d = new Date(this.startDate);
+                d.setDate(d.getDate() + 3);
+                this.endDate = d.toISOString().split('T')[0];
+            }
+        }
+    },
+
     filterAsset(name, brandModel, nup, categoryCode, categoryLabel, plateNumber, isLoaned) {
         if (this.hideUnavailable && isLoaned) {
             return false;
@@ -336,7 +350,7 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <label class="p-4 rounded-2xl border cursor-pointer transition flex items-start gap-3"
                            :class="loanType === 'SHORT_TERM' ? 'border-[#0B63B5] bg-blue-50/40 text-slate-900 ring-2 ring-blue-500/20' : 'border-slate-200 hover:bg-slate-50 text-slate-600'">
-                        <input type="radio" name="loan_type" value="SHORT_TERM" x-model="loanType" class="mt-1 text-[#0B63B5] focus:ring-[#0B63B5]">
+                        <input type="radio" name="loan_type" value="SHORT_TERM" x-model="loanType" @change="setLoanType('SHORT_TERM')" class="mt-1 text-[#0B63B5] focus:ring-[#0B63B5]">
                         <div>
                             <strong class="block text-xs font-bold text-slate-900">Peminjaman Sementara (SHORT_TERM)</strong>
                             <p class="text-[11px] text-slate-500 mt-0.5 leading-relaxed">
@@ -347,7 +361,7 @@
 
                     <label class="p-4 rounded-2xl border cursor-pointer transition flex items-start gap-3"
                            :class="loanType === 'ANNUAL' ? 'border-[#0B63B5] bg-blue-50/40 text-slate-900 ring-2 ring-blue-500/20' : 'border-slate-200 hover:bg-slate-50 text-slate-600'">
-                        <input type="radio" name="loan_type" value="ANNUAL" x-model="loanType" class="mt-1 text-[#0B63B5] focus:ring-[#0B63B5]">
+                        <input type="radio" name="loan_type" value="ANNUAL" x-model="loanType" @change="setLoanType('ANNUAL')" class="mt-1 text-[#0B63B5] focus:ring-[#0B63B5]">
                         <div>
                             <strong class="block text-xs font-bold text-slate-900">Peminjaman Tahunan (ANNUAL)</strong>
                             <p class="text-[11px] text-slate-500 mt-0.5 leading-relaxed">
@@ -365,6 +379,7 @@
                         Tanggal Mulai Peminjaman <span class="text-red-500">*</span>
                     </label>
                     <input type="date" name="start_date" x-model="startDate" required
+                           @change="if (loanType === 'ANNUAL') setLoanType('ANNUAL')"
                            class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-[#0B63B5] focus:ring-2 focus:ring-blue-100 outline-none text-xs font-semibold">
                 </div>
 
@@ -374,6 +389,12 @@
                     </label>
                     <input type="date" name="end_date" x-model="endDate" required
                            class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-[#0B63B5] focus:ring-2 focus:ring-blue-100 outline-none text-xs font-semibold">
+                    <template x-if="loanType === 'ANNUAL'">
+                        <p class="text-[11px] text-[#0B63B5] font-semibold mt-1.5 flex items-center gap-1.5">
+                            <i data-lucide="info" class="w-3.5 h-3.5 shrink-0"></i>
+                            <span>Otomatis diset hingga akhir tahun anggaran berjalan (31 Desember) untuk re-inventarisasi aset.</span>
+                        </p>
+                    </template>
                 </div>
             </div>
 

@@ -16,6 +16,21 @@
     position: '{{ addslashes($employee->position ?? '') }}',
     phoneNumber: '{{ addslashes($employee->phone_number ?? '') }}',
 
+    setLoanType(type) {
+        this.loanType = type;
+        if (type === 'ANNUAL') {
+            const yr = this.startDate ? new Date(this.startDate).getFullYear() : new Date().getFullYear();
+            this.endDate = `${yr}-12-31`;
+        } else if (type === 'SHORT_TERM') {
+            if (this.startDate) {
+                const d = new Date(this.startDate);
+                d.setDate(d.getDate() + 3);
+                this.endDate = d.toISOString().split('T')[0];
+            }
+        }
+        this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
+    },
+
     // Search, Filter & Tampilan
     searchQuery: '',
     selectedCategory: '',
@@ -569,18 +584,18 @@ x-init="$watch('searchQuery', () => page = 1); $watch('perPage', () => page = 1)
             <div>
                 <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Jenis Peminjaman</label>
                 <div class="grid grid-cols-2 gap-3">
-                    <label class="p-3.5 rounded-2xl border cursor-pointer flex items-center gap-3"
-                           :class="loanType === 'SHORT_TERM' ? 'border-[#0B63B5] bg-blue-50/50' : 'border-slate-200'">
-                        <input type="radio" name="loan_type" value="SHORT_TERM" x-model="loanType" class="text-[#0B63B5]">
+                    <label class="p-3.5 rounded-2xl border cursor-pointer flex items-center gap-3 transition"
+                           :class="loanType === 'SHORT_TERM' ? 'border-[#0B63B5] bg-blue-50/50 ring-2 ring-blue-500/20' : 'border-slate-200 hover:bg-slate-50'">
+                        <input type="radio" name="loan_type" value="SHORT_TERM" x-model="loanType" @change="setLoanType('SHORT_TERM')" class="text-[#0B63B5]">
                         <div>
                             <span class="block text-xs font-bold text-slate-900">Sementara (SHORT_TERM)</span>
                             <span class="text-[11px] text-slate-500">Kegiatan dinas harian / perjalanan luar kota</span>
                         </div>
                     </label>
 
-                    <label class="p-3.5 rounded-2xl border cursor-pointer flex items-center gap-3"
-                           :class="loanType === 'ANNUAL' ? 'border-[#0B63B5] bg-blue-50/50' : 'border-slate-200'">
-                        <input type="radio" name="loan_type" value="ANNUAL" x-model="loanType" class="text-[#0B63B5]">
+                    <label class="p-3.5 rounded-2xl border cursor-pointer flex items-center gap-3 transition"
+                           :class="loanType === 'ANNUAL' ? 'border-[#0B63B5] bg-blue-50/50 ring-2 ring-blue-500/20' : 'border-slate-200 hover:bg-slate-50'">
+                        <input type="radio" name="loan_type" value="ANNUAL" x-model="loanType" @change="setLoanType('ANNUAL')" class="text-[#0B63B5]">
                         <div>
                             <span class="block text-xs font-bold text-slate-900">Penugasan Tahunan (ANNUAL)</span>
                             <span class="text-[11px] text-slate-500">Laptop/HP dinas selama 1 tahun anggaran berjalan</span>
@@ -593,6 +608,7 @@ x-init="$watch('searchQuery', () => page = 1); $watch('perPage', () => page = 1)
                 <div>
                     <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Tanggal Peminjaman</label>
                     <input type="date" name="start_date" x-model="startDate" required
+                           @change="if (loanType === 'ANNUAL') setLoanType('ANNUAL')"
                            class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-[#0B63B5] focus:ring-2 focus:ring-blue-100 outline-none text-sm font-medium">
                 </div>
 
@@ -600,6 +616,12 @@ x-init="$watch('searchQuery', () => page = 1); $watch('perPage', () => page = 1)
                     <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Tanggal Pengembalian</label>
                     <input type="date" name="end_date" x-model="endDate" required
                            class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-[#0B63B5] focus:ring-2 focus:ring-blue-100 outline-none text-sm font-medium">
+                    <template x-if="loanType === 'ANNUAL'">
+                        <p class="text-[11px] text-[#0B63B5] font-semibold mt-1.5 flex items-center gap-1.5">
+                            <i data-lucide="info" class="w-3.5 h-3.5 shrink-0"></i>
+                            <span>Otomatis diset hingga akhir tahun anggaran berjalan (31 Desember) untuk re-inventarisasi aset.</span>
+                        </p>
+                    </template>
                 </div>
             </div>
 
