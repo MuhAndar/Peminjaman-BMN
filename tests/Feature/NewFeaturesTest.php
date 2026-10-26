@@ -759,6 +759,14 @@ class NewFeaturesTest extends TestCase
 
         $this->actingAs($ketua);
 
+        // Verifikasi tombol Setujui & Terbitkan dalam kondisi abu-abu dan disabled di tampilan
+        $resView = $this->get(route('persetujuan.show', $loan->id));
+        $resView->assertOk();
+        $resView->assertSee('Belum Ada Tanda Tangan yang Terpasang');
+        $resView->assertSee('Setujui & Terbitkan Surat Peminjaman', false);
+        $resView->assertSee('cursor-not-allowed', false);
+        $resView->assertSee('disabled', false);
+
         // Percobaan persetujuan tanpa tanda tangan (source kosong / null)
         $response = $this->from(route('persetujuan.show', $loan->id))
             ->post(route('persetujuan.approve', $loan->id), [

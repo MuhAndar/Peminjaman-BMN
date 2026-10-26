@@ -184,10 +184,20 @@
                                class="w-full p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-emerald-300 dark:border-emerald-700/70 text-xs text-slate-900 dark:text-slate-200 outline-none focus:ring-2 focus:ring-emerald-200 dark:focus:ring-emerald-800 placeholder-slate-400 dark:placeholder-slate-500">
                     </div>
 
+                    @php
+                        $hasInitialApproverSig = (!empty($loan->approver_signature) && \Illuminate\Support\Facades\Storage::disk('public')->exists($loan->approver_signature))
+                            || (!empty(auth()->user()->signature_path) && \Illuminate\Support\Facades\Storage::disk('public')->exists(auth()->user()->signature_path));
+                    @endphp
                     <button type="button"
                             @click="handleApprovalClick($event)"
-                            class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5 cursor-pointer">
-                        <i data-lucide="badge-check" class="w-4 h-4"></i>
+                            :disabled="!sigPreviewUrl || !sigSource"
+                            :title="(!sigPreviewUrl || !sigSource) ? 'Harap bubuhkan tanda tangan digital Ketua Tim terlebih dahulu sebelum menyetujui pengajuan' : ''"
+                            :class="(!sigPreviewUrl || !sigSource)
+                                ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-slate-300 dark:border-slate-700 cursor-not-allowed shadow-inner select-none'
+                                : 'bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer shadow-sm active:scale-95'"
+                            class="px-5 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 {{ $hasInitialApproverSig ? 'bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer shadow-sm active:scale-95' : 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-slate-300 dark:border-slate-700 cursor-not-allowed shadow-inner select-none' }}"
+                            {{ !$hasInitialApproverSig ? 'disabled' : '' }}>
+                        <i data-lucide="badge-check" class="w-4 h-4" :class="(!sigPreviewUrl || !sigSource) ? 'opacity-40' : ''"></i>
                         <span>Setujui & Terbitkan Surat Peminjaman</span>
                     </button>
 
