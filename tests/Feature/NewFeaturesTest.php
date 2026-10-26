@@ -588,15 +588,22 @@ class NewFeaturesTest extends TestCase
         $response = $this->get(route('loans.show', $loan->id));
         $response->assertOk();
 
-        // 1. Verifikasi alur transisi memperjelas dokumen spesifik
+        // 1. Verifikasi alur status bagi peminjam hanya menampilkan status baku
         $response->assertSee('Menunggu Telaah Surat Peminjaman');
         $response->assertSee('Menunggu Persetujuan Surat Peminjaman');
         $response->assertSee('Surat Peminjaman Disetujui');
 
-        // 2. Verifikasi deskripsi kontekstual untuk entri yang memiliki komentar/catatan
-        $response->assertSee('Catatan Pengajuan Peminjam:');
-        $response->assertSee('Catatan Hasil Telaah Pengelola BMN:');
-        $response->assertSee('Catatan Disposisi / Persetujuan Ketua Tim:');
+        // Catatan internal pengelola dan ketua tim disembunyikan dari peminjam
+        $response->assertDontSee('Dokumen telah lengkap dan barang tersedia.');
+        $response->assertDontSee('Disposisi disetujui oleh Ketua Tim.');
+
+        // 2. Verifikasi di sisi staf pengelola BMN, seluruh catatan kontekstual terlihat lengkap
+        $this->actingAs($pengelolaUser);
+        $resPengelola = $this->get(route('loans.show', $loan->id));
+        $resPengelola->assertOk();
+        $resPengelola->assertSee('Catatan Pengajuan Peminjam:');
+        $resPengelola->assertSee('Catatan Hasil Telaah Pengelola BMN:');
+        $resPengelola->assertSee('Catatan Disposisi / Persetujuan Ketua Tim:');
     }
 
     /**
@@ -1812,6 +1819,82 @@ class NewFeaturesTest extends TestCase
             'action' => 'ADMIN_CREATE_USER',
             'actor_id' => $admin->id,
         ]);
+    }
+
+    /**
+     * Test di sisi peminjam, riwayat progres hanya menampilkan status baku dan menyembunyikan
+     * catatan pengelola/ketua tim kecuali catatan revisi atau penolakan.
+     */
+    public function test_borrower_only_sees_status_and_hides_operational_notes_except_rejection_and_revision(): void
+    {
+        $borrower = Employee::first();
+        $borrowerUser = $borrower->user;
+        $pengelola = User::where('role', 'PENGELOLA_BMN')->first();
+        $ketuaTim = User::where('role', 'KETUA_TIM_ASET')->first();
+
+        $asset = Asset::where('status', 'AVAILABLE')->first();
+
+        // 1. Buat pengajuan yang melalui telaah, revisi, dan persetujuan
+        $loan = LoanRequest::create([
+            'borrower_id' => $borrower->id,
+            'loan_type' => 'SHORT_TERM',
+            'start_date' => Carbon::now()->toDateString(),
+            'end_date' => Carbon::now()->addDays(3)->toDateString(),
+            'status' => 'DRAFT',
+            'snap_full_name' => $borrower->full_name,
+            'snap_nip' => $borrower->nip,
+        ]);
+
+        LoanItem::create([
+            'loan_request_id' => $loan->id,
+            'asset_id' => $asset->id,
+            'purpose' => 'Kegiatan dinas peminjam',
+            'condition_out' => 'Baik',
+            'snap_item_name' => $asset->item_name,
+            'is_blocking' => false,
+        ]);
+
+        // Transisi 1: SUBMITTED dengan catatan peminjam
+        LoanStateMachine::transition($loan, 'SUBMITTED', $borrowerUser, 'Catatan awal pemohon');
+
+        // Transisi 2: NEEDS_REVISION dengan catatan dari pengelola aset
+        LoanStateMachine::transition($loan, 'NEEDS_REVISION', $pengelola, 'Harap lampirkan surat tugas resmi dan perbaiki tanggal');
+
+        // Transisi 3: Peminjam ajukan kembali
+        LoanStateMachine::transition($loan, 'SUBMITTED', $borrowerUser, 'Surat tugas sudah diperbarui');
+
+        // Transisi 4: UNDER_APPROVAL dengan catatan internal pengelola
+        LoanStateMachine::transition($loan, 'UNDER_APPROVAL', $pengelola, 'CATATAN_INTERNAL_PENGELOLA_RAHASIA: Berkas fisik aman');
+
+        // Transisi 5: APPROVED dengan catatan disposisi ketua tim
+        LoanStateMachine::transition($loan, 'APPROVED', $ketuaTim, 'CATATAN_INTERNAL_KETUA_TIM: Disetujui untuk dinas');
+
+        $loan->refresh();
+
+        // 2. Akses halaman detail sebagai PEMINJAM
+        $this->actingAs($borrowerUser);
+        $resBorrower = $this->get(route('loans.show', $loan->id));
+        $resBorrower->assertOk();
+
+        // Peminjam harus melihat status bersih
+        $resBorrower->assertSee('Surat Peminjaman Disetujui');
+        $resBorrower->assertSee('Perlu Perbaikan Dokumen Peminjaman');
+
+        // Peminjam HARUS melihat catatan revisi dari pengelola
+        $resBorrower->assertSee('Harap lampirkan surat tugas resmi dan perbaiki tanggal');
+
+        // Peminjam TIDAK BOLEH melihat catatan internal telaah & disposisi
+        $resBorrower->assertDontSee('CATATAN_INTERNAL_PENGELOLA_RAHASIA');
+        $resBorrower->assertDontSee('CATATAN_INTERNAL_KETUA_TIM');
+
+        // 3. Akses halaman detail sebagai PENGELOLA BMN
+        $this->actingAs($pengelola);
+        $resPengelola = $this->get(route('loans.show', $loan->id));
+        $resPengelola->assertOk();
+
+        // Pengelola BMN dapat melihat catatan operasional internal lengkap
+        $resPengelola->assertSee('CATATAN_INTERNAL_PENGELOLA_RAHASIA');
+        $resPengelola->assertSee('CATATAN_INTERNAL_KETUA_TIM');
     }
 }
 
