@@ -22,9 +22,9 @@
     hideUnavailable: false,
     showSelectedOnly: false,
 
-    // Paginasi (Default ringkas 12 barang agar tidak perlu scroll panjang)
+    // Paginasi (Pilihan 25, 50, 100)
     page: 1,
-    perPage: 12,
+    perPage: 25,
 
     // Data Master Aset
     allAssets: {{ Js::from($assetsData) }},
@@ -344,21 +344,21 @@ x-init="$watch('searchQuery', () => page = 1); $watch('perPage', () => page = 1)
                         </button>
                     </div>
 
-                    <!-- Per-Page Selector -->
+                    <!-- Per-Page Selector (25 / 50 / 100) -->
                     <div class="flex items-center gap-1.5">
                         <label for="perPageSelect" class="text-slate-500 dark:text-slate-400 text-[11px] font-medium">Tampil:</label>
                         <select id="perPageSelect" x-model.number="perPage"
-                                class="px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-bold text-slate-700 dark:text-slate-200 text-xs outline-none focus:ring-2 focus:ring-[#0B63B5]/20 focus:border-[#0B63B5] cursor-pointer">
-                            <option value="12">12 (Ringkas)</option>
-                            <option value="24">24</option>
-                            <option value="48">48</option>
+                                class="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-bold text-slate-700 dark:text-slate-200 text-xs outline-none focus:ring-2 focus:ring-[#0B63B5]/20 focus:border-[#0B63B5] cursor-pointer">
+                            <option value="25">25</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
                         </select>
                     </div>
                 </div>
             </div>
 
-            <!-- ASSET CARDS GRID (PAGINATED & COMPACT HEIGHT) -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 max-h-[440px] sm:max-h-[480px] overflow-y-auto pr-1">
+            <!-- ASSET CARDS GRID (PAGINATED & KETINGGIAN TERBATAS SEPERTI TADI) -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 max-h-[500px] overflow-y-auto pr-1">
                 <template x-for="asset in paginatedAssets" :key="asset.id">
                     <div @click="if(asset.is_selectable) toggleAsset(asset.id)"
                          :class="isSelected(asset.id) ? 'border-[#0B63B5] dark:border-blue-500 bg-blue-50/50 dark:bg-blue-950/40 shadow-sm ring-1 ring-[#0B63B5]/30' : (asset.is_selectable ? 'border-slate-200 dark:border-slate-700/80 hover:border-slate-300 dark:hover:border-slate-600 bg-white dark:bg-[#1E293B]' : 'border-slate-200 dark:border-slate-800 bg-slate-100/90 dark:bg-[#0F172A]/90 text-slate-500 dark:text-slate-400 cursor-not-allowed')"
