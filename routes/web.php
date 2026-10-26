@@ -94,7 +94,10 @@ Route::middleware('auth')->group(function () {
         Route::get('/users', [\App\Http\Controllers\AdminController::class, 'users'])->name('users');
         Route::post('/users', [\App\Http\Controllers\AdminController::class, 'storeUser'])->name('users.store');
         Route::get('/signatories', [\App\Http\Controllers\AdminController::class, 'signatories'])->name('signatories');
+        Route::get('/statistik', [\App\Http\Controllers\AdminController::class, 'statistics'])->name('statistics');
         Route::get('/settings', [\App\Http\Controllers\AdminController::class, 'settings'])->name('settings');
+        Route::post('/settings', [\App\Http\Controllers\AdminController::class, 'updateSettings'])->name('settings.update');
+        Route::post('/settings/reset-asset', [\App\Http\Controllers\AdminController::class, 'resetSettingAsset'])->name('settings.reset-asset');
     });
 
     // Download & Preview PDF Resmi

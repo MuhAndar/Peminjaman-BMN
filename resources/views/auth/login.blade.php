@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Masuk — Sistem Peminjaman BMN BBLSDM Komdigi Makassar</title>
+    <link rel="icon" type="image/x-icon" href="{{ \App\Models\AppSetting::getFaviconUrl() }}">
+    <title>Masuk — {{ \App\Models\AppSetting::getAppName() }} {{ \App\Models\AppSetting::getAppShortName() }}</title>
     
     <!-- Typography: Plus Jakarta Sans -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -53,12 +54,16 @@
 
             <!-- Top Header on Left Panel -->
             <div class="relative z-10 flex items-center gap-3.5">
-                <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-[#0B63B5] to-[#12A8E0] text-white font-black text-xl flex items-center justify-center shadow-lg shadow-blue-500/30 border border-white/20 shrink-0">
-                    B
-                </div>
+                @if(\App\Models\AppSetting::getLogoUrl())
+                    <img src="{{ \App\Models\AppSetting::getLogoUrl() }}" alt="{{ \App\Models\AppSetting::getAppName() }}" class="w-11 h-11 object-contain rounded-2xl p-1 bg-white/90 shadow-lg border border-white/30 shrink-0">
+                @else
+                    <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-[#0B63B5] to-[#12A8E0] text-white font-black text-xl flex items-center justify-center shadow-lg shadow-blue-500/30 border border-white/20 shrink-0">
+                        {{ substr(\App\Models\AppSetting::getAppName(), 0, 1) }}
+                    </div>
+                @endif
                 <div>
                     <span class="text-xs font-extrabold uppercase tracking-widest text-cyan-300 block">Kementerian Komunikasi dan Digital RI</span>
-                    <span class="text-sm font-bold text-white tracking-tight block">BBLSDM Komdigi Makassar</span>
+                    <span class="text-sm font-bold text-white tracking-tight block">{{ \App\Models\AppSetting::getAppShortName() }}</span>
                 </div>
             </div>
 

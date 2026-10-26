@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\AppSetting;
 use App\Models\Asset;
 use App\Models\AuditLog;
 use App\Models\Document;
@@ -1896,5 +1897,115 @@ class NewFeaturesTest extends TestCase
         $resPengelola->assertSee('CATATAN_INTERNAL_PENGELOLA_RAHASIA');
         $resPengelola->assertSee('CATATAN_INTERNAL_KETUA_TIM');
     }
+
+    /**
+     * Test admin can access settings, update website identity, upload logo and favicon, and reset.
+     */
+    public function test_admin_settings_website_branding_logo_favicon_and_reset(): void
+    {
+        $admin = User::where('role', 'ADMIN')->first();
+        $peminjam = User::where('role', 'PEMINJAM')->first();
+
+        // 1. Peminjam dilarang mengakses pengaturan
+        $this->actingAs($peminjam);
+        $resForbidden = $this->get(route('admin.settings'));
+        $resForbidden->assertStatus(403);
+
+        // 2. Admin dapat mengakses halaman pengaturan
+        $this->actingAs($admin);
+        $resAdmin = $this->get(route('admin.settings'));
+        $resAdmin->assertOk();
+        $resAdmin->assertSee('Pengaturan Identitas');
+
+        // 3. Admin memperbarui identitas website & teks satker
+        Storage::fake('public');
+        $fakeLogo = UploadedFile::fake()->create('custom_logo.png', 100, 'image/png');
+        $fakeFavicon = UploadedFile::fake()->create('custom_favicon.ico', 50, 'image/x-icon');
+
+        $updateResponse = $this->post(route('admin.settings.update'), [
+            'app_name' => 'Portal Layanan BMN Modern',
+            'app_short_name' => 'BBLSDM Komdigi',
+            'satker_name' => 'Balai Besar Pelatihan SDM Komunikasi dan Digital',
+            'satker_code' => 'BBLSDM.99',
+            'satker_address' => 'Jl. Pengayoman No. 10 Makassar',
+            'app_footer_text' => '© 2026 Portal BMN Resmi',
+            'logo_file' => $fakeLogo,
+            'favicon_file' => $fakeFavicon,
+            'sla_telaah' => 45,
+            'sla_persetujuan' => 90,
+        ]);
+
+        $updateResponse->assertRedirect(route('admin.settings'));
+        $updateResponse->assertSessionHas('success');
+
+        // Verifikasi nilai tersimpan di AppSetting
+        $this->assertEquals('Portal Layanan BMN Modern', AppSetting::getAppName());
+        $this->assertEquals('BBLSDM Komdigi', AppSetting::getAppShortName());
+        $this->assertEquals('BBLSDM.99', AppSetting::getSatkerCode());
+
+        // Verifikasi file tersimpan di Storage
+        $logoPath = AppSetting::get('app_logo');
+        $favPath = AppSetting::get('app_favicon');
+        $this->assertNotNull($logoPath);
+        $this->assertNotNull($favPath);
+        Storage::disk('public')->assertExists($logoPath);
+        Storage::disk('public')->assertExists($favPath);
+
+        // Verifikasi layout merender logo dan nama baru
+        $resPage = $this->get(route('dashboard'));
+        $resPage->assertSee('Portal Layanan BMN Modern');
+
+        // 4. Reset asset logo ke default
+        $resetLogoRes = $this->post(route('admin.settings.reset-asset'), [
+            'type' => 'logo'
+        ]);
+        $resetLogoRes->assertRedirect(route('admin.settings'));
+        $this->assertNull(AppSetting::get('app_logo'));
+        Storage::disk('public')->assertMissing($logoPath);
+
+        // 5. Reset asset favicon ke default
+        $resetFavRes = $this->post(route('admin.settings.reset-asset'), [
+            'type' => 'favicon'
+        ]);
+        $resetFavRes->assertRedirect(route('admin.settings'));
+        $this->assertNull(AppSetting::get('app_favicon'));
+        Storage::disk('public')->assertMissing($favPath);
+    }
+
+    /**
+     * Test admin can access statistics and analytics page with charts and KPI.
+     */
+    public function test_admin_can_access_statistics_and_analytics_page(): void
+    {
+        $admin = User::where('role', 'ADMIN')->first();
+        $peminjam = User::where('role', 'PEMINJAM')->first();
+
+        // 1. Peminjam dilarang mengakses statistik admin
+        $this->actingAs($peminjam);
+        $resForbidden = $this->get(route('admin.statistics'));
+        $resForbidden->assertStatus(403);
+
+        // 2. Admin dapat membuka halaman statistik
+        $this->actingAs($admin);
+        $resStats = $this->get(route('admin.statistics'));
+        $resStats->assertOk();
+
+        // Verifikasi komponen KPI & Chart
+        $resStats->assertSee('Statistik');
+        $resStats->assertSee('Riwayat Peminjaman BMN');
+        $resStats->assertSee('Total Pengajuan');
+        $resStats->assertSee('Sedang Digunakan');
+        $resStats->assertSee('Selesai Kembali');
+        $resStats->assertSee('Kepatuhan Waktu');
+        $resStats->assertSee('monthlyTrendChart');
+        $resStats->assertSee('statusDoughnutChart');
+        $resStats->assertSee('categoryBarChart');
+        $resStats->assertSee('typePieChart');
+
+        // 3. Akses dengan filter tahun
+        $resYearFilter = $this->get(route('admin.statistics', ['year' => 2026]));
+        $resYearFilter->assertOk();
+    }
 }
+
 

@@ -14,6 +14,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
@@ -243,17 +244,317 @@ class AdminController extends Controller
     }
 
     /**
-     * Display system settings.
+     * Display system identity and app settings.
      */
     public function settings()
     {
         $this->authorizeAdmin();
-        $satkerCode = AppSetting::get('satker_code', 'BBLSDM.73');
-        $satkerName = AppSetting::get('satker_name', 'Balai Besar Pelatihan Sumber Daya Manusia Komunikasi dan Digital Makassar');
-        $satkerAddress = AppSetting::get('satker_address', 'Jl. Prof. Abdurrahman Basalamah II No 25 Makassar 90231');
+
+        $appName = AppSetting::getAppName();
+        $appShortName = AppSetting::getAppShortName();
+        $satkerCode = AppSetting::getSatkerCode();
+        $satkerName = AppSetting::getSatkerName();
+        $satkerAddress = AppSetting::getSatkerAddress();
+        $appFooterText = AppSetting::getFooterText();
+        $logoUrl = AppSetting::getLogoUrl();
+        $faviconUrl = AppSetting::getFaviconUrl();
+        $hasCustomLogo = !empty(AppSetting::get('app_logo'));
+        $hasCustomFavicon = !empty(AppSetting::get('app_favicon'));
         $slaMinutes = AppSetting::get('sla_minutes', []);
 
-        return view('admin.settings', compact('satkerCode', 'satkerName', 'satkerAddress', 'slaMinutes'));
+        return view('admin.settings', compact(
+            'appName',
+            'appShortName',
+            'satkerCode',
+            'satkerName',
+            'satkerAddress',
+            'appFooterText',
+            'logoUrl',
+            'faviconUrl',
+            'hasCustomLogo',
+            'hasCustomFavicon',
+            'slaMinutes'
+        ));
+    }
+
+    /**
+     * Update website identity and app settings.
+     */
+    public function updateSettings(Request $request)
+    {
+        $this->authorizeAdmin();
+
+        $validated = $request->validate([
+            'app_name' => 'required|string|max:120',
+            'app_short_name' => 'required|string|max:80',
+            'satker_name' => 'required|string|max:255',
+            'satker_code' => 'required|string|max:50',
+            'satker_address' => 'required|string|max:255',
+            'app_footer_text' => 'nullable|string|max:255',
+            'logo_file' => 'nullable|file|mimes:png,jpg,jpeg,svg,webp|max:2048',
+            'favicon_file' => 'nullable|file|mimes:ico,png,svg|max:1024',
+            'sla_telaah' => 'nullable|integer|min:1|max:1440',
+            'sla_persetujuan' => 'nullable|integer|min:1|max:1440',
+        ]);
+
+        // Upload Logo Baru jika ada
+        if ($request->hasFile('logo_file')) {
+            $logoFile = $request->file('logo_file');
+            $oldLogo = AppSetting::get('app_logo');
+            if ($oldLogo && Storage::disk('public')->exists($oldLogo)) {
+                Storage::disk('public')->delete($oldLogo);
+            }
+            $logoPath = $logoFile->store('settings', 'public');
+            AppSetting::set('app_logo', $logoPath);
+        }
+
+        // Upload Favicon Baru jika ada
+        if ($request->hasFile('favicon_file')) {
+            $favFile = $request->file('favicon_file');
+            $oldFav = AppSetting::get('app_favicon');
+            if ($oldFav && Storage::disk('public')->exists($oldFav)) {
+                Storage::disk('public')->delete($oldFav);
+            }
+            $favPath = $favFile->store('settings', 'public');
+            AppSetting::set('app_favicon', $favPath);
+        }
+
+        // Update Pengaturan Teks
+        AppSetting::set('app_name', trim($validated['app_name']));
+        AppSetting::set('app_short_name', trim($validated['app_short_name']));
+        AppSetting::set('satker_name', trim($validated['satker_name']));
+        AppSetting::set('satker_code', trim($validated['satker_code']));
+        AppSetting::set('satker_address', trim($validated['satker_address']));
+        AppSetting::set('app_footer_text', trim($validated['app_footer_text'] ?? '© 2026 BBLSDM Komunikasi dan Digital Makassar. Hak Cipta Dilindungi.'));
+
+        // Update SLA jika diisi
+        $slaMinutes = AppSetting::get('sla_minutes', []);
+        if (isset($validated['sla_telaah'])) {
+            $slaMinutes['step1'] = (int)$validated['sla_telaah'];
+        }
+        if (isset($validated['sla_persetujuan'])) {
+            $slaMinutes['step2'] = (int)$validated['sla_persetujuan'];
+        }
+        AppSetting::set('sla_minutes', $slaMinutes);
+
+        // Catat Audit Trail
+        AuditLog::create([
+            'actor_id' => auth()->id(),
+            'action' => 'ADMIN_UPDATE_SETTINGS',
+            'entity' => 'AppSetting',
+            'entity_id' => 'system',
+            'before' => null,
+            'after' => [
+                'app_name' => $validated['app_name'],
+                'app_short_name' => $validated['app_short_name'],
+                'satker_name' => $validated['satker_name'],
+            ],
+            'ip' => $request->ip(),
+        ]);
+
+        return redirect()->route('admin.settings')->with('success', 'Pengaturan identitas website dan konfigurasi sistem berhasil disimpan.');
+    }
+
+    /**
+     * Reset specific setting asset (logo or favicon) to default.
+     */
+    public function resetSettingAsset(Request $request)
+    {
+        $this->authorizeAdmin();
+
+        $type = $request->input('type');
+        if ($type === 'logo') {
+            $oldLogo = AppSetting::get('app_logo');
+            if ($oldLogo && Storage::disk('public')->exists($oldLogo)) {
+                Storage::disk('public')->delete($oldLogo);
+            }
+            AppSetting::set('app_logo', null);
+            $msg = 'Logo website berhasil direset ke ikon bawaan.';
+        } elseif ($type === 'favicon') {
+            $oldFav = AppSetting::get('app_favicon');
+            if ($oldFav && Storage::disk('public')->exists($oldFav)) {
+                Storage::disk('public')->delete($oldFav);
+            }
+            AppSetting::set('app_favicon', null);
+            $msg = 'Favicon browser berhasil direset ke favicon bawaan.';
+        } else {
+            return redirect()->route('admin.settings')->with('error', 'Tipe aset tidak valid.');
+        }
+
+        AuditLog::create([
+            'actor_id' => auth()->id(),
+            'action' => 'ADMIN_RESET_SETTING_ASSET',
+            'entity' => 'AppSetting',
+            'entity_id' => $type,
+            'ip' => $request->ip(),
+        ]);
+
+        return redirect()->route('admin.settings')->with('success', $msg);
+    }
+
+    /**
+     * Display Statistics and Analytics for BMN Loans history.
+     */
+    public function statistics(Request $request)
+    {
+        $this->authorizeAdmin();
+
+        $nowMakassar = Carbon::now('Asia/Makassar');
+        $selectedYear = (int)$request->query('year', $nowMakassar->year);
+
+        // All available years from loan requests
+        $allYears = LoanRequest::selectRaw('created_at')->get()
+            ->map(fn($l) => $l->created_at ? $l->created_at->year : null)
+            ->filter()
+            ->unique()
+            ->sortDesc()
+            ->values()
+            ->toArray();
+
+        if (empty($allYears)) {
+            $allYears = [$nowMakassar->year];
+        }
+
+        // Fetch loans according to selected year (or all years if year=0)
+        $loanQuery = LoanRequest::with(['items.asset.category', 'borrower']);
+        if ($selectedYear > 0) {
+            $loanQuery->whereYear('created_at', $selectedYear);
+        }
+        $loans = $loanQuery->get();
+
+        // 1. KPI Metrics
+        $totalLoans = $loans->count();
+        $completedLoans = $loans->where('status', 'RETURNED')->count();
+        $rejectedLoans = $loans->where('status', 'REJECTED')->count();
+        
+        // Active loans (currently running across the system)
+        $activeLoansCount = LoanRequest::whereIn('status', ['ACTIVE', 'BAST_ISSUED', 'RETURN_REQUESTED', 'RETURN_CHECKED'])->count();
+
+        // Overdue count (currently active and end_date < today)
+        $todayStr = $nowMakassar->toDateString();
+        $overdueLoansCount = LoanRequest::whereIn('status', ['ACTIVE', 'BAST_ISSUED', 'RETURN_REQUESTED', 'RETURN_CHECKED'])
+            ->where('end_date', '<', $todayStr)
+            ->count();
+
+        // On-time return rate (among returned loans in selected scope)
+        $onTimeCount = 0;
+        $returnedLoans = $loans->where('status', 'RETURNED');
+        foreach ($returnedLoans as $rLoan) {
+            $actualReturn = $rLoan->updated_at ? $rLoan->updated_at->toDateString() : $rLoan->end_date;
+            if ($actualReturn <= $rLoan->end_date) {
+                $onTimeCount++;
+            }
+        }
+        $onTimeRate = $completedLoans > 0 ? round(($onTimeCount / $completedLoans) * 100) : 100;
+
+        // Total Items Borrowed
+        $totalItemsCount = 0;
+        foreach ($loans as $l) {
+            $totalItemsCount += $l->items->count();
+        }
+
+        // Average duration (days)
+        $totalDurationDays = 0;
+        $loansWithDuration = 0;
+        foreach ($loans as $l) {
+            if ($l->start_date && $l->end_date) {
+                $start = Carbon::parse($l->start_date);
+                $end = Carbon::parse($l->end_date);
+                $diff = $start->diffInDays($end) + 1;
+                $totalDurationDays += $diff;
+                $loansWithDuration++;
+            }
+        }
+        $avgDurationDays = $loansWithDuration > 0 ? round($totalDurationDays / $loansWithDuration, 1) : 0;
+
+        // 2. Monthly Trend (Jan - Dec)
+        $monthLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+        $monthlySubmissions = array_fill(0, 12, 0);
+        $monthlyCompletions = array_fill(0, 12, 0);
+
+        foreach ($loans as $l) {
+            if ($l->created_at) {
+                $mIndex = $l->created_at->month - 1;
+                if ($mIndex >= 0 && $mIndex < 12) {
+                    $monthlySubmissions[$mIndex]++;
+                }
+            }
+        }
+
+        // Completions by month in the selected year
+        $completedInYear = LoanRequest::where('status', 'RETURNED');
+        if ($selectedYear > 0) {
+            $completedInYear->whereYear('updated_at', $selectedYear);
+        }
+        foreach ($completedInYear->get() as $cLoan) {
+            if ($cLoan->updated_at) {
+                $mIndex = $cLoan->updated_at->month - 1;
+                if ($mIndex >= 0 && $mIndex < 12) {
+                    $monthlyCompletions[$mIndex]++;
+                }
+            }
+        }
+
+        // 3. Status Distribution
+        $statusDistribution = [
+            'RETURNED' => $completedLoans,
+            'ACTIVE' => $loans->whereIn('status', ['ACTIVE', 'BAST_ISSUED'])->count(),
+            'IN_PROCESS' => $loans->whereIn('status', ['DRAFT', 'SUBMITTED', 'UNDER_APPROVAL', 'APPROVED', 'RETURN_REQUESTED', 'RETURN_CHECKED'])->count(),
+            'REJECTED' => $rejectedLoans,
+        ];
+
+        // 4. Loan Type Breakdown (SHORT_TERM vs ANNUAL)
+        $loanTypeBreakdown = [
+            'SHORT_TERM' => $loans->where('loan_type', 'SHORT_TERM')->count(),
+            'ANNUAL' => $loans->where('loan_type', 'ANNUAL')->count(),
+        ];
+
+        // 5. Category Utility / Most Borrowed Categories
+        $categoryCounts = [];
+        $categoryDurations = [];
+        foreach ($loans as $l) {
+            $dur = ($l->start_date && $l->end_date) ? (Carbon::parse($l->start_date)->diffInDays(Carbon::parse($l->end_date)) + 1) : 1;
+            foreach ($l->items as $item) {
+                $catLabel = $item->asset?->category?->label ?? 'Peralatan TIK & Multimedia';
+                $categoryCounts[$catLabel] = ($categoryCounts[$catLabel] ?? 0) + 1;
+                $categoryDurations[$catLabel][] = $dur;
+            }
+        }
+
+        arsort($categoryCounts);
+        $topCategories = array_slice($categoryCounts, 0, 6, true);
+
+        // Build category summary table data
+        $categorySummary = [];
+        foreach ($topCategories as $catLabel => $count) {
+            $durations = $categoryDurations[$catLabel] ?? [1];
+            $avgDur = round(array_sum($durations) / count($durations), 1);
+            $categorySummary[] = [
+                'label' => $catLabel,
+                'total_borrowed' => $count,
+                'avg_duration' => $avgDur,
+            ];
+        }
+
+        return view('admin.statistics', compact(
+            'selectedYear',
+            'allYears',
+            'totalLoans',
+            'activeLoansCount',
+            'completedLoans',
+            'rejectedLoans',
+            'overdueLoansCount',
+            'onTimeRate',
+            'totalItemsCount',
+            'avgDurationDays',
+            'monthLabels',
+            'monthlySubmissions',
+            'monthlyCompletions',
+            'statusDistribution',
+            'loanTypeBreakdown',
+            'topCategories',
+            'categorySummary'
+        ));
     }
 
     /**

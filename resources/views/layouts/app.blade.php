@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Peminjaman BMN') — BBLSDM Komdigi Makassar</title>
+    <link rel="icon" type="image/x-icon" href="{{ \App\Models\AppSetting::getFaviconUrl() }}">
+    <title>@yield('title', \App\Models\AppSetting::getAppName()) — {{ \App\Models\AppSetting::getAppShortName() }}</title>
 
     <!-- Theme & Sidebar Synchronous State Detection (Mencegah FOUC & Animasi Membesar/Mengecil saat Navigasi) -->
     <script>
@@ -236,9 +237,13 @@
              :class="sidebarCollapsed && !sidebarMobileOpen ? 'justify-center px-0' : 'justify-between px-4'">
             <!-- Brand Logo -->
             <a href="{{ route('dashboard') }}" class="flex items-center gap-3 overflow-hidden">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#0B63B5] to-[#12A8E0] flex items-center justify-center text-white font-black text-xl shadow-md shadow-blue-500/20 shrink-0">
-                    B
-                </div>
+                @if(\App\Models\AppSetting::getLogoUrl())
+                    <img src="{{ \App\Models\AppSetting::getLogoUrl() }}" alt="{{ \App\Models\AppSetting::getAppName() }}" class="w-10 h-10 object-contain rounded-xl shrink-0 p-0.5 bg-white shadow-2xs border border-slate-200/80 dark:border-slate-700">
+                @else
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#0B63B5] to-[#12A8E0] flex items-center justify-center text-white font-black text-xl shadow-md shadow-blue-500/20 shrink-0">
+                        {{ substr(\App\Models\AppSetting::getAppName(), 0, 1) }}
+                    </div>
+                @endif
                 <div class="sidebar-hide-on-collapse truncate whitespace-nowrap"
                      x-show="!sidebarCollapsed || sidebarMobileOpen"
                      x-transition:enter="transition-opacity duration-150 delay-75"
@@ -247,11 +252,11 @@
                      x-transition:leave="transition-opacity duration-75"
                      x-transition:leave-start="opacity-100"
                      x-transition:leave-end="opacity-0">
-                    <span class="font-extrabold text-slate-900 dark:text-white text-base tracking-tight flex items-center gap-1">
-                        BMN <span class="text-[#0B63B5] dark:text-blue-400">Makassar</span>
+                    <span class="font-extrabold text-slate-900 dark:text-white text-sm sm:text-base tracking-tight block truncate">
+                        {{ \App\Models\AppSetting::getAppName() }}
                     </span>
                     <span class="text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold block -mt-0.5 truncate">
-                        BBLSDM Komdigi
+                        {{ \App\Models\AppSetting::getAppShortName() }}
                     </span>
                 </div>
             </a>
@@ -793,12 +798,42 @@
                     </div>
                 </a>
 
-                <!-- Pejabat Penandatangan -->
-                <a href="{{ route('admin.signatories') }}"
-                   class="sidebar-center-on-collapse flex items-center rounded-xl h-11 transition-colors group relative select-none cursor-pointer {{ request()->routeIs('admin.signatories') ? 'bg-blue-50 text-[#0B63B5] font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium' }}"
+                <!-- 3. Statistik & Analitik Riwayat Peminjaman (Graph & Chart) -->
+                <a href="{{ route('admin.statistics') }}"
+                   class="sidebar-center-on-collapse flex items-center justify-between rounded-xl h-11 transition-colors group relative select-none cursor-pointer {{ request()->routeIs('admin.statistics') ? 'bg-blue-50 text-[#0B63B5] font-bold border border-blue-200/80 shadow-2xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium' }}"
+                   :class="sidebarCollapsed && !sidebarMobileOpen ? 'justify-center px-0' : 'px-3'">
+                    <div class="flex items-center gap-3 truncate">
+                        <div class="w-6 h-6 flex items-center justify-center shrink-0">
+                            <i data-lucide="bar-chart-3" class="w-5 h-5 {{ request()->routeIs('admin.statistics') ? 'text-[#0B63B5]' : 'text-slate-500 group-hover:text-slate-800' }}"></i>
+                        </div>
+                        <span x-show="!sidebarCollapsed || sidebarMobileOpen"
+                              x-transition:enter="transition-opacity duration-150 delay-100"
+                              x-transition:enter-start="opacity-0"
+                              x-transition:enter-end="opacity-100"
+                              x-transition:leave="transition-opacity duration-75"
+                              x-transition:leave-start="opacity-100"
+                              x-transition:leave-end="opacity-0"
+                              class="sidebar-hide-on-collapse truncate whitespace-nowrap text-sm">
+                            Statistik & Grafik BMN
+                        </span>
+                    </div>
+                    <span x-show="!sidebarCollapsed || sidebarMobileOpen" class="sidebar-hide-on-collapse px-1.5 py-0.5 text-[9px] bg-blue-100 text-[#0B63B5] rounded-md font-bold uppercase">Grafik</span>
+
+                    <!-- Floating Tooltip -->
+                    <div x-show="sidebarCollapsed && !sidebarMobileOpen"
+                         x-cloak
+                         class="absolute left-full top-1/2 -translate-y-1/2 ml-3.5 px-3 py-1.5 bg-slate-900/95 text-white text-xs font-semibold rounded-xl shadow-xl whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0 transition-all duration-150 z-50 flex items-center gap-1.5">
+                        <span class="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 bg-slate-900/95 rotate-45"></span>
+                        <span class="relative z-10">Statistik & Grafik History Peminjaman</span>
+                    </div>
+                </a>
+
+                <!-- Pengaturan Identitas & Website -->
+                <a href="{{ route('admin.settings') }}"
+                   class="sidebar-center-on-collapse flex items-center rounded-xl h-11 transition-colors group relative select-none cursor-pointer {{ request()->routeIs('admin.settings') ? 'bg-blue-50 text-[#0B63B5] font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium' }}"
                    :class="sidebarCollapsed && !sidebarMobileOpen ? 'justify-center px-0' : 'px-3 gap-3'">
                     <div class="w-6 h-6 flex items-center justify-center shrink-0">
-                        <i data-lucide="feather" class="w-5 h-5 {{ request()->routeIs('admin.signatories') ? 'text-[#0B63B5]' : 'text-slate-500 group-hover:text-slate-800' }}"></i>
+                        <i data-lucide="sliders" class="w-5 h-5 {{ request()->routeIs('admin.settings') ? 'text-[#0B63B5]' : 'text-slate-500 group-hover:text-slate-800' }}"></i>
                     </div>
                     <span x-show="!sidebarCollapsed || sidebarMobileOpen"
                           x-transition:enter="transition-opacity duration-150 delay-100"
@@ -808,7 +843,7 @@
                           x-transition:leave-start="opacity-100"
                           x-transition:leave-end="opacity-0"
                           class="sidebar-hide-on-collapse truncate whitespace-nowrap text-sm">
-                        Pejabat Penandatangan
+                        Pengaturan Website
                     </span>
 
                     <!-- Floating Tooltip -->
@@ -816,27 +851,9 @@
                          x-cloak
                          class="absolute left-full top-1/2 -translate-y-1/2 ml-3.5 px-3 py-1.5 bg-slate-900/95 text-white text-xs font-semibold rounded-xl shadow-xl whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0 transition-all duration-150 z-50 flex items-center gap-1.5">
                         <span class="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 bg-slate-900/95 rotate-45"></span>
-                        <span class="relative z-10">Pejabat Penandatangan</span>
+                        <span class="relative z-10">Pengaturan Identitas & Website</span>
                     </div>
                 </a>
-
-                <!-- Pengaturan Satker -->
-                <a href="{{ route('admin.settings') }}"
-                   class="sidebar-center-on-collapse flex items-center rounded-xl h-11 transition-colors group relative select-none cursor-pointer {{ request()->routeIs('admin.settings') ? 'bg-blue-50 text-[#0B63B5] font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium' }}"
-                   :class="sidebarCollapsed && !sidebarMobileOpen ? 'justify-center px-0' : 'px-3 gap-3'">
-                    <div class="w-6 h-6 flex items-center justify-center shrink-0">
-                        <i data-lucide="settings" class="w-5 h-5 {{ request()->routeIs('admin.settings') ? 'text-[#0B63B5]' : 'text-slate-500 group-hover:text-slate-800' }}"></i>
-                    </div>
-                    <span x-show="!sidebarCollapsed || sidebarMobileOpen"
-                          x-transition:enter="transition-opacity duration-150 delay-100"
-                          x-transition:enter-start="opacity-0"
-                          x-transition:enter-end="opacity-100"
-                          x-transition:leave="transition-opacity duration-75"
-                          x-transition:leave-start="opacity-100"
-                          x-transition:leave-end="opacity-0"
-                          class="sidebar-hide-on-collapse truncate whitespace-nowrap text-sm">
-                        Pengaturan Satker
-                    </span>
 
                     <!-- Floating Tooltip -->
                     <div x-show="sidebarCollapsed && !sidebarMobileOpen"
@@ -949,10 +966,10 @@
                                         Audit Peminjaman
                                     @elseif(request()->routeIs('admin.users'))
                                         Manajemen Pengguna
-                                    @elseif(request()->routeIs('admin.signatories'))
-                                        Pejabat Penandatangan
+                                    @elseif(request()->routeIs('admin.statistics'))
+                                        Statistik & Analitik
                                     @elseif(request()->routeIs('admin.settings'))
-                                        Pengaturan Satker
+                                        Pengaturan Website
                                     @elseif(request()->routeIs('admin.activity-logs') || request()->routeIs('admin.audit-logs'))
                                         Log Sistem
                                     @else
