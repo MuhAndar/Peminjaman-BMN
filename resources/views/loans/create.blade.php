@@ -15,37 +15,92 @@
     rankGrade: '{{ addslashes($employee->rank_grade ?? '') }}',
     position: '{{ addslashes($employee->position ?? '') }}',
     phoneNumber: '{{ addslashes($employee->phone_number ?? '') }}',
+
+    // Search, Filter & Tampilan
     searchQuery: '',
     selectedCategory: '',
     hideUnavailable: false,
+    showSelectedOnly: false,
 
-    filterAsset(name, brandModel, nup, categoryCode, categoryLabel, plateNumber, isLoaned) {
-        if (this.hideUnavailable && isLoaned) {
-            return false;
-        }
-        if (this.selectedCategory && categoryCode !== this.selectedCategory) {
-            return false;
-        }
-        if (this.searchQuery && this.searchQuery.trim()) {
-            const q = this.searchQuery.toLowerCase().trim();
-            const searchable = ((name || '') + ' ' + (brandModel || '') + ' ' + (nup || '') + ' ' + (plateNumber || '') + ' ' + (categoryLabel || '')).toLowerCase();
-            if (!searchable.includes(q)) {
+    // Paginasi (Rekomendasi 50 barang per halaman)
+    page: 1,
+    perPage: 50,
+
+    // Data Master Aset
+    allAssets: {{ Js::from($assetsData) }},
+
+    // Getter Filtered Assets
+    get filteredAssets() {
+        return this.allAssets.filter(asset => {
+            if (this.showSelectedOnly && !this.selectedAssets.includes(asset.id)) {
                 return false;
             }
-        }
-        return true;
+            if (this.hideUnavailable && !asset.is_selectable) {
+                return false;
+            }
+            if (this.selectedCategory && asset.category_code !== this.selectedCategory) {
+                return false;
+            }
+            if (this.searchQuery && this.searchQuery.trim()) {
+                const q = this.searchQuery.toLowerCase().trim();
+                const searchable = ((asset.item_name || '') + ' ' + (asset.brand_model || '') + ' ' + (asset.nup || '') + ' ' + (asset.plate_number || '') + ' ' + (asset.category_label || '')).toLowerCase();
+                if (!searchable.includes(q)) {
+                    return false;
+                }
+            }
+            return true;
+        });
     },
+
+    get totalPages() {
+        return Math.max(1, Math.ceil(this.filteredAssets.length / this.perPage));
+    },
+
+    get paginatedAssets() {
+        const start = (this.page - 1) * this.perPage;
+        return this.filteredAssets.slice(start, start + this.perPage);
+    },
+
+    goToPage(p) {
+        if (p >= 1 && p <= this.totalPages) {
+            this.page = p;
+            const el = document.getElementById('asset-selection-top');
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }
+    },
+
+    getPageNumbers() {
+        const current = this.page;
+        const total = this.totalPages;
+        if (total <= 7) {
+            return Array.from({ length: total }, (_, i) => i + 1);
+        }
+        if (current <= 4) {
+            return [1, 2, 3, 4, 5, '...', total];
+        }
+        if (current >= total - 3) {
+            return [1, '...', total - 4, total - 3, total - 2, total - 1, total];
+        }
+        return [1, '...', current - 1, current, current + 1, '...', total];
+    },
+
     toggleCategory(code) {
         if (this.selectedCategory === code) {
             this.selectedCategory = '';
         } else {
             this.selectedCategory = code;
         }
+        this.page = 1;
     },
+
     clearFilters() {
         this.searchQuery = '';
         this.selectedCategory = '';
         this.hideUnavailable = false;
+        this.showSelectedOnly = false;
+        this.page = 1;
     },
 
     toggleAsset(id) {
@@ -55,9 +110,15 @@
             this.selectedAssets.push(id);
         }
     },
+
     isSelected(id) {
         return this.selectedAssets.includes(id);
     },
+
+    getSelectedAssetObjects() {
+        return this.allAssets.filter(a => this.selectedAssets.includes(a.id));
+    },
+
     validateStep1() {
         if (this.selectedAssets.length === 0) {
             alert('Pilih minimal 1 barang BMN untuk melanjutkan.');
@@ -83,7 +144,8 @@
         }
         return true;
     }
-}">
+}"
+x-init="$watch('searchQuery', () => page = 1); $watch('perPage', () => page = 1); $watch('hideUnavailable', () => page = 1); $watch('showSelectedOnly', () => page = 1);">
     <!-- Top Bar / Back to List Navigation -->
     <div class="flex items-center justify-between gap-3">
         <a href="{{ url()->previous() !== url()->current() ? url()->previous() : route('loans.index') }}"
@@ -239,132 +301,219 @@
                 </div>
             </div>
 
-            <!-- ASSET CARDS GRID -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 max-h-[500px] overflow-y-auto pr-1">
-                @foreach($availableAssets as $asset)
-                    @php
-                        $opStatus = $asset->operational_status;
-                        $isSelectable = $opStatus['is_selectable'];
-                        $activeLoan = $opStatus['loan'];
-                        $isOverdue = false;
-                        $loanPeriodCompact = '';
-                        $loanEndDateStr = '';
+            <!-- ANCHOR SCROLL PAGINASI -->
+            <div id="asset-selection-top"></div>
 
-                        if ($activeLoan && $activeLoan->start_date && $activeLoan->end_date) {
-                            $todayMakassar = \Carbon\Carbon::now('Asia/Makassar')->startOfDay();
-                            $startDate = \Carbon\Carbon::parse($activeLoan->start_date)->setTimezone('Asia/Makassar');
-                            $endDate = \Carbon\Carbon::parse($activeLoan->end_date)->setTimezone('Asia/Makassar');
-                            $isOverdue = $todayMakassar->gt($endDate->copy()->startOfDay());
-                            $loanEndDateStr = $endDate->translatedFormat('d M Y');
-                            if ($startDate->year === $endDate->year) {
-                                $loanPeriodCompact = $startDate->translatedFormat('d M') . ' – ' . $endDate->translatedFormat('d M Y');
-                            } else {
-                                $loanPeriodCompact = $startDate->translatedFormat('d M Y') . ' – ' . $endDate->translatedFormat('d M Y');
-                            }
-                        }
-                    @endphp
+            <!-- PAGINATION TOOLBAR -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50 dark:bg-slate-800/60 p-3.5 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 text-xs">
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="text-slate-500 dark:text-slate-400">Menampilkan</span>
+                    <span class="font-extrabold text-slate-800 dark:text-slate-100 tabular-nums"
+                          x-text="filteredAssets.length === 0 ? '0' : (((page - 1) * perPage + 1) + ' - ' + Math.min(page * perPage, filteredAssets.length))"></span>
+                    <span class="text-slate-500 dark:text-slate-400">dari</span>
+                    <span class="font-extrabold text-slate-800 dark:text-slate-100 tabular-nums" x-text="filteredAssets.length"></span>
+                    <span class="text-slate-500 dark:text-slate-400">barang</span>
 
-                    <div x-show="filterAsset('{{ addslashes($asset->item_name) }}', '{{ addslashes($asset->brand_model_combined) }}', '{{ $asset->nup }}', '{{ $asset->category_code }}', '{{ addslashes($asset->category->label ?? '') }}', '{{ addslashes($asset->plate_number ?? '') }}', {{ !$isSelectable ? 'true' : 'false' }})"
-                         @if($isSelectable)
-                             @click="toggleAsset('{{ $asset->id }}')"
-                             :class="isSelected('{{ $asset->id }}') ? 'border-[#0B63B5] dark:border-blue-500 bg-blue-50/50 dark:bg-blue-950/40 shadow-sm ring-1 ring-[#0B63B5]/30' : 'border-slate-200 dark:border-slate-700/80 hover:border-slate-300 dark:hover:border-slate-600 bg-white dark:bg-[#1E293B]'"
-                             class="p-4 rounded-2xl border cursor-pointer transition flex items-start gap-3 select-none h-full"
-                         @else
-                             class="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-100/90 dark:bg-[#0F172A]/90 text-slate-500 dark:text-slate-400 cursor-not-allowed select-none flex items-start gap-3 shadow-2xs h-full"
-                         @endif>
+                    <!-- Quick Filter: Tampilkan Hanya yang Terpilih -->
+                    <template x-if="selectedAssets.length > 0">
+                        <button type="button" @click="showSelectedOnly = !showSelectedOnly; page = 1"
+                                :class="showSelectedOnly ? 'bg-[#0B63B5] text-white shadow-xs' : 'bg-blue-50 dark:bg-blue-950/70 text-[#0B63B5] dark:text-blue-300 border border-blue-200 dark:border-blue-800'"
+                                class="ml-1 sm:ml-2 px-2.5 py-1 rounded-lg font-bold text-[11px] transition flex items-center gap-1.5 cursor-pointer">
+                            <span class="w-1.5 h-1.5 rounded-full" :class="showSelectedOnly ? 'bg-white' : 'bg-[#0B63B5]'"></span>
+                            <span x-text="showSelectedOnly ? 'Tampilkan Semua Barang' : ('Lihat Terpilih Saja (' + selectedAssets.length + ')')"></span>
+                        </button>
+                    </template>
+                </div>
 
-                        <!-- Checkbox (tidak bisa dicek jika barang sedang dalam proses pengajuan atau dipinjam) -->
-                        <input type="checkbox" name="asset_ids[]" value="{{ $asset->id }}"
-                               @if($isSelectable)
-                                   :checked="isSelected('{{ $asset->id }}')"
-                                   class="mt-1 w-4 h-4 text-[#0B63B5] rounded border-slate-300 focus:ring-blue-500 pointer-events-none shrink-0"
-                               @else
-                                   disabled
-                                   class="mt-1 w-4 h-4 text-slate-400 rounded border-slate-300 dark:border-slate-700 bg-slate-200 dark:bg-slate-800 cursor-not-allowed pointer-events-none opacity-60 shrink-0"
-                               @endif>
+                <!-- Per-Page Selector (Rekomendasi: 50 barang per halaman) -->
+                <div class="flex items-center gap-2 self-end sm:self-auto">
+                    <label for="perPageSelect" class="text-slate-500 dark:text-slate-400 text-[11px] font-medium">Per halaman:</label>
+                    <select id="perPageSelect" x-model.number="perPage"
+                            class="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-bold text-slate-700 dark:text-slate-200 text-xs outline-none focus:ring-2 focus:ring-[#0B63B5]/20 focus:border-[#0B63B5] cursor-pointer">
+                        <option value="25">25</option>
+                        <option value="50">50 (Rekomendasi)</option>
+                        <option value="100">100</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- ASSET CARDS GRID (PAGINATED) -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 max-h-[560px] overflow-y-auto pr-1">
+                <template x-for="asset in paginatedAssets" :key="asset.id">
+                    <div @click="if(asset.is_selectable) toggleAsset(asset.id)"
+                         :class="isSelected(asset.id) ? 'border-[#0B63B5] dark:border-blue-500 bg-blue-50/50 dark:bg-blue-950/40 shadow-sm ring-1 ring-[#0B63B5]/30' : (asset.is_selectable ? 'border-slate-200 dark:border-slate-700/80 hover:border-slate-300 dark:hover:border-slate-600 bg-white dark:bg-[#1E293B]' : 'border-slate-200 dark:border-slate-800 bg-slate-100/90 dark:bg-[#0F172A]/90 text-slate-500 dark:text-slate-400 cursor-not-allowed')"
+                         :style="asset.is_selectable ? 'cursor: pointer;' : 'cursor: not-allowed;'"
+                         class="p-4 rounded-2xl border transition flex items-start gap-3 select-none h-full">
+
+                        <!-- Checkbox -->
+                        <input type="checkbox" :checked="isSelected(asset.id)" :disabled="!asset.is_selectable"
+                               class="mt-1 w-4 h-4 text-[#0B63B5] rounded border-slate-300 pointer-events-none shrink-0"
+                               :class="asset.is_selectable ? 'focus:ring-blue-500' : 'opacity-60 bg-slate-200 dark:bg-slate-800 cursor-not-allowed'">
 
                         <div class="flex-1 min-w-0">
                             <div class="flex items-start justify-between gap-2.5">
                                 <!-- Kolom Kiri: Nama Barang & Spesifikasi -->
                                 <div class="min-w-0 flex-1">
-                                    <h3 class="font-bold text-sm {{ !$isSelectable ? 'text-slate-700 dark:text-slate-300' : 'text-slate-900 dark:text-white' }} truncate" title="{{ $asset->item_name }}">
-                                        {{ $asset->item_name }}
+                                    <h3 class="font-bold text-sm truncate"
+                                        :class="!asset.is_selectable ? 'text-slate-700 dark:text-slate-300' : 'text-slate-900 dark:text-white'"
+                                        :title="asset.item_name" x-text="asset.item_name">
                                     </h3>
-                                    <p class="text-xs font-medium {{ !$isSelectable ? 'text-slate-500 dark:text-slate-400' : 'text-slate-700 dark:text-slate-300' }} mt-0.5 truncate" title="{{ $asset->brand_model_combined }}">
-                                        {{ $asset->brand_model_combined }}
+                                    <p class="text-xs font-medium mt-0.5 truncate"
+                                       :class="!asset.is_selectable ? 'text-slate-500 dark:text-slate-400' : 'text-slate-700 dark:text-slate-300'"
+                                       :title="asset.brand_model" x-text="asset.brand_model || '-'">
                                     </p>
 
                                     <div class="mt-2 text-[11px] text-slate-500 dark:text-slate-400 space-y-0.5">
-                                        @if($asset->plate_number)
-                                            <div>Plat: <strong class="text-slate-700 dark:text-slate-200">{{ $asset->plate_number }}</strong></div>
-                                        @endif
-                                        @if($asset->nup)
-                                            <div>NUP: <strong class="text-slate-700 dark:text-slate-200">{{ $asset->nup }}</strong> &bull; Thn: {{ $asset->acquisition_year }}</div>
-                                        @endif
-                                        <div>Nilai: <span class="tabular-nums font-semibold {{ !$isSelectable ? 'text-slate-700 dark:text-slate-300' : 'text-slate-800 dark:text-slate-200' }}">{{ $asset->formatted_value }}</span></div>
+                                        <template x-if="asset.plate_number">
+                                            <div>Plat: <strong class="text-slate-700 dark:text-slate-200" x-text="asset.plate_number"></strong></div>
+                                        </template>
+                                        <template x-if="asset.nup">
+                                            <div>NUP: <strong class="text-slate-700 dark:text-slate-200" x-text="asset.nup"></strong> &bull; Thn: <span x-text="asset.acquisition_year"></span></div>
+                                        </template>
+                                        <div>Nilai: <span class="tabular-nums font-semibold" :class="!asset.is_selectable ? 'text-slate-700 dark:text-slate-300' : 'text-slate-800 dark:text-slate-200'" x-text="asset.formatted_value"></span></div>
                                     </div>
                                 </div>
 
                                 <!-- Kolom Kanan: Kategori (Atas) & Status Ketersediaan / Peminjaman (Bawah) -->
                                 <div class="shrink-0 flex flex-col items-end gap-1.5 text-right">
                                     <!-- 1. Kategori Barang -->
-                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-transparent dark:border-slate-700/60 truncate max-w-[130px]" title="{{ $asset->category->label ?? '-' }}">
-                                        {{ $asset->category->label ?? '-' }}
+                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-transparent dark:border-slate-700/60 truncate max-w-[130px]"
+                                          :title="asset.category_label" x-text="asset.category_label">
                                     </span>
 
                                     <!-- 2. Status & Informasi Tanggal -->
-                                    @if($opStatus['code'] === 'PENDING_APPROVAL')
-                                        <!-- Barang sedang diajukan tapi belum terbit surat peminjaman: Tidak bisa dicek -->
+                                    <!-- PENDING_APPROVAL -->
+                                    <template x-if="asset.op_code === 'PENDING_APPROVAL'">
                                         <span class="inline-flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950/70 text-[#0B63B5] dark:text-blue-300 border border-blue-200 dark:border-blue-800/80 shadow-2xs">
                                             <span class="w-1.5 h-1.5 rounded-full bg-[#0B63B5]"></span>
                                             <span>Dalam proses pengajuan</span>
                                         </span>
-                                    @elseif($opStatus['code'] === 'ON_LOAN')
-                                        <!-- Barang sudah terbit Surat Peminjaman: Sedang Dipinjam & tampilkan tanggal -->
-                                        @if($isOverdue)
-                                            <span class="inline-flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950/70 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800/80 shadow-2xs">
-                                                <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>
-                                                <span>Belum Kembali</span>
-                                            </span>
-                                            <div class="text-[10px] text-rose-600 dark:text-rose-400 font-semibold leading-tight whitespace-nowrap">
-                                                Tenggat: {{ $loanEndDateStr }}
-                                            </div>
-                                        @else
-                                            <span class="inline-flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/80 shadow-2xs">
-                                                <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-                                                <span>Sedang Dipinjam</span>
-                                            </span>
-                                            @if($loanPeriodCompact)
-                                                <div class="text-[10px] text-slate-500 dark:text-slate-400 font-medium leading-tight whitespace-nowrap">
-                                                    {{ $loanPeriodCompact }}
+                                    </template>
+
+                                    <!-- ON_LOAN -->
+                                    <template x-if="asset.op_code === 'ON_LOAN'">
+                                        <div class="flex flex-col items-end gap-0.5">
+                                            <template x-if="asset.is_overdue">
+                                                <div class="flex flex-col items-end">
+                                                    <span class="inline-flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950/70 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800/80 shadow-2xs">
+                                                        <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>
+                                                        <span>Belum Kembali</span>
+                                                    </span>
+                                                    <div class="text-[10px] text-rose-600 dark:text-rose-400 font-semibold leading-tight whitespace-nowrap mt-0.5" x-text="'Tenggat: ' + asset.loan_end_date"></div>
                                                 </div>
-                                            @endif
-                                        @endif
-                                    @elseif($opStatus['code'] === 'AVAILABLE')
-                                        <!-- Badge Tersedia untuk Keseimbangan Grid -->
+                                            </template>
+                                            <template x-if="!asset.is_overdue">
+                                                <div class="flex flex-col items-end">
+                                                    <span class="inline-flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/80 shadow-2xs">
+                                                        <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                                                        <span>Sedang Dipinjam</span>
+                                                    </span>
+                                                    <template x-if="asset.loan_period">
+                                                        <div class="text-[10px] text-slate-500 dark:text-slate-400 font-medium leading-tight whitespace-nowrap mt-0.5" x-text="asset.loan_period"></div>
+                                                    </template>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </template>
+
+                                    <!-- AVAILABLE -->
+                                    <template x-if="asset.op_code === 'AVAILABLE'">
                                         <span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/80">
                                             <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                                             <span>Tersedia</span>
                                         </span>
-                                    @else
-                                        <span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200/80 dark:border-rose-800/80">
-                                            <span>{{ $opStatus['label'] }}</span>
-                                        </span>
-                                    @endif
+                                    </template>
+
+                                    <!-- OTHER (MAINTENANCE, RUSAK, DLL) -->
+                                    <template x-if="asset.op_code !== 'PENDING_APPROVAL' && asset.op_code !== 'ON_LOAN' && asset.op_code !== 'AVAILABLE'">
+                                        <span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200/80 dark:border-rose-800/80" x-text="asset.op_label"></span>
+                                    </template>
                                 </div>
                             </div>
                         </div>
                     </div>
-                @endforeach
+                </template>
+            </div>
+
+            <!-- EMPTY STATE JIKA PENCARIAN / FILTER KOSONG -->
+            <template x-if="filteredAssets.length === 0">
+                <div class="p-8 text-center bg-slate-50 dark:bg-slate-900/40 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 space-y-2">
+                    <div class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center mx-auto">
+                        <i data-lucide="search-x" class="w-5 h-5"></i>
+                    </div>
+                    <div class="text-xs font-bold text-slate-700 dark:text-slate-300">Tidak ada barang BMN yang cocok</div>
+                    <p class="text-[11px] text-slate-500 dark:text-slate-400">Silakan ubah kata kunci pencarian atau reset filter kategori.</p>
+                    <button type="button" @click="clearFilters()" class="text-xs font-bold text-[#0B63B5] dark:text-blue-400 hover:underline pt-1 inline-block">
+                        Reset Semua Filter
+                    </button>
+                </div>
+            </template>
+
+            <!-- PAGINATION CONTROLS (BAWAH) -->
+            <div x-show="totalPages > 1" class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
+                <div class="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                    Halaman <strong class="text-slate-800 dark:text-slate-200" x-text="page"></strong> dari <strong class="text-slate-800 dark:text-slate-200" x-text="totalPages"></strong>
+                </div>
+
+                <div class="flex items-center gap-1 self-center sm:self-auto">
+                    <!-- Tombol Halaman Pertama -->
+                    <button type="button" @click="goToPage(1)" :disabled="page === 1"
+                            class="px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold transition disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200"
+                            title="Halaman Pertama">
+                        &laquo;
+                    </button>
+
+                    <!-- Tombol Halaman Sebelumnya -->
+                    <button type="button" @click="goToPage(page - 1)" :disabled="page === 1"
+                            class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold transition disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200">
+                        Sebelumnya
+                    </button>
+
+                    <!-- Angka Halaman -->
+                    <div class="flex items-center gap-1">
+                        <template x-for="p in getPageNumbers()" :key="'page-' + p">
+                            <div>
+                                <template x-if="p === '...'">
+                                    <span class="px-2 py-1 text-xs text-slate-400 font-bold select-none">&hellip;</span>
+                                </template>
+                                <template x-if="p !== '...'">
+                                    <button type="button" @click="goToPage(p)"
+                                            :class="page === p ? 'bg-[#0B63B5] text-white border-[#0B63B5] shadow-xs' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'"
+                                            class="w-8 h-8 rounded-lg border text-xs font-extrabold transition flex items-center justify-center cursor-pointer"
+                                            x-text="p">
+                                    </button>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- Tombol Halaman Selanjutnya -->
+                    <button type="button" @click="goToPage(page + 1)" :disabled="page === totalPages"
+                            class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold transition disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200">
+                        Selanjutnya
+                    </button>
+
+                    <!-- Tombol Halaman Terakhir -->
+                    <button type="button" @click="goToPage(totalPages)" :disabled="page === totalPages"
+                            class="px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold transition disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200"
+                            title="Halaman Terakhir">
+                        &raquo;
+                    </button>
+                </div>
             </div>
 
             <!-- Bottom Selected Status -->
-            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600 flex items-center justify-between">
-                <span>Barang terpilih: <strong x-text="selectedAssets.length" class="text-[#0B63B5]"></strong> item</span>
+            <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 text-xs text-slate-600 dark:text-slate-300 flex items-center justify-between">
+                <span>Barang terpilih: <strong x-text="selectedAssets.length" class="text-[#0B63B5] dark:text-blue-400 font-extrabold"></strong> item</span>
                 <button type="button" x-show="selectedAssets.length > 0" @click="selectedAssets = []" class="text-[11px] text-red-600 hover:underline font-bold">
                     Hapus Pilihan
                 </button>
             </div>
+
+            <!-- Hidden Inputs for Selected Asset IDs Form Submission -->
+            <template x-for="id in selectedAssets" :key="'submit-asset-' + id">
+                <input type="hidden" name="asset_ids[]" :value="id">
+            </template>
         </div>
 
         <!-- STEP 2: PERIODE & KEPERLUAN -->
@@ -411,20 +560,18 @@
                 </div>
             </div>
 
-            <!-- Purpose Inputs Per Selected Asset -->
+            <!-- Purpose Inputs Per Selected Asset (Hanya Render Barang yang Terpilih) -->
             <div class="space-y-3 pt-2">
                 <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Uraian Keperluan Peminjaman</label>
-                @foreach($availableAssets as $asset)
-                    <div x-show="isSelected('{{ $asset->id }}')" class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-1.5">
-                        <div class="text-xs font-bold text-slate-800">
-                            {{ $asset->item_name }} &bull; {{ $asset->brand_model_combined }}
-                        </div>
-                        <input type="text" name="purposes[{{ $asset->id }}]"
+                <template x-for="asset in getSelectedAssetObjects()" :key="'purpose-' + asset.id">
+                    <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-1.5">
+                        <div class="text-xs font-bold text-slate-800" x-text="asset.item_name + ' • ' + (asset.brand_model || '-')"></div>
+                        <input type="text" :name="'purposes[' + asset.id + ']'"
                                placeholder="Contoh: Operasional pelatihan teknis / koordinasi dinas"
                                value="Pelaksanaan tugas kedinasan di dalam dan luar kantor"
                                class="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 focus:border-[#0B63B5] outline-none text-xs font-medium">
                     </div>
-                @endforeach
+                </template>
             </div>
         </div>
 

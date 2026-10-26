@@ -508,6 +508,12 @@ class NewFeaturesTest extends TestCase
         $response->assertSee('Kembali ke Daftar Pengajuan');
         $response->assertSee('toggleCategory');
         $response->assertSee('selectedCategory');
+        $response->assertViewHas('assetsData');
+        $response->assertSee('perPage');
+        $response->assertSee('paginatedAssets');
+        $response->assertSee('Halaman');
+        $response->assertSee('Sebelumnya');
+        $response->assertSee('Selanjutnya');
     }
 
     /**

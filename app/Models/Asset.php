@@ -151,6 +151,21 @@ class Asset extends Model
             return $this->memoizedPendingLoan;
         }
 
+        if ($this->relationLoaded('loanItems')) {
+            $this->memoizedPendingLoan = $this->loanItems
+                ->map(fn($item) => $item->loanRequest)
+                ->filter(fn($lr) => $lr && in_array($lr->status, [
+                    'DRAFT',
+                    'SUBMITTED',
+                    'UNDER_APPROVAL',
+                    'NEEDS_REVISION',
+                ]))
+                ->sortByDesc('created_at')
+                ->first();
+            $this->pendingLoanLoaded = true;
+            return $this->memoizedPendingLoan;
+        }
+
         $this->memoizedPendingLoan = LoanRequest::whereHas('items', function ($q) {
             $q->where('asset_id', $this->id);
         })->whereIn('status', [
@@ -167,6 +182,22 @@ class Asset extends Model
     public function getApprovedLoanAttribute(): ?LoanRequest
     {
         if ($this->approvedLoanLoaded) {
+            return $this->memoizedApprovedLoan;
+        }
+
+        if ($this->relationLoaded('loanItems')) {
+            $this->memoizedApprovedLoan = $this->loanItems
+                ->map(fn($item) => $item->loanRequest)
+                ->filter(fn($lr) => $lr && in_array($lr->status, [
+                    'APPROVED',
+                    'BAST_ISSUED',
+                    'ACTIVE',
+                    'RETURN_REQUESTED',
+                    'RETURN_CHECKED',
+                ]))
+                ->sortByDesc('created_at')
+                ->first();
+            $this->approvedLoanLoaded = true;
             return $this->memoizedApprovedLoan;
         }
 

@@ -139,7 +139,48 @@ class LoanRequestController extends Controller
             return $idx !== false ? (100 - $idx) : ($cat->assets_count ?? 0);
         })->take(5)->values();
 
-        return view('loans.create', compact('employee', 'availableAssets', 'selectedAssetId', 'categories', 'popularCategories'));
+        // Siapkan struktur data ringan untuk paginasi instan & hemat memori di sisi klien
+        $assetsData = $availableAssets->map(function ($asset) {
+            $opStatus = $asset->operational_status;
+            $isSelectable = $opStatus['is_selectable'];
+            $activeLoan = $opStatus['loan'];
+            $isOverdue = false;
+            $loanPeriodCompact = '';
+            $loanEndDateStr = '';
+
+            if ($activeLoan && $activeLoan->start_date && $activeLoan->end_date) {
+                $todayMakassar = \Carbon\Carbon::now('Asia/Makassar')->startOfDay();
+                $startDate = \Carbon\Carbon::parse($activeLoan->start_date)->setTimezone('Asia/Makassar');
+                $endDate = \Carbon\Carbon::parse($activeLoan->end_date)->setTimezone('Asia/Makassar');
+                $isOverdue = $todayMakassar->gt($endDate->copy()->startOfDay());
+                $loanEndDateStr = $endDate->translatedFormat('d M Y');
+                if ($startDate->year === $endDate->year) {
+                    $loanPeriodCompact = $startDate->translatedFormat('d M') . ' – ' . $endDate->translatedFormat('d M Y');
+                } else {
+                    $loanPeriodCompact = $startDate->translatedFormat('d M Y') . ' – ' . $endDate->translatedFormat('d M Y');
+                }
+            }
+
+            return [
+                'id' => (string)$asset->id,
+                'item_name' => $asset->item_name,
+                'brand_model' => $asset->brand_model_combined,
+                'nup' => $asset->nup,
+                'acquisition_year' => $asset->acquisition_year,
+                'formatted_value' => $asset->formatted_value,
+                'category_code' => $asset->category_code,
+                'category_label' => $asset->category->label ?? '-',
+                'plate_number' => $asset->plate_number,
+                'is_selectable' => $isSelectable,
+                'op_code' => $opStatus['code'],
+                'op_label' => $opStatus['label'],
+                'is_overdue' => $isOverdue,
+                'loan_period' => $loanPeriodCompact,
+                'loan_end_date' => $loanEndDateStr,
+            ];
+        });
+
+        return view('loans.create', compact('employee', 'availableAssets', 'selectedAssetId', 'categories', 'popularCategories', 'assetsData'));
     }
 
     /**
