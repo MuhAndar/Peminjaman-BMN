@@ -223,14 +223,38 @@
                             'REJECTED' => 'Ditolak',
                         ];
 
+                        $actionTranslations = [
+                            'CREATE_LOAN_DRAFT' => 'Pembuatan Draf Pengajuan',
+                            'UPDATE_LOAN_DRAFT' => 'Pembaruan Draf Pengajuan',
+                            'DELETE_LOAN_REQUEST' => 'Penghapusan Berkas Pengajuan',
+                            'TRANSITION_LOAN' => 'Transisi Status Pengajuan',
+                            'SIGN_LOAN_BORROWER' => 'Tanda Tangan Peminjam',
+                            'SIGN_LOAN_OFFICER' => 'Tanda Tangan Petugas BMN',
+                            'SIGN_LOAN_APPROVER' => 'Tanda Tangan Ketua Tim Aset',
+                            'SIGN_LOAN_borrower' => 'Tanda Tangan Peminjam (BAST)',
+                            'SIGN_LOAN_officer' => 'Tanda Tangan Petugas (BAST)',
+                            'SIGN_LOAN_approver' => 'Tanda Tangan Ketua Tim Aset',
+                            'RESET_LOAN_TO_SUBMITTED' => 'Reset Antrean ke Pengajuan',
+                            'UPLOAD_BAST_PHOTO' => 'Unggah Foto Bukti Fisik',
+                            'DELETE_BAST_PHOTO' => 'Hapus Foto Fisik',
+                            'DELETE_LOAN_PHOTO' => 'Hapus Foto Fisik',
+                            'DOWNLOAD_PDF' => 'Unduh Dokumen PDF',
+                        ];
+
                         $actionLabels = [
+                            'CREATE_LOAN_DRAFT' => ['label' => 'Pembuatan Draf Pengajuan', 'color' => 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/60 dark:text-sky-300 dark:border-sky-800', 'icon' => 'file-plus-2'],
+                            'UPDATE_LOAN_DRAFT' => ['label' => 'Pembaruan Draf Pengajuan', 'color' => 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800', 'icon' => 'file-edit'],
+                            'DELETE_LOAN_REQUEST' => ['label' => 'Penghapusan Berkas Pengajuan', 'color' => 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/60 dark:text-red-300 dark:border-red-800', 'icon' => 'trash-2'],
                             'SIGN_LOAN_borrower' => ['label' => 'Tanda Tangan Peminjam (BAST)', 'color' => 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/60 dark:text-purple-300 dark:border-purple-800', 'icon' => 'pen-tool'],
+                            'SIGN_LOAN_BORROWER' => ['label' => 'Tanda Tangan Peminjam (Draf/BAST)', 'color' => 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/60 dark:text-purple-300 dark:border-purple-800', 'icon' => 'pen-tool'],
                             'SIGN_LOAN_officer' => ['label' => 'Tanda Tangan Petugas (BAST)', 'color' => 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/60 dark:text-indigo-300 dark:border-indigo-800', 'icon' => 'pen-tool'],
+                            'SIGN_LOAN_OFFICER' => ['label' => 'Tanda Tangan Petugas BMN', 'color' => 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/60 dark:text-indigo-300 dark:border-indigo-800', 'icon' => 'pen-tool'],
                             'SIGN_LOAN_approver' => ['label' => 'Tanda Tangan Ketua Tim Aset', 'color' => 'bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-950/60 dark:text-teal-300 dark:border-teal-800', 'icon' => 'badge-check'],
                             'SIGN_LOAN_APPROVER' => ['label' => 'Tanda Tangan Ketua Tim Aset', 'color' => 'bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-950/60 dark:text-teal-300 dark:border-teal-800', 'icon' => 'badge-check'],
                             'RESET_LOAN_TO_SUBMITTED' => ['label' => 'Reset Antrean ke Pengajuan', 'color' => 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800', 'icon' => 'rotate-ccw'],
                             'UPLOAD_BAST_PHOTO' => ['label' => 'Unggah Foto Bukti Fisik', 'color' => 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800', 'icon' => 'camera'],
                             'DELETE_BAST_PHOTO' => ['label' => 'Hapus Foto Fisik', 'color' => 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/60 dark:text-red-300 dark:border-red-800', 'icon' => 'trash-2'],
+                            'DELETE_LOAN_PHOTO' => ['label' => 'Hapus Foto Fisik', 'color' => 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/60 dark:text-red-300 dark:border-red-800', 'icon' => 'trash-2'],
                             'DOWNLOAD_PDF' => ['label' => 'Unduh Dokumen PDF', 'color' => 'bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700', 'icon' => 'file-down'],
                         ];
 
@@ -246,7 +270,7 @@
                         $note = $log->after['note'] ?? null;
                         $modalDisplayAction = $isTransition
                             ? "{$fromLabel} → {$toLabel}"
-                            : ($actionInfo['label'] ?? ($toLabel ?: ucwords(str_replace('_', ' ', strtolower($log->action)))));
+                            : ($actionInfo['label'] ?? ($toLabel ?: ($actionTranslations[$log->action] ?? ucwords(str_replace('_', ' ', strtolower($log->action))))));
                     @endphp
                     <tr class="hover:bg-blue-50/30 dark:hover:bg-slate-800/50 transition-colors">
                         <!-- Waktu -->
@@ -309,7 +333,7 @@
                             @else
                                 <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
                                     <i data-lucide="activity" class="w-3.5 h-3.5 text-slate-400"></i>
-                                    <span>{{ ucwords(str_replace('_', ' ', strtolower($log->action))) }}</span>
+                                    <span>{{ $actionTranslations[$log->action] ?? ucwords(str_replace('_', ' ', strtolower($log->action))) }}</span>
                                 </span>
                             @endif
                         </td>

@@ -239,9 +239,31 @@ class LoanAuditController extends Controller
                 ? $loan->items->map(fn($it) => $it->snap_item_name . ($it->nup ? ' (NUP: ' . $it->nup . ')' : ''))->implode(', ')
                 : '-';
 
-            $fromStatus = $log->before['status'] ?? '-';
-            $toStatus = $log->after['status'] ?? '-';
-            $transition = $fromStatus . ' -> ' . $toStatus;
+            $rawFrom = $log->before['status'] ?? null;
+            $rawTo = $log->after['status'] ?? null;
+            if ($rawFrom !== null && $rawTo !== null && $rawFrom !== $rawTo) {
+                $transition = $rawFrom . ' -> ' . $rawTo;
+            } else {
+                $actionTranslations = [
+                    'CREATE_LOAN_DRAFT' => 'Pembuatan Draf Pengajuan',
+                    'UPDATE_LOAN_DRAFT' => 'Pembaruan Draf Pengajuan',
+                    'DELETE_LOAN_REQUEST' => 'Penghapusan Berkas Pengajuan',
+                    'TRANSITION_LOAN' => 'Transisi Status Pengajuan',
+                    'SIGN_LOAN_BORROWER' => 'Tanda Tangan Peminjam',
+                    'SIGN_LOAN_OFFICER' => 'Tanda Tangan Petugas BMN',
+                    'SIGN_LOAN_APPROVER' => 'Tanda Tangan Ketua Tim Aset',
+                    'SIGN_LOAN_borrower' => 'Tanda Tangan Peminjam (BAST)',
+                    'SIGN_LOAN_officer' => 'Tanda Tangan Petugas (BAST)',
+                    'SIGN_LOAN_approver' => 'Tanda Tangan Ketua Tim Aset',
+                    'RESET_LOAN_TO_SUBMITTED' => 'Reset Antrean ke Pengajuan',
+                    'UPLOAD_BAST_PHOTO' => 'Unggah Foto Bukti Fisik',
+                    'DELETE_BAST_PHOTO' => 'Hapus Foto Fisik',
+                    'DELETE_LOAN_PHOTO' => 'Hapus Foto Fisik',
+                    'DOWNLOAD_PDF' => 'Unduh Dokumen PDF',
+                ];
+                $transition = $actionTranslations[$log->action] ?? ($rawTo ?: ucwords(str_replace('_', ' ', strtolower($log->action))));
+            }
+            $toStatus = $rawTo ?? '-';
             $note = $log->after['note'] ?? '-';
             $actor = $log->actor ? $log->actor->name . ' (' . $log->actor->role . ')' : 'Sistem';
 
@@ -336,9 +358,31 @@ class LoanAuditController extends Controller
                     ? $loan->items->map(fn($it) => $it->snap_item_name . ($it->nup ? ' (NUP: ' . $it->nup . ')' : ''))->implode(', ')
                     : '-';
 
-                $fromStatus = $log->before['status'] ?? '-';
-                $toStatus = $log->after['status'] ?? '-';
-                $transition = $fromStatus . ' -> ' . $toStatus;
+                $rawFrom = $log->before['status'] ?? null;
+                $rawTo = $log->after['status'] ?? null;
+                if ($rawFrom !== null && $rawTo !== null && $rawFrom !== $rawTo) {
+                    $transition = $rawFrom . ' -> ' . $rawTo;
+                } else {
+                    $actionTranslations = [
+                        'CREATE_LOAN_DRAFT' => 'Pembuatan Draf Pengajuan',
+                        'UPDATE_LOAN_DRAFT' => 'Pembaruan Draf Pengajuan',
+                        'DELETE_LOAN_REQUEST' => 'Penghapusan Berkas Pengajuan',
+                        'TRANSITION_LOAN' => 'Transisi Status Pengajuan',
+                        'SIGN_LOAN_BORROWER' => 'Tanda Tangan Peminjam',
+                        'SIGN_LOAN_OFFICER' => 'Tanda Tangan Petugas BMN',
+                        'SIGN_LOAN_APPROVER' => 'Tanda Tangan Ketua Tim Aset',
+                        'SIGN_LOAN_borrower' => 'Tanda Tangan Peminjam (BAST)',
+                        'SIGN_LOAN_officer' => 'Tanda Tangan Petugas (BAST)',
+                        'SIGN_LOAN_approver' => 'Tanda Tangan Ketua Tim Aset',
+                        'RESET_LOAN_TO_SUBMITTED' => 'Reset Antrean ke Pengajuan',
+                        'UPLOAD_BAST_PHOTO' => 'Unggah Foto Bukti Fisik',
+                        'DELETE_BAST_PHOTO' => 'Hapus Foto Fisik',
+                        'DELETE_LOAN_PHOTO' => 'Hapus Foto Fisik',
+                        'DOWNLOAD_PDF' => 'Unduh Dokumen PDF',
+                    ];
+                    $transition = $actionTranslations[$log->action] ?? ($rawTo ?: ucwords(str_replace('_', ' ', strtolower($log->action))));
+                }
+                $toStatus = $rawTo ?? '-';
                 $note = $log->after['note'] ?? '-';
                 $actor = $log->actor ? $log->actor->name . ' (' . $log->actor->role . ')' : 'Sistem';
 
