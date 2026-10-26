@@ -116,6 +116,18 @@ class AdminAuditLogTest extends TestCase
         $resCsv->assertStatus(200);
         $this->assertTrue(str_contains($resCsv->headers->get('content-disposition'), '.csv'));
         $csvContent = $resCsv->streamedContent();
+
         $this->assertStringContainsString('Catatan telaah pengajuan', $csvContent);
+        // Pastikan kolom baru ada di header
+        $this->assertStringContainsString('Nomor Dokumen Resmi', $csvContent);
+        $this->assertStringContainsString('NIP Peminjam', $csvContent);
+        $this->assertStringContainsString('Jabatan Peminjam', $csvContent);
+        $this->assertStringContainsString('Kode Barang BMN', $csvContent);
+        $this->assertStringContainsString('Barang BMN & NUP', $csvContent);
+        $this->assertStringContainsString('Jenis & Periode Peminjaman', $csvContent);
+
+        // Pastikan UUID tidak dipotong dengan titik-titik
+        $this->assertStringContainsString('test-uuid-loan-export', $csvContent);
+        $this->assertStringNotContainsString('test-uui...', $csvContent);
     }
 }

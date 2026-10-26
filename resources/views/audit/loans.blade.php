@@ -289,11 +289,11 @@
                             @endif
                         </td>
 
-                        <!-- Peminjam & Unit Kerja -->
+                        <!-- Peminjam & Jabatan -->
                         <td class="py-3.5 px-4">
                             @if($loan)
                                 <span class="font-extrabold text-slate-900 dark:text-white block">{{ $loan->snap_full_name }}</span>
-                                <span class="text-[11px] text-slate-500 dark:text-slate-400 font-medium block truncate max-w-xs">{{ $loan->snap_unit_kerja }}</span>
+                                <span class="text-[11px] text-slate-500 dark:text-slate-400 font-medium block truncate max-w-xs">{{ $loan->snap_position ?: ($loan->snap_nip ? 'NIP ' . $loan->snap_nip : 'BBLSDM Komdigi Makassar') }}</span>
                             @else
                                 <span class="text-slate-400 dark:text-slate-500 italic">Data pengajuan diarsipkan</span>
                             @endif
@@ -340,8 +340,27 @@
 
                         <!-- Pelaksana -->
                         <td class="py-3.5 px-4 whitespace-nowrap">
-                            <span class="font-bold text-slate-900 dark:text-white block">{{ $log->actor ? $log->actor->name : 'Sistem' }}</span>
-                            <span class="text-[10px] text-slate-500 dark:text-slate-400 font-semibold block uppercase tracking-wider">{{ $log->actor ? $log->actor->role : 'SYSTEM' }}</span>
+                            @php
+                                $cleanActorName = 'Sistem';
+                                $cleanRoleLabel = 'SYSTEM';
+                                if ($log->actor) {
+                                    $rawName = trim($log->actor->name);
+                                    $roleMap = [
+                                        'PEMINJAM' => 'Peminjam',
+                                        'PENGELOLA_BMN' => 'Pengelola BMN',
+                                        'KETUA_TIM_ASET' => 'Ketua Tim Aset',
+                                        'ADMIN' => 'Administrator',
+                                    ];
+                                    $cleanRoleLabel = $roleMap[$log->actor->role] ?? $log->actor->role;
+                                    if (preg_match('/\((peminjam|pengelola|ketua tim|admin)[^)]*\)$/i', $rawName)) {
+                                        $cleanActorName = preg_replace('/\s*\([^)]*\)\s*$/', '', $rawName);
+                                    } else {
+                                        $cleanActorName = $rawName;
+                                    }
+                                }
+                            @endphp
+                            <span class="font-bold text-slate-900 dark:text-white block">{{ $cleanActorName }}</span>
+                            <span class="text-[10px] text-slate-500 dark:text-slate-400 font-semibold block uppercase tracking-wider">{{ $cleanRoleLabel }}</span>
                         </td>
 
                         <!-- Catatan Disposisi -->
@@ -370,16 +389,21 @@
                                         @click="viewDetail({{ json_encode([
                                             'id' => $log->id,
                                             'created_at' => $log->created_at ? $log->created_at->setTimezone('Asia/Makassar')->format('d/m/Y H:i') : '-',
-                                            'actor_name' => $log->actor ? $log->actor->name : 'Sistem',
-                                            'actor_role' => $log->actor ? $log->actor->role : 'SYSTEM',
+                                            'actor_name' => $cleanActorName,
+                                            'actor_role' => $cleanRoleLabel,
                                             'loan_id' => $loan ? $loan->id : $log->entity_id,
                                             'borrower_name' => $loan ? $loan->snap_full_name : '-',
-                                            'borrower_nip' => $loan ? $loan->snap_nip : '-',
-                                            'unit_kerja' => $loan ? $loan->snap_unit_kerja : '-',
-                                            'purpose' => $loan ? $loan->loan_purpose : '-',
-                                            'start_date' => $loan && $loan->loan_start_date ? $loan->loan_start_date->format('d/m/Y') : '-',
-                                            'end_date' => $loan && $loan->loan_end_date ? $loan->loan_end_date->format('d/m/Y') : '-',
-                                            'items' => $loan ? $loan->items->map(fn($it) => ['name' => $it->snap_item_name, 'code' => $it->bmn_asset_code, 'nup' => $it->nup]) : [],
+                                            'borrower_nip' => $loan ? ($loan->snap_nip ?: '-') : '-',
+                                            'position' => $loan ? ($loan->snap_position ?: '-') : '-',
+                                            'unit_kerja' => $loan ? ($loan->snap_position ?: 'BBLSDM Komdigi Makassar') : '-',
+                                            'purpose' => $loan ? ($loan->items->first()?->purpose ?: '-') : '-',
+                                            'start_date' => $loan && $loan->start_date ? $loan->start_date->format('d/m/Y') : '-',
+                                            'end_date' => $loan && $loan->end_date ? $loan->end_date->format('d/m/Y') : '-',
+                                            'items' => $loan ? $loan->items->map(fn($it) => [
+                                                'name' => $it->snap_item_name,
+                                                'code' => $it->asset?->bmn_code ?: '-',
+                                                'nup' => $it->snap_nup ?: ($it->asset?->nup ?: '-')
+                                            ]) : [],
                                             'from_status' => $fromLabel,
                                             'to_status' => $toLabel,
                                             'is_transition' => $isTransition,
@@ -502,8 +526,8 @@
                                 <span class="font-bold text-slate-900 dark:text-white block" x-text="selectedLog ? selectedLog.borrower_name : '-'"></span>
                             </div>
                             <div>
-                                <span class="text-[10px] text-slate-400 dark:text-slate-500 font-bold block">Unit Kerja:</span>
-                                <span class="text-slate-700 dark:text-slate-300 block" x-text="selectedLog ? selectedLog.unit_kerja : '-'"></span>
+                                <span class="text-[10px] text-slate-400 dark:text-slate-500 font-bold block">Jabatan & NIP:</span>
+                                <span class="text-slate-700 dark:text-slate-300 block font-medium" x-text="selectedLog ? ((selectedLog.position !== '-' ? selectedLog.position : 'Pegawai BBLSDM') + (selectedLog.borrower_nip !== '-' ? ' • NIP ' + selectedLog.borrower_nip : '')) : '-'"></span>
                             </div>
                             <div>
                                 <span class="text-[10px] text-slate-400 dark:text-slate-500 font-bold block">Keperluan:</span>
