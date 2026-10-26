@@ -290,6 +290,9 @@
         this.photoStage = stage;
         this.photoModalOpen = true;
         this.previewPhotos = [];
+        this.photoDataTransfer = new DataTransfer();
+        const targetInput = document.getElementById('bmn_loan_photos_input');
+        if (targetInput) targetInput.files = this.photoDataTransfer.files;
         this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
     },
     openLightbox(url, title, meta) {
@@ -298,14 +301,54 @@
         this.activePhotoMeta = meta;
         this.lightboxOpen = true;
     },
+    photoDataTransfer: new DataTransfer(),
     previewPhotos: [],
     handlePhotoSelect(e) {
-        const files = Array.from(e.target.files);
+        const input = e.target;
+        const files = Array.from(input.files || []);
+        if (files.length === 0) return;
+        const maxPhotos = 5;
+
+        for (const f of files) {
+            if (this.previewPhotos.length >= maxPhotos) {
+                alert('Maksimal total 5 foto dokumentasi BAST.');
+                break;
+            }
+            this.photoDataTransfer.items.add(f);
+            this.previewPhotos.push({
+                file: f,
+                name: f.name,
+                size: (f.size / 1024).toFixed(0) + ' KB',
+                url: URL.createObjectURL(f)
+            });
+        }
+
+        const targetInput = document.getElementById('bmn_loan_photos_input');
+        if (targetInput) {
+            targetInput.files = this.photoDataTransfer.files;
+        }
+        input.value = '';
+        this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
+    },
+    removePreviewPhoto(idx) {
+        this.previewPhotos.splice(idx, 1);
+        const dt = new DataTransfer();
+        this.previewPhotos.forEach(p => dt.items.add(p.file));
+        this.photoDataTransfer = dt;
+        const targetInput = document.getElementById('bmn_loan_photos_input');
+        if (targetInput) {
+            targetInput.files = dt.files;
+        }
+        this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
+    },
+    clearAllPreviewPhotos() {
         this.previewPhotos = [];
-        files.forEach(f => {
-            const url = URL.createObjectURL(f);
-            this.previewPhotos.push({ name: f.name, size: (f.size / 1024).toFixed(0) + ' KB', url: url });
-        });
+        this.photoDataTransfer = new DataTransfer();
+        const targetInput = document.getElementById('bmn_loan_photos_input');
+        if (targetInput) {
+            targetInput.files = this.photoDataTransfer.files;
+        }
+        this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
     }
 }">
     <!-- Breadcrumb & Top Bar -->
@@ -356,6 +399,113 @@
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <!-- LEFT COLUMN: Details, Items, Actions -->
         <div class="lg:col-span-8 space-y-6">
+            {{-- 1. BANNER OVERDUE / JATUH TEMPO (Khusus status ACTIVE / RETURN_REQUESTED yang melewati tanggal tenggat) --}}
+            @if($loan->isOverdue())
+                <div class="rounded-3xl border-2 border-red-500 bg-red-50/90 dark:bg-rose-950/60 p-6 shadow-md space-y-4 animate-in fade-in">
+                    <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                        <div class="flex items-start gap-3.5">
+                            <div class="w-11 h-11 rounded-2xl bg-red-600 text-white flex items-center justify-center shrink-0 shadow-sm animate-pulse">
+                                <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-base font-black text-red-950 dark:text-red-100 flex items-center gap-2">
+                                    <span>PERINGATAN: Peminjaman BMN Ini Telah Lewat Tenggat Batas Waktu!</span>
+                                </h3>
+                                <p class="text-xs text-red-800 dark:text-rose-200 mt-1 leading-relaxed">
+                                    Masa peminjaman barang inventaris ini telah melewati tanggal pengembalian (Jatuh tempo: <strong class="underline">{{ \App\Helpers\FormatHelper::formatDateIndo($loan->end_date) }}</strong>). 
+                                    Harap segera serahkan fisik barang BMN ke Petugas Pengelola BMN di kantor untuk penyelesaian administrasi BAST Pengembalian.
+                                </p>
+                            </div>
+                        </div>
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-red-600 text-white shadow-xs self-start shrink-0">
+                            <i data-lucide="alarm-clock" class="w-3.5 h-3.5"></i>
+                            <span>Lewat Tenggat</span>
+                        </span>
+                    </div>
+
+                    @if($loan->status === 'ACTIVE' && ($isOwner || $user->isAdmin()))
+                        <div class="pt-2 border-t border-red-200 dark:border-rose-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <span class="text-xs font-semibold text-red-900 dark:text-rose-200">
+                                Sudah membawa fisik barang ke kantor? Klik tombol di samping untuk memulai proses serah terima:
+                            </span>
+                            <form method="POST" action="{{ route('loans.request-return', $loan->id) }}">
+                                @csrf
+                                <button type="submit"
+                                        data-confirm="Apakah Anda yakin ingin mengajukan pengembalian fisik BMN ini ke Petugas BMN di kantor sekarang?"
+                                        data-confirm-title="Pengembalian BMN Lewat Tenggat"
+                                        data-confirm-btn="Ya, Ajukan Pengembalian Sekarang"
+                                        data-confirm-type="danger"
+                                        class="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-extrabold shadow-md transition flex items-center gap-2 cursor-pointer active:scale-95 shrink-0">
+                                    <i data-lucide="package-open" class="w-4 h-4"></i>
+                                    <span>Ajukan Pengembalian Sekarang</span>
+                                </button>
+                            </form>
+                        </div>
+                    @endif
+                </div>
+            {{-- 2. BANNER STATUS ACTIVE NORMAL (Belum Lewat Tenggat) --}}
+            @elseif($loan->status === 'ACTIVE')
+                <div class="rounded-3xl border-2 border-emerald-400 dark:border-emerald-700/80 bg-emerald-50/70 dark:bg-emerald-950/40 p-6 shadow-sm space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                        <div class="flex items-start gap-3.5">
+                            <div class="w-10 h-10 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                                <i data-lucide="package-check" class="w-5 h-5"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-base font-black text-emerald-950 dark:text-emerald-100">
+                                    BMN Sedang Dalam Peminjaman Aktif (BAST Peminjaman Selesai)
+                                </h3>
+                                <p class="text-xs text-emerald-800 dark:text-emerald-200 mt-1 leading-relaxed">
+                                    Fisik barang berada dalam tanggung jawab peminjam hingga <strong>{{ \App\Helpers\FormatHelper::formatDateIndo($loan->end_date) }}</strong>. 
+                                    Jika kegiatan dinas telah selesai atau barang akan dikembalikan, silakan klik tombol ajukan pengembalian di bawah.
+                                </p>
+                            </div>
+                        </div>
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700 self-start shrink-0">
+                            <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-600"></i>
+                            <span>Peminjaman Aktif</span>
+                        </span>
+                    </div>
+
+                    @if($isOwner && ($user->isPeminjam() || $user->isAdmin()))
+                        <div class="pt-2 border-t border-emerald-200/80 dark:border-emerald-800/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <span class="text-xs font-semibold text-emerald-900 dark:text-emerald-200">
+                                Sudah selesai menggunakan barang inventaris?
+                            </span>
+                            <form method="POST" action="{{ route('loans.request-return', $loan->id) }}">
+                                @csrf
+                                <button type="submit"
+                                        data-confirm="Apakah Anda yakin ingin mengajukan pengembalian fisik BMN ini ke Petugas BMN di kantor?"
+                                        data-confirm-title="Pengembalian BMN"
+                                        data-confirm-btn="Ya, Ajukan Pengembalian"
+                                        data-confirm-type="warning"
+                                        class="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-2 cursor-pointer active:scale-95 shrink-0">
+                                    <i data-lucide="package-open" class="w-4 h-4"></i>
+                                    <span>Ajukan Pengembalian Fisik BMN ke Kantor</span>
+                                </button>
+                            </form>
+                        </div>
+                    @endif
+                </div>
+            {{-- 3. BANNER RETURN_REQUESTED (Pengembalian Sedang Menunggu Pemeriksaan Pengelola) --}}
+            @elseif($loan->status === 'RETURN_REQUESTED')
+                <div class="rounded-3xl border-2 border-blue-300 dark:border-blue-700/80 bg-blue-50/70 dark:bg-blue-950/40 p-6 shadow-sm space-y-3">
+                    <div class="flex items-start gap-3.5">
+                        <div class="w-10 h-10 rounded-2xl bg-[#0B63B5] text-white flex items-center justify-center shrink-0 shadow-xs">
+                            <i data-lucide="package-open" class="w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-base font-black text-slate-900 dark:text-white">
+                                Pengembalian Fisik BMN Sedang Diajukan (SOP Pengembalian Langkah 1 & 2)
+                            </h3>
+                            <p class="text-xs text-slate-600 dark:text-slate-300 mt-1 leading-relaxed">
+                                Peminjam telah mengajukan pengembalian. Silakan serahkan fisik barang BMN ke Petugas Pengelola BMN di kantor untuk pemeriksaan kesesuaian fisik dan penerbitan dokumen resmi Berita Acara Serah Terima (BAST) Pengembalian.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
             @if(in_array($loan->status, ['DRAFT', 'NEEDS_REVISION']) && ($isOwner || $user->isAdmin()))
                 @php
                     $hasBorrowerSig = !empty($loan->borrower_signature) && \Illuminate\Support\Facades\Storage::disk('public')->exists($loan->borrower_signature);
@@ -1484,30 +1634,50 @@
                     <form method="POST" action="{{ route('kelola.issue-bast', $loan->id) }}" enctype="multipart/form-data" class="space-y-4"
                           x-data="{
                               existingPhotos: {{ $bastPjmPhotos->count() }},
-                              selectedCount: 0,
-                              previewUrls: [],
+                              dt: new DataTransfer(),
+                              filesList: [],
                               maxPhotos: 5,
                               handleFiles(input) {
                                   const files = Array.from(input.files || []);
                                   if (files.length === 0) return;
-                                  if (this.existingPhotos + files.length > this.maxPhotos) {
-                                      alert('Maksimal total 5 foto fisik dokumentasi BAST. Sistem membatasi foto yang dipilih.');
+                                  for (const f of files) {
+                                      if (this.existingPhotos + this.filesList.length >= this.maxPhotos) {
+                                          alert('Maksimal total 5 foto fisik dokumentasi BAST.');
+                                          break;
+                                      }
+                                      this.dt.items.add(f);
+                                      this.filesList.push({
+                                          file: f,
+                                          url: URL.createObjectURL(f)
+                                      });
                                   }
-                                  const validFiles = files.slice(0, Math.max(1, this.maxPhotos - this.existingPhotos));
-                                  this.selectedCount = validFiles.length;
-                                  this.previewUrls = [];
-                                  validFiles.forEach(file => {
-                                      const reader = new FileReader();
-                                      reader.onload = (e) => { this.previewUrls.push(e.target.result); };
-                                      reader.readAsDataURL(file);
-                                  });
+                                  const targetInput = document.getElementById('issue_bast_photos_input');
+                                  if (targetInput) targetInput.files = this.dt.files;
+                                  input.value = '';
+                                  this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
+                              },
+                              removeFile(idx) {
+                                  this.filesList.splice(idx, 1);
+                                  const newDt = new DataTransfer();
+                                  this.filesList.forEach(item => newDt.items.add(item.file));
+                                  this.dt = newDt;
+                                  const targetInput = document.getElementById('issue_bast_photos_input');
+                                  if (targetInput) targetInput.files = newDt.files;
+                                  this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
+                              },
+                              clearAll() {
+                                  this.filesList = [];
+                                  this.dt = new DataTransfer();
+                                  const targetInput = document.getElementById('issue_bast_photos_input');
+                                  if (targetInput) targetInput.files = this.dt.files;
                                   this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
                               },
                               get canSubmit() {
-                                  return (this.existingPhotos > 0 || this.selectedCount > 0);
+                                  return (this.existingPhotos > 0 || this.filesList.length > 0);
                               }
                           }">
                         @csrf
+                        <input type="file" id="issue_bast_photos_input" name="photos[]" multiple class="hidden">
 
                         <!-- Status Tanda Tangan Petugas Pengelola BMN (Wajib) -->
                         <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border {{ $hasOfficerSig ? 'border-emerald-200 dark:border-emerald-800/60' : 'border-amber-200 dark:border-amber-800/60' }} shadow-2xs space-y-3">
@@ -1598,27 +1768,35 @@
                                 <label class="cursor-pointer px-3.5 py-1.5 bg-white dark:bg-slate-900 border border-cyan-300 dark:border-cyan-700 hover:bg-cyan-50 dark:hover:bg-cyan-900/40 text-cyan-800 dark:text-cyan-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs">
                                     <i data-lucide="camera" class="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400"></i>
                                     <span>Jepret Kamera</span>
-                                    <input type="file" name="photos[]" accept="image/*" capture="environment" class="hidden" @change="handleFiles($event.target)">
+                                    <input type="file" accept="image/*" capture="environment" class="hidden" @change="handleFiles($event.target)">
                                 </label>
                                 <label class="cursor-pointer px-3.5 py-1.5 bg-white dark:bg-slate-900 border border-cyan-300 dark:border-cyan-700 hover:bg-cyan-50 dark:hover:bg-cyan-900/40 text-cyan-800 dark:text-cyan-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs">
                                     <i data-lucide="images" class="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400"></i>
                                     <span>Pilih dari Galeri</span>
-                                    <input type="file" name="photos[]" accept="image/*" multiple class="hidden" @change="handleFiles($event.target)">
+                                    <input type="file" accept="image/*" multiple class="hidden" @change="handleFiles($event.target)">
                                 </label>
                                 <span class="text-xs font-medium"
-                                      :class="selectedCount > 0 ? 'text-emerald-700 dark:text-emerald-300 font-bold' : 'text-slate-500 dark:text-slate-400 italic'"
-                                      x-text="selectedCount > 0 ? selectedCount + ' foto baru dipilih (Maks. 5 foto)' : (existingPhotos > 0 ? existingPhotos + ' foto sudah tersimpan di sistem' : 'Belum ada foto dipilih')">
+                                      :class="filesList.length > 0 ? 'text-emerald-700 dark:text-emerald-300 font-bold' : 'text-slate-500 dark:text-slate-400 italic'"
+                                      x-text="filesList.length > 0 ? filesList.length + ' foto baru dipilih (Maks. 5 foto)' : (existingPhotos > 0 ? existingPhotos + ' foto sudah tersimpan di sistem' : 'Belum ada foto dipilih')">
                                 </span>
                             </div>
 
-                            <!-- Preview Thumbnail Foto Baru Terpilih -->
-                            <template x-if="previewUrls.length > 0">
+                            <!-- Preview Thumbnail Foto Baru Terpilih (Akumulatif & Bisa Dihapus Satuan) -->
+                            <template x-if="filesList.length > 0">
                                 <div class="space-y-1.5 pt-2 border-t border-cyan-200/50 dark:border-cyan-800/50">
-                                    <span class="text-[10px] text-cyan-900 dark:text-cyan-200 font-bold block">Preview Foto Terpilih:</span>
+                                    <div class="flex items-center justify-between text-[11px]">
+                                        <span class="text-cyan-900 dark:text-cyan-200 font-bold" x-text="filesList.length + ' foto baru siap dilampirkan:'"></span>
+                                        <button type="button" @click="clearAll()" class="text-red-600 dark:text-red-400 font-bold hover:underline cursor-pointer">Hapus Semua</button>
+                                    </div>
                                     <div class="flex flex-wrap gap-2">
-                                        <template x-for="(url, idx) in previewUrls" :key="idx">
-                                            <div class="relative w-16 h-16 rounded-xl overflow-hidden border-2 border-cyan-500 dark:border-cyan-400 shadow-xs bg-slate-100">
-                                                <img :src="url" class="w-full h-full object-cover">
+                                        <template x-for="(item, idx) in filesList" :key="idx">
+                                            <div class="relative w-16 h-16 rounded-xl overflow-hidden border-2 border-cyan-500 dark:border-cyan-400 shadow-xs bg-slate-100 group">
+                                                <img :src="item.url" class="w-full h-full object-cover">
+                                                <button type="button" @click.stop="removeFile(idx)"
+                                                        class="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-red-600 hover:bg-red-700 text-white flex items-center justify-center text-[10px] font-bold shadow-xs cursor-pointer"
+                                                        title="Hapus foto ini">
+                                                    &times;
+                                                </button>
                                                 <span class="absolute bottom-0 right-0 bg-slate-900/70 text-white text-[9px] px-1 font-mono font-bold" x-text="'#' + (idx + 1)"></span>
                                             </div>
                                         </template>
@@ -1715,30 +1893,50 @@
                     <form method="POST" action="{{ route('kelola.process-return-check', $loan->id) }}" enctype="multipart/form-data" class="space-y-4"
                           x-data="{
                               existingPhotos: {{ $bastKblPhotos->count() }},
-                              selectedCount: 0,
-                              previewUrls: [],
+                              dt: new DataTransfer(),
+                              filesList: [],
                               maxPhotos: 5,
                               handleFiles(input) {
                                   const files = Array.from(input.files || []);
                                   if (files.length === 0) return;
-                                  if (this.existingPhotos + files.length > this.maxPhotos) {
-                                      alert('Maksimal total 5 foto fisik pengembalian yang dapat dipilih.');
+                                  for (const f of files) {
+                                      if (this.existingPhotos + this.filesList.length >= this.maxPhotos) {
+                                          alert('Maksimal total 5 foto fisik pengembalian yang dapat dipilih.');
+                                          break;
+                                      }
+                                      this.dt.items.add(f);
+                                      this.filesList.push({
+                                          file: f,
+                                          url: URL.createObjectURL(f)
+                                      });
                                   }
-                                  const validFiles = files.slice(0, Math.max(1, this.maxPhotos - this.existingPhotos));
-                                  this.selectedCount = validFiles.length;
-                                  this.previewUrls = [];
-                                  validFiles.forEach(file => {
-                                      const reader = new FileReader();
-                                      reader.onload = (e) => { this.previewUrls.push(e.target.result); };
-                                      reader.readAsDataURL(file);
-                                  });
+                                  const targetInput = document.getElementById('return_check_photos_input');
+                                  if (targetInput) targetInput.files = this.dt.files;
+                                  input.value = '';
+                                  this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
+                              },
+                              removeFile(idx) {
+                                  this.filesList.splice(idx, 1);
+                                  const newDt = new DataTransfer();
+                                  this.filesList.forEach(item => newDt.items.add(item.file));
+                                  this.dt = newDt;
+                                  const targetInput = document.getElementById('return_check_photos_input');
+                                  if (targetInput) targetInput.files = newDt.files;
+                                  this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
+                              },
+                              clearAll() {
+                                  this.filesList = [];
+                                  this.dt = new DataTransfer();
+                                  const targetInput = document.getElementById('return_check_photos_input');
+                                  if (targetInput) targetInput.files = this.dt.files;
                                   this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
                               },
                               get canSubmit() {
-                                  return (this.existingPhotos > 0 || this.selectedCount > 0);
+                                  return (this.existingPhotos > 0 || this.filesList.length > 0);
                               }
                           }">
                         @csrf
+                        <input type="file" id="return_check_photos_input" name="photos[]" multiple class="hidden">
                         @foreach($loan->items as $item)
                             <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
                                 <div class="font-bold text-xs text-slate-900">{{ $item->snap_item_name }} ({{ $item->snap_brand_model }})</div>
@@ -1799,27 +1997,35 @@
                                 <label class="cursor-pointer px-3.5 py-1.5 bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/40 text-amber-800 dark:text-amber-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs">
                                     <i data-lucide="camera" class="w-3.5 h-3.5 text-amber-600 dark:text-amber-400"></i>
                                     <span>Jepret Kamera</span>
-                                    <input type="file" name="photos[]" accept="image/*" capture="environment" class="hidden" @change="handleFiles($event.target)">
+                                    <input type="file" accept="image/*" capture="environment" class="hidden" @change="handleFiles($event.target)">
                                 </label>
                                 <label class="cursor-pointer px-3.5 py-1.5 bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/40 text-amber-800 dark:text-amber-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs">
                                     <i data-lucide="images" class="w-3.5 h-3.5 text-amber-600 dark:text-amber-400"></i>
                                     <span>Pilih dari Galeri</span>
-                                    <input type="file" name="photos[]" accept="image/*" multiple class="hidden" @change="handleFiles($event.target)">
+                                    <input type="file" accept="image/*" multiple class="hidden" @change="handleFiles($event.target)">
                                 </label>
                                 <span class="text-xs font-medium"
-                                      :class="selectedCount > 0 ? 'text-emerald-700 dark:text-emerald-300 font-bold' : 'text-slate-500 dark:text-slate-400 italic'"
-                                      x-text="selectedCount > 0 ? selectedCount + ' foto baru dipilih (Maks. 5 foto)' : (existingPhotos > 0 ? existingPhotos + ' foto sudah tersimpan di sistem' : 'Belum ada foto dipilih')">
+                                      :class="filesList.length > 0 ? 'text-emerald-700 dark:text-emerald-300 font-bold' : 'text-slate-500 dark:text-slate-400 italic'"
+                                      x-text="filesList.length > 0 ? filesList.length + ' foto baru dipilih (Maks. 5 foto)' : (existingPhotos > 0 ? existingPhotos + ' foto sudah tersimpan di sistem' : 'Belum ada foto dipilih')">
                                 </span>
                             </div>
 
-                            <!-- Preview Thumbnail Foto Baru -->
-                            <template x-if="previewUrls.length > 0">
+                            <!-- Preview Thumbnail Foto Baru (Akumulatif & Bisa Dihapus Satuan) -->
+                            <template x-if="filesList.length > 0">
                                 <div class="space-y-1.5 pt-2 border-t border-amber-200/50 dark:border-amber-800/50">
-                                    <span class="text-[10px] text-amber-900 dark:text-amber-200 font-bold block">Preview Foto Terpilih:</span>
+                                    <div class="flex items-center justify-between text-[11px]">
+                                        <span class="text-amber-900 dark:text-amber-200 font-bold" x-text="filesList.length + ' foto baru siap dilampirkan:'"></span>
+                                        <button type="button" @click="clearAll()" class="text-red-600 dark:text-red-400 font-bold hover:underline cursor-pointer">Hapus Semua</button>
+                                    </div>
                                     <div class="flex flex-wrap gap-2">
-                                        <template x-for="(url, idx) in previewUrls" :key="idx">
-                                            <div class="relative w-16 h-16 rounded-xl overflow-hidden border-2 border-amber-500 dark:border-amber-400 shadow-xs bg-slate-100">
-                                                <img :src="url" class="w-full h-full object-cover">
+                                        <template x-for="(item, idx) in filesList" :key="idx">
+                                            <div class="relative w-16 h-16 rounded-xl overflow-hidden border-2 border-amber-500 dark:border-amber-400 shadow-xs bg-slate-100 group">
+                                                <img :src="item.url" class="w-full h-full object-cover">
+                                                <button type="button" @click.stop="removeFile(idx)"
+                                                        class="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-red-600 hover:bg-red-700 text-white flex items-center justify-center text-[10px] font-bold shadow-xs cursor-pointer"
+                                                        title="Hapus foto ini">
+                                                    &times;
+                                                </button>
                                                 <span class="absolute bottom-0 right-0 bg-slate-900/70 text-white text-[9px] px-1 font-mono font-bold" x-text="'#' + (idx + 1)"></span>
                                             </div>
                                         </template>
@@ -2218,6 +2424,9 @@
 
                 <form method="POST" action="{{ route('loans.photos.upload', $loan->id) }}" enctype="multipart/form-data" class="space-y-4">
                     @csrf
+                    <!-- Berkas Input Nyata yang Dikirimkan ke Server (Tersinkronisasi Otomatis Lewat DataTransfer) -->
+                    <input type="file" id="bmn_loan_photos_input" name="photos[]" multiple class="hidden">
+
                     <!-- Stage Selector -->
                     <div>
                         <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Tahap Dokumentasi BAST:</label>
@@ -2239,7 +2448,12 @@
 
                     <!-- Action: Camera or Gallery Picker -->
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2">Pilih Sumber Foto (Boleh 1 atau lebih foto):</label>
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">Pilih / Tambah Foto (Maksimal 5 foto):</label>
+                            <span class="text-[11px] font-bold text-slate-500 dark:text-slate-400 tabular-nums">
+                                <span x-text="previewPhotos.length"></span>/5 Foto
+                            </span>
+                        </div>
                         <div class="grid grid-cols-2 gap-2.5">
                             <!-- Button 1: Kamera HP / Webcam -->
                             <label class="flex flex-col items-center justify-center p-4 rounded-2xl border-2 border-dashed border-[#0B63B5]/40 dark:border-blue-700/60 bg-blue-50/30 dark:bg-blue-950/30 hover:bg-blue-50 dark:hover:bg-blue-900/30 cursor-pointer transition text-center group">
@@ -2247,34 +2461,39 @@
                                     <i data-lucide="camera" class="w-5 h-5"></i>
                                 </div>
                                 <span class="text-xs font-bold text-slate-800 dark:text-slate-200">Jepret Kamera</span>
-                                <span class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Buka kamera ponsel/laptop</span>
-                                <input type="file" name="photos[]" accept="image/*" capture="environment" class="hidden" @change="handlePhotoSelect($event)">
+                                <span class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Tambah jepretan kamera</span>
+                                <input type="file" accept="image/*" capture="environment" class="hidden" @change="handlePhotoSelect($event)">
                             </label>
 
-                            <!-- Button 2: Galeri / File (Bisa Multiple) -->
+                            <!-- Button 2: Galeri / File (Bisa Multiple & Akumulatif) -->
                             <label class="flex flex-col items-center justify-center p-4 rounded-2xl border-2 border-dashed border-purple-300 dark:border-purple-700/60 bg-purple-50/30 dark:bg-purple-950/30 hover:bg-purple-50 dark:hover:bg-purple-900/30 cursor-pointer transition text-center group">
                                 <div class="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/60 text-purple-700 dark:text-purple-300 flex items-center justify-center mb-2 group-hover:scale-110 transition">
                                     <i data-lucide="images" class="w-5 h-5"></i>
                                 </div>
                                 <span class="text-xs font-bold text-slate-800 dark:text-slate-200">Pilih dari Galeri</span>
-                                <span class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Bisa pilih banyak foto</span>
-                                <input type="file" name="photos[]" accept="image/*" multiple class="hidden" @change="handlePhotoSelect($event)">
+                                <span class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Tambah foto dari galeri</span>
+                                <input type="file" accept="image/*" multiple class="hidden" @change="handlePhotoSelect($event)">
                             </label>
                         </div>
                     </div>
 
-                    <!-- Preview of Selected Photos -->
+                    <!-- Preview of Selected Photos (Akumulatif dengan tombol hapus satuan) -->
                     <template x-if="previewPhotos.length > 0">
                         <div class="space-y-2">
                             <div class="flex items-center justify-between text-xs">
-                                <span class="font-bold text-slate-700 dark:text-slate-200" x-text="previewPhotos.length + ' foto siap diunggah:'"></span>
-                                <button type="button" @click="previewPhotos = []" class="text-red-600 dark:text-red-400 font-bold text-[11px] hover:underline cursor-pointer">Hapus Semua</button>
+                                <span class="font-bold text-slate-700 dark:text-slate-200" x-text="previewPhotos.length + ' foto siap diunggah (bisa tambah foto lagi):'"></span>
+                                <button type="button" @click="clearAllPreviewPhotos()" class="text-red-600 dark:text-red-400 font-bold text-[11px] hover:underline cursor-pointer">Hapus Semua</button>
                             </div>
-                            <div class="grid grid-cols-3 gap-2 max-h-36 overflow-y-auto p-1 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-700">
+                            <div class="grid grid-cols-3 sm:grid-cols-4 gap-2.5 max-h-48 overflow-y-auto p-2 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-700">
                                 <template x-for="(p, idx) in previewPhotos" :key="idx">
-                                    <div class="relative rounded-xl overflow-hidden aspect-square border border-slate-300 dark:border-slate-600 group">
+                                    <div class="relative rounded-xl overflow-hidden aspect-square border-2 border-purple-400/80 dark:border-purple-600 bg-white shadow-2xs group">
                                         <img :src="p.url" class="w-full h-full object-cover">
-                                        <div class="absolute bottom-0 inset-x-0 bg-slate-900/70 p-1 text-[9px] text-white truncate text-center" x-text="p.size"></div>
+                                        <button type="button" @click.stop="removePreviewPhoto(idx)"
+                                                class="absolute top-1 right-1 w-5 h-5 rounded-full bg-red-600 hover:bg-red-700 text-white flex items-center justify-center text-xs font-bold shadow-md cursor-pointer transition active:scale-90"
+                                                title="Hapus foto ini">
+                                            &times;
+                                        </button>
+                                        <div class="absolute bottom-0 inset-x-0 bg-slate-900/80 p-0.5 text-[9px] text-white truncate text-center font-mono font-medium" x-text="p.size"></div>
                                     </div>
                                 </template>
                             </div>
@@ -2295,7 +2514,8 @@
                             Batal
                         </button>
                         <button type="submit"
-                                class="px-5 py-2.5 bg-purple-700 hover:bg-purple-800 text-white rounded-xl text-xs font-bold shadow-md transition flex items-center gap-1.5 cursor-pointer">
+                                :disabled="previewPhotos.length === 0"
+                                class="px-5 py-2.5 bg-purple-700 hover:bg-purple-800 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-xl text-xs font-bold shadow-md transition flex items-center gap-1.5 cursor-pointer">
                             <i data-lucide="upload" class="w-4 h-4"></i>
                             <span>Unggah Foto Dokumentasi</span>
                         </button>

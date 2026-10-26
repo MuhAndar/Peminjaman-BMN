@@ -36,6 +36,18 @@
                 {{ $counts['all'] ?? 0 }}
             </span>
         </a>
+
+        @if(($counts['overdue'] ?? 0) > 0)
+            <a href="{{ route('loans.index', ['status' => 'overdue']) }}"
+               class="px-3.5 py-2 rounded-xl text-xs font-black whitespace-nowrap transition flex items-center gap-2 {{ ($statusFilter ?? '') === 'overdue' ? 'bg-red-600 text-white shadow-md' : 'bg-red-50 dark:bg-rose-950/40 border border-red-300 dark:border-rose-800 text-red-700 dark:text-rose-300 hover:bg-red-100 dark:hover:bg-rose-900/50' }}">
+                <i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-red-600 dark:text-red-400 animate-pulse"></i>
+                <span>Lewat Tenggat</span>
+                <span class="px-1.5 py-0.5 rounded-full text-[10px] {{ ($statusFilter ?? '') === 'overdue' ? 'bg-white/20 text-white' : 'bg-red-200/90 dark:bg-rose-900 text-red-950 dark:text-rose-100' }} font-black tabular-nums">
+                    {{ $counts['overdue'] }}
+                </span>
+            </a>
+        @endif
+
         <a href="{{ route('loans.index', ['status' => 'active']) }}"
            class="px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition flex items-center gap-2 {{ ($statusFilter ?? '') === 'active' ? 'bg-[#0B63B5] text-white shadow-sm' : 'bg-white dark:bg-[#1E293B] border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800' }}">
             <span>Sedang Dipinjam</span>
@@ -92,8 +104,11 @@
                     </thead>
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                         @foreach($loans as $loan)
-                            @php $meta = $loan->status_meta; @endphp
-                            <tr class="hover:bg-slate-50/70 dark:hover:bg-slate-800/80 transition">
+                            @php 
+                                $meta = $loan->status_meta; 
+                                $isOverdue = $loan->isOverdue();
+                            @endphp
+                            <tr class="{{ $isOverdue ? 'bg-red-50/70 dark:bg-rose-950/30 border-l-4 border-l-red-600' : 'hover:bg-slate-50/70 dark:hover:bg-slate-800/80' }} transition">
                                 <td class="py-4 px-6 text-xs text-slate-500 dark:text-slate-400 tabular-nums font-medium">
                                     {{ $loan->created_at->format('d/m/Y') }}
                                     <div class="text-[10px] font-mono text-slate-400">#{{ substr($loan->id, 0, 8) }}</div>
@@ -109,9 +124,21 @@
                                     s.d. {{ \App\Helpers\FormatHelper::formatDateIndo($loan->end_date) }}
                                 </td>
                                 <td class="py-4 px-4">
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold border {{ $meta['bg'] }}">
-                                        {{ $meta['label'] }}
-                                    </span>
+                                    @if($isOverdue)
+                                        <div class="space-y-1">
+                                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-red-600 text-white shadow-xs animate-pulse">
+                                                <i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i>
+                                                <span>LEWAT TENGGAT ({{ \Carbon\Carbon::parse($loan->end_date)->diffInDays(now()) }} Hari)</span>
+                                            </span>
+                                            <div class="text-[10px] text-red-700 dark:text-rose-300 font-semibold pl-1">
+                                                Batas: {{ \App\Helpers\FormatHelper::formatDateIndo($loan->end_date) }}
+                                            </div>
+                                        </div>
+                                    @else
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold border {{ $meta['bg'] }}">
+                                            {{ $meta['label'] }}
+                                        </span>
+                                    @endif
                                 </td>
                                 <td class="py-4 px-4 text-xs">
                                     @php $docs = $loan->documents()->where('status', 'ISSUED')->get(); @endphp
@@ -130,10 +157,27 @@
                                     @endif
                                 </td>
                                 <td class="py-4 px-6 text-right">
-                                    <a href="{{ route('loans.show', $loan->id) }}" class="inline-flex items-center gap-1 text-xs font-bold text-[#0B63B5] dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 px-3 py-1.5 rounded-xl transition">
-                                        <span>Detail</span>
-                                        <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
-                                    </a>
+                                    <div class="inline-flex items-center gap-2 justify-end">
+                                        @if($loan->status === 'ACTIVE')
+                                            <form method="POST" action="{{ route('loans.request-return', $loan->id) }}" class="inline-block">
+                                                @csrf
+                                                <button type="submit"
+                                                        data-confirm="Apakah Anda yakin ingin mengajukan pengembalian fisik BMN ini ke Petugas BMN di kantor?"
+                                                        data-confirm-title="Pengembalian BMN"
+                                                        data-confirm-btn="Ya, Ajukan Pengembalian"
+                                                        data-confirm-type="warning"
+                                                        class="inline-flex items-center gap-1.5 text-xs font-bold text-white bg-amber-500 hover:bg-amber-600 px-3 py-1.5 rounded-xl transition shadow-2xs active:scale-95 cursor-pointer"
+                                                        title="Ajukan Pengembalian Fisik BMN ke Kantor">
+                                                    <i data-lucide="package-open" class="w-3.5 h-3.5"></i>
+                                                    <span>Kembalikan</span>
+                                                </button>
+                                            </form>
+                                        @endif
+                                        <a href="{{ route('loans.show', $loan->id) }}" class="inline-flex items-center gap-1 text-xs font-bold text-[#0B63B5] dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 px-3 py-1.5 rounded-xl transition">
+                                            <span>Detail</span>
+                                            <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                                        </a>
+                                    </div>
                                 </td>
                             </tr>
                         @endforeach
@@ -144,8 +188,11 @@
             <!-- Mobile Card View (<768px) -->
             <div class="md:hidden divide-y divide-slate-100 dark:divide-slate-800">
                 @foreach($loans as $loan)
-                    @php $meta = $loan->status_meta; @endphp
-                    <div class="p-4 space-y-3">
+                    @php 
+                        $meta = $loan->status_meta; 
+                        $isOverdue = $loan->isOverdue();
+                    @endphp
+                    <div class="p-4 space-y-3 transition {{ $isOverdue ? 'bg-red-50/70 dark:bg-rose-950/30 border-l-4 border-l-red-600' : '' }}">
                         <div class="flex items-start justify-between gap-2">
                             <div>
                                 <span class="text-xs text-slate-400 font-medium tabular-nums">{{ $loan->created_at->format('d/m/Y') }}</span>
@@ -153,9 +200,16 @@
                                     {{ $loan->items_summary }}
                                 </h3>
                             </div>
-                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold border {{ $meta['bg'] }}">
-                                {{ $meta['label'] }}
-                            </span>
+                            @if($isOverdue)
+                                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-black bg-red-600 text-white animate-pulse">
+                                    <i data-lucide="alert-triangle" class="w-3 h-3"></i>
+                                    <span>Lewat Tenggat</span>
+                                </span>
+                            @else
+                                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold border {{ $meta['bg'] }}">
+                                    {{ $meta['label'] }}
+                                </span>
+                            @endif
                         </div>
 
                         <div class="text-xs text-slate-600 dark:text-slate-300 space-y-1 bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-xl">
@@ -167,10 +221,26 @@
 
                         <div class="pt-1 flex items-center justify-between">
                             <span class="text-xs text-slate-400">{{ $loan->documents()->where('status', 'ISSUED')->count() }} Dokumen Terbit</span>
-                            <a href="{{ route('loans.show', $loan->id) }}" class="text-xs font-bold text-[#0B63B5] dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 px-3 py-1.5 rounded-lg flex items-center gap-1">
-                                <span>Lihat Detail</span>
-                                <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
-                            </a>
+                            <div class="flex items-center gap-2">
+                                @if($loan->status === 'ACTIVE')
+                                    <form method="POST" action="{{ route('loans.request-return', $loan->id) }}" class="inline-block">
+                                        @csrf
+                                        <button type="submit"
+                                                data-confirm="Apakah Anda yakin ingin mengajukan pengembalian fisik BMN ini ke Petugas BMN di kantor?"
+                                                data-confirm-title="Pengembalian BMN"
+                                                data-confirm-btn="Ya, Ajukan Pengembalian"
+                                                data-confirm-type="warning"
+                                                class="text-xs font-bold text-white bg-amber-500 hover:bg-amber-600 px-3 py-1.5 rounded-lg flex items-center gap-1 shadow-2xs active:scale-95 cursor-pointer">
+                                            <i data-lucide="package-open" class="w-3.5 h-3.5"></i>
+                                            <span>Kembalikan</span>
+                                        </button>
+                                    </form>
+                                @endif
+                                <a href="{{ route('loans.show', $loan->id) }}" class="text-xs font-bold text-[#0B63B5] dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 px-3 py-1.5 rounded-lg flex items-center gap-1">
+                                    <span>Detail</span>
+                                    <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                                </a>
+                            </div>
                         </div>
                     </div>
                 @endforeach

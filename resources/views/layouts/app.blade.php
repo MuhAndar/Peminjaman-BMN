@@ -367,29 +367,63 @@
                     Layanan Peminjam
                 </div>
 
+                @php
+                    $todayMakassar = \Carbon\Carbon::now('Asia/Makassar')->toDateString();
+                    $borrowerEmpId = auth()->user()->employee_id;
+                    $peminjamOverdueCount = \App\Models\LoanRequest::where('borrower_id', $borrowerEmpId)
+                        ->whereIn('status', ['ACTIVE', 'RETURN_REQUESTED'])
+                        ->where('end_date', '<', $todayMakassar)
+                        ->count();
+                    $peminjamUpdateCount = \App\Models\LoanRequest::where('borrower_id', $borrowerEmpId)
+                        ->whereIn('status', ['APPROVED', 'BAST_ISSUED', 'NEEDS_REVISION'])
+                        ->count();
+                @endphp
                 <a href="{{ route('loans.index') }}"
-                   class="sidebar-center-on-collapse flex items-center rounded-xl h-11 transition-colors group relative select-none cursor-pointer {{ request()->routeIs('loans.index') ? 'bg-blue-50 text-[#0B63B5] font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium' }}"
-                   :class="sidebarCollapsed && !sidebarMobileOpen ? 'justify-center px-0' : 'px-3 gap-3'">
-                    <div class="w-6 h-6 flex items-center justify-center shrink-0">
-                        <i data-lucide="file-text" class="w-5 h-5 {{ request()->routeIs('loans.index') ? 'text-[#0B63B5]' : 'text-slate-500 group-hover:text-slate-800' }}"></i>
+                   class="sidebar-center-on-collapse flex items-center justify-between rounded-xl h-11 transition-colors group relative select-none cursor-pointer {{ request()->routeIs('loans.index') ? 'bg-blue-50 text-[#0B63B5] font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium' }}"
+                   :class="sidebarCollapsed && !sidebarMobileOpen ? 'justify-center px-0' : 'px-3'">
+                    <div class="flex items-center gap-3 truncate">
+                        <div class="w-6 h-6 flex items-center justify-center shrink-0">
+                            <i data-lucide="file-text" class="w-5 h-5 {{ request()->routeIs('loans.index') ? 'text-[#0B63B5]' : 'text-slate-500 group-hover:text-slate-800' }}"></i>
+                        </div>
+                        <span x-show="!sidebarCollapsed || sidebarMobileOpen"
+                              x-transition:enter="transition-opacity duration-150 delay-100"
+                              x-transition:enter-start="opacity-0"
+                              x-transition:enter-end="opacity-100"
+                              x-transition:leave="transition-opacity duration-75"
+                              x-transition:leave-start="opacity-100"
+                              x-transition:leave-end="opacity-0"
+                              class="sidebar-hide-on-collapse truncate whitespace-nowrap text-sm">
+                            Pengajuan
+                        </span>
                     </div>
-                    <span x-show="!sidebarCollapsed || sidebarMobileOpen"
-                          x-transition:enter="transition-opacity duration-150 delay-100"
-                          x-transition:enter-start="opacity-0"
-                          x-transition:enter-end="opacity-100"
-                          x-transition:leave="transition-opacity duration-75"
-                          x-transition:leave-start="opacity-100"
-                          x-transition:leave-end="opacity-0"
-                          class="sidebar-hide-on-collapse truncate whitespace-nowrap text-sm">
-                        Pengajuan
-                    </span>
+
+                    @if($peminjamOverdueCount > 0)
+                        <span x-show="!sidebarCollapsed || sidebarMobileOpen"
+                              class="sidebar-hide-on-collapse px-2 py-0.5 text-[10px] bg-red-600 text-white rounded-full font-black tabular-nums shadow-xs animate-pulse flex items-center gap-1"
+                              title="{{ $peminjamOverdueCount }} Pengajuan Lewat Tenggat Batas Waktu!">
+                            <i data-lucide="alert-triangle" class="w-2.5 h-2.5"></i>
+                            <span>{{ $peminjamOverdueCount }}</span>
+                        </span>
+                    @elseif($peminjamUpdateCount > 0)
+                        <span x-show="!sidebarCollapsed || sidebarMobileOpen"
+                              class="sidebar-hide-on-collapse px-1.5 py-0.5 text-[10px] bg-emerald-600 text-white rounded-full font-bold tabular-nums flex items-center gap-1 shadow-xs"
+                              title="{{ $peminjamUpdateCount }} Berkas Pengajuan Disetujui / Ada Pembaruan">
+                            <i data-lucide="bell" class="w-2.5 h-2.5"></i>
+                            <span>{{ $peminjamUpdateCount }}</span>
+                        </span>
+                    @endif
 
                     <!-- Floating Tooltip -->
                     <div x-show="sidebarCollapsed && !sidebarMobileOpen"
                          x-cloak
-                         class="absolute left-full top-1/2 -translate-y-1/2 ml-3.5 px-3 py-1.5 bg-slate-900/95 text-white text-xs font-semibold rounded-xl shadow-xl whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0 transition-all duration-150 z-50 flex items-center gap-1.5">
+                         class="absolute left-full top-1/2 -translate-y-1/2 ml-3.5 px-3 py-1.5 bg-slate-900/95 text-white text-xs font-semibold rounded-xl shadow-xl whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0 transition-all duration-150 z-50 flex items-center gap-2">
                         <span class="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 bg-slate-900/95 rotate-45"></span>
                         <span class="relative z-10">Pengajuan</span>
+                        @if($peminjamOverdueCount > 0)
+                            <span class="px-1.5 py-0.2 text-[10px] bg-red-600 text-white rounded-full font-bold tabular-nums">{{ $peminjamOverdueCount }} Lewat Tenggat</span>
+                        @elseif($peminjamUpdateCount > 0)
+                            <span class="px-1.5 py-0.2 text-[10px] bg-emerald-500 text-white rounded-full font-bold tabular-nums">{{ $peminjamUpdateCount }}</span>
+                        @endif
                     </div>
                 </a>
 
@@ -455,12 +489,28 @@
                         </span>
                     </div>
 
-                    @php $pendingCount = \App\Models\LoanRequest::whereIn('status', ['SUBMITTED', 'RETURN_REQUESTED'])->count(); @endphp
-                    @if($pendingCount > 0)
-                        <span x-show="!sidebarCollapsed || sidebarMobileOpen"
-                              class="sidebar-hide-on-collapse px-1.5 py-0.5 text-[10px] bg-amber-500 text-white rounded-full font-bold tabular-nums">
-                            {{ $pendingCount }}
-                        </span>
+                    @php 
+                        $todayMakassar = \Carbon\Carbon::now('Asia/Makassar')->toDateString();
+                        $pendingCount = \App\Models\LoanRequest::whereIn('status', ['SUBMITTED', 'APPROVED', 'BAST_ISSUED', 'RETURN_REQUESTED'])->count();
+                        $pengelolaOverdueCount = \App\Models\LoanRequest::whereIn('status', ['ACTIVE', 'RETURN_REQUESTED'])
+                            ->where('end_date', '<', $todayMakassar)
+                            ->count();
+                    @endphp
+                    @if($pendingCount > 0 || $pengelolaOverdueCount > 0)
+                        <div x-show="!sidebarCollapsed || sidebarMobileOpen" class="sidebar-hide-on-collapse flex items-center gap-1">
+                            @if($pengelolaOverdueCount > 0)
+                                <span class="px-1.5 py-0.5 text-[10px] bg-red-600 text-white rounded-full font-black tabular-nums shadow-xs animate-pulse"
+                                      title="{{ $pengelolaOverdueCount }} Peminjaman BMN Lewat Tenggat Waktu!">
+                                    !{{ $pengelolaOverdueCount }}
+                                </span>
+                            @endif
+                            @if($pendingCount > 0)
+                                <span class="px-1.5 py-0.5 text-[10px] bg-amber-500 text-white rounded-full font-bold tabular-nums"
+                                      title="{{ $pendingCount }} Berkas Pengajuan Dalam Antrean Telaah / Terbit BAST">
+                                    {{ $pendingCount }}
+                                </span>
+                            @endif
+                        </div>
                     @endif
 
                     <!-- Floating Tooltip -->
@@ -469,6 +519,9 @@
                          class="absolute left-full top-1/2 -translate-y-1/2 ml-3.5 px-3 py-1.5 bg-slate-900/95 text-white text-xs font-semibold rounded-xl shadow-xl whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0 transition-all duration-150 z-50 flex items-center gap-2">
                         <span class="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 bg-slate-900/95 rotate-45"></span>
                         <span class="relative z-10">Antrean Telaah</span>
+                        @if($pengelolaOverdueCount > 0)
+                            <span class="px-1.5 py-0.2 text-[10px] bg-red-600 text-white rounded-full font-bold tabular-nums">{{ $pengelolaOverdueCount }} Terlambat</span>
+                        @endif
                         @if($pendingCount > 0)
                             <span class="px-1.5 py-0.2 text-[10px] bg-amber-500 text-white rounded-full font-bold tabular-nums">{{ $pendingCount }}</span>
                         @endif
@@ -811,10 +864,16 @@
                     <!-- Mobile Toggle with Arrow Icon -->
                     <button type="button"
                             @click="sidebarMobileOpen = !sidebarMobileOpen"
-                            class="lg:hidden p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition focus:outline-none flex items-center gap-1.5 shrink-0"
+                            class="lg:hidden p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition focus:outline-none flex items-center gap-1.5 shrink-0 relative"
                             title="Buka Menu Navigasi">
                         <i data-lucide="chevron-right" class="w-4 h-4 text-[#0B63B5] dark:text-blue-400"></i>
                         <span class="text-xs font-bold text-slate-700 dark:text-slate-200">Menu</span>
+                        @if(($peminjamOverdueCount ?? 0) > 0 || ($pengelolaOverdueCount ?? 0) > 0)
+                            <span class="w-2 h-2 rounded-full bg-red-600 animate-ping absolute top-1.5 right-1.5"></span>
+                            <span class="w-2 h-2 rounded-full bg-red-600 absolute top-1.5 right-1.5"></span>
+                        @elseif(($peminjamUpdateCount ?? 0) > 0 || ($pendingCount ?? 0) > 0 || ($approvalCount ?? 0) > 0)
+                            <span class="w-2 h-2 rounded-full bg-emerald-500 absolute top-1.5 right-1.5"></span>
+                        @endif
                     </button>
 
                     <!-- Breadcrumbs -->

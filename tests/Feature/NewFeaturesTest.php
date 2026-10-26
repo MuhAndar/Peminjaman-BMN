@@ -1504,5 +1504,64 @@ class NewFeaturesTest extends TestCase
         $disposition = $resTemplate->headers->get('content-disposition');
         $this->assertStringContainsString('Template_Entry_Form_Peminjaman.xlsx', $disposition);
     }
+
+    /**
+     * Verifikasi penanda lewat tenggat, notifikasi badge peminjam, dan alur pengembalian.
+     */
+    public function test_overdue_alerts_mobile_pagination_and_borrower_return(): void
+    {
+        $borrowerUser = User::where('role', 'PEMINJAM')->first();
+        $this->assertNotNull($borrowerUser);
+        $borrower = $borrowerUser->employee;
+        $pengelola = User::where('role', 'PENGELOLA_BMN')->first();
+        $ketuaTim = User::where('role', 'KETUA_TIM_ASET')->first();
+
+        // 1. Buat pinjaman aktif yang sudah lewat tenggat (end_date di masa lalu)
+        $pastDate = Carbon::now('Asia/Makassar')->subDays(5)->toDateString();
+        $activeLoan = $this->createActiveLoan($borrower, $pengelola, $ketuaTim);
+        $activeLoan->update([
+            'status' => 'ACTIVE',
+            'start_date' => Carbon::now('Asia/Makassar')->subDays(10)->toDateString(),
+            'end_date' => $pastDate,
+        ]);
+        $activeLoan->refresh();
+
+        $this->assertTrue($activeLoan->isOverdue());
+
+        // 2. Akses halaman pengajuan sebagai peminjam
+        $this->actingAs($borrowerUser);
+        $response = $this->get(route('loans.index'));
+        $response->assertOk();
+
+        // Verifikasi ada indikator Lewat Tenggat
+        $response->assertSee('Lewat Tenggat');
+        $response->assertSee('LEWAT TENGGAT');
+        $response->assertSee('Kembalikan');
+
+        // Verifikasi filter status=overdue
+        $responseFilter = $this->get(route('loans.index', ['status' => 'overdue']));
+        $responseFilter->assertOk();
+        $responseFilter->assertSee('LEWAT TENGGAT');
+        $responseFilter->assertSee($activeLoan->items->first()->snap_item_name);
+
+        // 3. Akses detail pengajuan dan verifikasi tombol alur pengembalian
+        $responseDetail = $this->get(route('loans.show', $activeLoan));
+        $responseDetail->assertOk();
+        $responseDetail->assertSee('Ajukan Pengembalian Sekarang');
+        $responseDetail->assertSee('Pengembalian BMN Lewat Tenggat');
+        $responseDetail->assertSee('Alur SOP Pengembalian BMN');
+
+        // 4. Verifikasi halaman katalog bmn dengan view mobile paginasi
+        $responseKatalog = $this->get(route('assets.index'));
+        $responseKatalog->assertOk();
+        $responseKatalog->assertSee('Sebelumnya');
+        $responseKatalog->assertSee('Berikutnya');
+
+        // 5. Verifikasi halaman ajukan bmn baru
+        $responseCreate = $this->get(route('loans.create'));
+        $responseCreate->assertOk();
+        $responseCreate->assertSee('Pilih Barang BMN yang Tersedia');
+        $responseCreate->assertSee('goToPage');
+    }
 }
 

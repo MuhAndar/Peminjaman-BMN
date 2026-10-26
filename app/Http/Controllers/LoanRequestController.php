@@ -29,6 +29,7 @@ class LoanRequestController extends Controller
         $employeeId = $user->employee_id;
 
         $baseQuery = LoanRequest::where('borrower_id', $employeeId);
+        $todayMakassar = \Carbon\Carbon::now('Asia/Makassar')->toDateString();
 
         $statusFilter = $request->query('status', 'all');
 
@@ -38,6 +39,7 @@ class LoanRequestController extends Controller
             'process' => (clone $baseQuery)->whereIn('status', ['SUBMITTED', 'UNDER_APPROVAL', 'APPROVED', 'BAST_ISSUED', 'RETURN_REQUESTED'])->count(),
             'returned' => (clone $baseQuery)->where('status', 'RETURNED')->count(),
             'rejected' => (clone $baseQuery)->whereIn('status', ['REJECTED', 'NEEDS_REVISION'])->count(),
+            'overdue' => (clone $baseQuery)->whereIn('status', ['ACTIVE', 'RETURN_REQUESTED'])->where('end_date', '<', $todayMakassar)->count(),
         ];
 
         $query = (clone $baseQuery)->with(['items.asset', 'documents'])->orderBy('created_at', 'desc');
@@ -50,6 +52,8 @@ class LoanRequestController extends Controller
             $query->where('status', 'RETURNED');
         } elseif ($statusFilter === 'rejected') {
             $query->whereIn('status', ['REJECTED', 'NEEDS_REVISION']);
+        } elseif ($statusFilter === 'overdue') {
+            $query->whereIn('status', ['ACTIVE', 'RETURN_REQUESTED'])->where('end_date', '<', $todayMakassar);
         } elseif ($statusFilter && $statusFilter !== 'all') {
             $query->where('status', $statusFilter);
         }

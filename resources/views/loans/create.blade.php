@@ -68,6 +68,7 @@
             if (el) {
                 el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }
+            this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
         }
     },
 
@@ -470,55 +471,77 @@ x-init="$watch('searchQuery', () => page = 1); $watch('perPage', () => page = 1)
             </template>
 
             <!-- PAGINATION CONTROLS (BAWAH) -->
-            <div x-show="totalPages > 1" class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
-                <div class="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                    Halaman <strong class="text-slate-800 dark:text-slate-200" x-text="page"></strong> dari <strong class="text-slate-800 dark:text-slate-200" x-text="totalPages"></strong>
-                </div>
-
-                <div class="flex items-center gap-1 self-center sm:self-auto">
-                    <!-- Tombol Halaman Pertama -->
-                    <button type="button" @click="goToPage(1)" :disabled="page === 1"
-                            class="px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold transition disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200"
-                            title="Halaman Pertama">
-                        &laquo;
-                    </button>
-
-                    <!-- Tombol Halaman Sebelumnya -->
+            <div x-show="totalPages > 1" class="pt-2 select-none">
+                <!-- Tampilan Mobile (<640px): Stepper Kompak & Rata -->
+                <div class="flex sm:hidden items-center justify-between w-full gap-2">
                     <button type="button" @click="goToPage(page - 1)" :disabled="page === 1"
-                            class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold transition disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200">
-                        Sebelumnya
+                            class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200 transition disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 shadow-2xs">
+                        <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i>
+                        <span>Sebelumnya</span>
                     </button>
 
-                    <!-- Angka Halaman -->
-                    <div class="flex items-center gap-1">
-                        <template x-for="p in getPageNumbers()" :key="'page-' + p">
-                            <div>
-                                <template x-if="p === '...'">
-                                    <span class="px-2 py-1 text-xs text-slate-400 font-bold select-none">&hellip;</span>
-                                </template>
-                                <template x-if="p !== '...'">
-                                    <button type="button" @click="goToPage(p)"
-                                            :class="page === p ? 'bg-[#0B63B5] text-white border-[#0B63B5] shadow-xs' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'"
-                                            class="w-8 h-8 rounded-lg border text-xs font-extrabold transition flex items-center justify-center cursor-pointer"
-                                            x-text="p">
-                                    </button>
-                                </template>
-                            </div>
-                        </template>
+                    <div class="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200/80 dark:border-slate-700 text-xs font-extrabold text-slate-800 dark:text-slate-200 tabular-nums">
+                        <span x-text="page"></span> <span class="text-slate-400 font-normal">/</span> <span x-text="totalPages"></span>
                     </div>
 
-                    <!-- Tombol Halaman Selanjutnya -->
                     <button type="button" @click="goToPage(page + 1)" :disabled="page === totalPages"
-                            class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold transition disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200">
-                        Selanjutnya
+                            class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200 transition disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 shadow-2xs">
+                        <span>Berikutnya</span>
+                        <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
                     </button>
+                </div>
 
-                    <!-- Tombol Halaman Terakhir -->
-                    <button type="button" @click="goToPage(totalPages)" :disabled="page === totalPages"
-                            class="px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold transition disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200"
-                            title="Halaman Terakhir">
-                        &raquo;
-                    </button>
+                <!-- Tampilan Desktop (>=640px): Lengkap dengan Nomor Halaman -->
+                <div class="hidden sm:flex sm:items-center justify-between gap-3">
+                    <div class="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                        Halaman <strong class="text-slate-800 dark:text-slate-200" x-text="page"></strong> dari <strong class="text-slate-800 dark:text-slate-200" x-text="totalPages"></strong>
+                    </div>
+
+                    <div class="flex items-center gap-1">
+                        <!-- Tombol Halaman Pertama -->
+                        <button type="button" @click="goToPage(1)" :disabled="page === 1"
+                                class="px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold transition disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200"
+                                title="Halaman Pertama">
+                            &laquo;
+                        </button>
+
+                        <!-- Tombol Halaman Sebelumnya -->
+                        <button type="button" @click="goToPage(page - 1)" :disabled="page === 1"
+                                class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold transition disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200">
+                            Sebelumnya
+                        </button>
+
+                        <!-- Angka Halaman -->
+                        <div class="flex items-center gap-1">
+                            <template x-for="p in getPageNumbers()" :key="'page-' + p">
+                                <div>
+                                    <template x-if="p === '...'">
+                                        <span class="px-2 py-1 text-xs text-slate-400 font-bold select-none">&hellip;</span>
+                                    </template>
+                                    <template x-if="p !== '...'">
+                                        <button type="button" @click="goToPage(p)"
+                                                :class="page === p ? 'bg-[#0B63B5] text-white border-[#0B63B5] shadow-xs' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'"
+                                                class="w-8 h-8 rounded-lg border text-xs font-extrabold transition flex items-center justify-center cursor-pointer"
+                                                x-text="p">
+                                        </button>
+                                    </template>
+                                </div>
+                            </template>
+                        </div>
+
+                        <!-- Tombol Halaman Selanjutnya -->
+                        <button type="button" @click="goToPage(page + 1)" :disabled="page === totalPages"
+                                class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold transition disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200">
+                            Selanjutnya
+                        </button>
+
+                        <!-- Tombol Halaman Terakhir -->
+                        <button type="button" @click="goToPage(totalPages)" :disabled="page === totalPages"
+                                class="px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold transition disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200"
+                                title="Halaman Terakhir">
+                            &raquo;
+                        </button>
+                    </div>
                 </div>
             </div>
 
