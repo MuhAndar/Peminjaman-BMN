@@ -1241,5 +1241,62 @@ class NewFeaturesTest extends TestCase
         // Pengajuan tetap ada di DB
         $this->assertDatabaseHas('loan_requests', ['id' => $loan->id]);
     }
+
+    /**
+     * Verifikasi tombol "Teruskan ke Ketua Tim" berstatus abu-abu (disabled) jika TTD pengelola belum ada,
+     * dan aktif/biru jika TTD pengelola telah dimasukkan.
+     */
+    public function test_pengelola_forward_button_disabled_without_signature_and_active_with_signature(): void
+    {
+        $peminjam = User::where('role', 'PEMINJAM')->first();
+        $pengelola = User::where('role', 'PENGELOLA_BMN')->first();
+
+        // Pastikan signature pengelola kosong di profil
+        $pengelola->signature_path = null;
+        $pengelola->save();
+
+        $asset = Asset::where('status', 'AVAILABLE')->first();
+
+        $loan = LoanRequest::create([
+            'borrower_id' => $peminjam->employee_id,
+            'loan_type' => 'SHORT_TERM',
+            'start_date' => Carbon::now()->addDays(1)->toDateString(),
+            'end_date' => Carbon::now()->addDays(3)->toDateString(),
+            'status' => 'SUBMITTED',
+            'snap_full_name' => $peminjam->name,
+            'snap_nip' => $peminjam->employee->nip,
+            'officer_signature' => null,
+        ]);
+        $loan->items()->create([
+            'asset_id' => $asset->id,
+            'purpose' => 'Koordinasi dinas',
+            'snap_item_name' => $asset->item_name,
+            'snap_brand_model' => $asset->brand_model_combined,
+            'snap_value' => $asset->acquisition_value,
+        ]);
+
+        // 1. Saat TTD Pengelola belum ada: tombol abu-abu dan disabled
+        $this->actingAs($pengelola);
+        $resWithoutSig = $this->get(route('loans.show', $loan->id));
+        $resWithoutSig->assertOk();
+        $resWithoutSig->assertSee('Tanda Tangan Pengelola BMN Belum Ada');
+        $resWithoutSig->assertSee('Teruskan ke Ketua Tim (Dokumen Lengkap)');
+        $resWithoutSig->assertSee('cursor-not-allowed', false);
+        $resWithoutSig->assertSee('disabled', false);
+
+        // 2. Berikan TTD pada pengajuan
+        $dummySigPath = 'signatures/test_pengelola_sig.png';
+        Storage::disk('public')->put($dummySigPath, 'dummy_signature_content');
+        $loan->update(['officer_signature' => $dummySigPath]);
+
+        // Saat TTD Pengelola sudah ada: tombol biru dan aktif
+        $resWithSig = $this->get(route('loans.show', $loan->id));
+        $resWithSig->assertOk();
+        $resWithSig->assertSee('Tanda Tangan Pengelola Terpasang');
+        $resWithSig->assertSee('bg-[#0B63B5]', false);
+
+        // Bersihkan storage uji
+        Storage::disk('public')->delete($dummySigPath);
+    }
 }
 

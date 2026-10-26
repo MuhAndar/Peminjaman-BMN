@@ -1292,34 +1292,95 @@
             @endif
 
             <!-- 2. Action Pengelola BMN: Telaah Pengajuan (SUBMITTED) -->
-            @if($loan->status === 'SUBMITTED' && $isPengelola)
-                <div class="bg-white rounded-3xl border-2 border-blue-200 p-6 shadow-sm space-y-4">
-                    <div class="flex items-center gap-2 text-[#0B63B5]">
+            @if($loan->status === 'SUBMITTED' && ($isPengelola || $user->isAdmin()))
+                @php
+                    $officerSigPath = $loan->officer_signature ?: (auth()->user()->signature_path ?? null);
+                    $hasOfficerSig = !empty($officerSigPath) && \Illuminate\Support\Facades\Storage::disk('public')->exists($officerSigPath);
+                @endphp
+                <div class="bg-white dark:bg-slate-900 rounded-3xl border-2 border-blue-200 dark:border-blue-800 p-6 shadow-sm space-y-4">
+                    <div class="flex items-center gap-2 text-[#0B63B5] dark:text-blue-400">
                         <i data-lucide="clipboard-check" class="w-5 h-5"></i>
-                        <h3 class="text-base font-black text-slate-900">Tindakan Pengelola BMN (SOP Peminjaman Langkah 2 & 3)</h3>
+                        <h3 class="text-base font-black text-slate-900 dark:text-white">Tindakan Pengelola BMN (SOP Peminjaman Langkah 2 & 3)</h3>
                     </div>
-                    <p class="text-xs text-slate-600">
+                    <p class="text-xs text-slate-600 dark:text-slate-300">
                         Periksa kelengkapan form, ketersediaan barang di gudang, dan kondisi fisik barang (Target SLA: 10 menit).
                     </p>
+
+                    <!-- Status Tanda Tangan Petugas Pengelola BMN -->
+                    <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border {{ $hasOfficerSig ? 'border-emerald-200 dark:border-emerald-800/60' : 'border-amber-200 dark:border-amber-800/60' }} flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+                        <div class="flex items-center gap-3 min-w-0">
+                            @if($hasOfficerSig)
+                                <div class="w-24 h-12 bg-white signature-paper rounded-xl border border-emerald-200 dark:border-emerald-700 p-1 flex items-center justify-center shrink-0 shadow-2xs" style="background-color: #ffffff !important;">
+                                    <img src="{{ asset('storage/' . $officerSigPath) }}" alt="TTD Pengelola" class="max-h-full max-w-full object-contain">
+                                </div>
+                                <div class="min-w-0 text-xs">
+                                    <div class="flex items-center gap-1.5 font-bold text-slate-800 dark:text-white">
+                                        <span>Tanda Tangan Pengelola Terpasang</span>
+                                        <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-600"></i>
+                                    </div>
+                                    <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                                        Petugas: <strong>{{ auth()->user()->name }}</strong>
+                                    </p>
+                                </div>
+                            @else
+                                <div class="w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-400 flex items-center justify-center shrink-0">
+                                    <i data-lucide="signature" class="w-6 h-6"></i>
+                                </div>
+                                <div class="min-w-0 text-xs">
+                                    <div class="font-bold text-amber-900 dark:text-amber-200">
+                                        Tanda Tangan Pengelola BMN Belum Ada
+                                    </div>
+                                    <p class="text-[11px] text-amber-700 dark:text-amber-400 mt-0.5">
+                                        Wajib dibubuhkan sebelum meneruskan berkas telaah ke Ketua Tim Keuangan & Aset.
+                                    </p>
+                                </div>
+                            @endif
+                        </div>
+
+                        <div class="shrink-0">
+                            @if($hasOfficerSig)
+                                <button type="button" @click="openSigModal('officer')"
+                                        class="px-3.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition shadow-2xs cursor-pointer flex items-center gap-1.5">
+                                    <i data-lucide="edit-3" class="w-3.5 h-3.5 text-emerald-600"></i>
+                                    <span>Ganti Tanda Tangan</span>
+                                </button>
+                            @else
+                                <button type="button" @click="openSigModal('officer')"
+                                        class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shadow-sm transition cursor-pointer flex items-center gap-1.5">
+                                    <i data-lucide="pen-tool" class="w-3.5 h-3.5"></i>
+                                    <span>Bubuhkan Tanda Tangan</span>
+                                </button>
+                            @endif
+                        </div>
+                    </div>
 
                     <form method="POST" action="{{ route('kelola.review', $loan->id) }}" class="space-y-4">
                         @csrf
                         <div>
-                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Catatan Penelaahan</label>
-                            <textarea name="note" rows="2" class="w-full p-3 rounded-xl border border-slate-300 text-xs font-medium outline-none focus:border-blue-500"
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Catatan Penelaahan</label>
+                            <textarea name="note" rows="2" class="w-full p-3 rounded-xl border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-xs font-medium outline-none focus:border-blue-500"
                                       placeholder="Tuliskan catatan kelengkapan dokumen atau alasan perbaikan jika dikembalikan..."></textarea>
                         </div>
 
                         <div class="flex flex-wrap gap-3">
-                            <button type="submit" name="action" value="approve_review"
-                                    data-confirm="Apakah seluruh dokumen dan ketersediaan fisik BMN telah sesuai untuk diteruskan ke Ketua Tim?"
-                                    data-confirm-title="Teruskan ke Ketua Tim"
-                                    data-confirm-btn="Ya, Teruskan Berkas"
-                                    data-confirm-type="primary"
-                                    class="px-5 py-2.5 bg-[#0B63B5] hover:bg-[#0B4F8A] text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5 cursor-pointer">
-                                <i data-lucide="arrow-right-circle" class="w-4 h-4"></i>
-                                <span>Teruskan ke Ketua Tim (Dokumen Lengkap)</span>
-                            </button>
+                            @if($hasOfficerSig)
+                                <button type="submit" name="action" value="approve_review"
+                                        data-confirm="Apakah seluruh dokumen dan ketersediaan fisik BMN telah sesuai untuk diteruskan ke Ketua Tim?"
+                                        data-confirm-title="Teruskan ke Ketua Tim"
+                                        data-confirm-btn="Ya, Teruskan Berkas"
+                                        data-confirm-type="primary"
+                                        class="px-5 py-2.5 bg-[#0B63B5] hover:bg-[#0B4F8A] text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5 cursor-pointer">
+                                    <i data-lucide="arrow-right-circle" class="w-4 h-4"></i>
+                                    <span>Teruskan ke Ketua Tim (Dokumen Lengkap)</span>
+                                </button>
+                            @else
+                                <button type="button" disabled
+                                        title="Harap bubuhkan tanda tangan Pengelola BMN terlebih dahulu sebelum meneruskan berkas ke Ketua Tim"
+                                        class="px-5 py-2.5 bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-not-allowed shadow-inner select-none">
+                                    <i data-lucide="arrow-right-circle" class="w-4 h-4 opacity-40"></i>
+                                    <span>Teruskan ke Ketua Tim (Dokumen Lengkap)</span>
+                                </button>
+                            @endif
 
                             <button type="submit" name="action" value="request_revision"
                                     data-confirm="Apakah Anda yakin ingin mengembalikan pengajuan ini ke peminjam untuk diperbaiki?"
