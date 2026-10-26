@@ -150,11 +150,11 @@
 
             <table style="width: 100%; border-collapse: collapse; margin-top: 10pt;">
                 @foreach(array_chunk($photos, 2) as $row)
-                    <tr>
+                    <tr style="page-break-inside: avoid;">
                         @foreach($row as $p)
                             <td style="width: 50%; padding: 8pt; vertical-align: top; text-align: center; border: 1pt solid #D9D9D9; background: #fafafa;">
                                 <div style="background: #ffffff; border: 1pt solid #e2e8f0; padding: 4pt; border-radius: 4pt;">
-                                    <img src="{{ $p['src'] }}" style="max-width: 100%; max-height: 190pt; object-fit: contain;">
+                                    <img src="{{ $p['src'] }}" style="max-width: 100%; max-height: 180pt; object-fit: contain;">
                                 </div>
                                 <div style="font-size: 8.5pt; color: #1e293b; margin-top: 6pt; font-weight: bold;">
                                     {{ $p['caption'] }}

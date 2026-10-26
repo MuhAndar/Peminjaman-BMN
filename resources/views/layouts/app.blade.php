@@ -1257,7 +1257,7 @@
         // Global Event Listener for declarative [data-confirm] buttons
         document.addEventListener('click', function(e) {
             const btn = e.target.closest('[data-confirm]');
-            if (!btn) return;
+            if (!btn || btn.disabled || btn.hasAttribute('disabled') || btn.getAttribute('aria-disabled') === 'true') return;
 
             e.preventDefault();
             const form = btn.closest('form');

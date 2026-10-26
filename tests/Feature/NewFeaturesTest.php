@@ -1306,5 +1306,145 @@ class NewFeaturesTest extends TestCase
         // Bersihkan storage uji
         Storage::disk('public')->delete($dummySigPath);
     }
+
+    /**
+     * Verifikasi bahwa penerbitan BAST Peminjaman dan BAST Pengembalian mewajibkan
+     * minimal 1 foto fisik barang (tombol disabled jika belum ada foto, dan server menolak jika tanpa foto),
+     * serta mendukung pengunggahan multiple foto (hingga 5 foto).
+     */
+    public function test_bast_issuance_and_return_require_photos_and_support_multiple_photos(): void
+    {
+        Storage::fake('public');
+
+        $peminjamUser = User::where('role', 'PEMINJAM')->first();
+        $pengelolaUser = User::where('role', 'PENGELOLA_BMN')->first();
+        $ketuaTimUser = User::where('role', 'KETUA_TIM_ASET')->first();
+        $asset = Asset::where('status', 'AVAILABLE')->first();
+
+        // Siapkan tanda tangan dummy di Storage fake
+        $borrowerSig = 'signatures/test_borrower.png';
+        $officerSig = 'signatures/test_officer.png';
+        $approverSig = 'signatures/test_approver.png';
+        Storage::disk('public')->put($borrowerSig, 'dummy_sig');
+        Storage::disk('public')->put($officerSig, 'dummy_sig');
+        Storage::disk('public')->put($approverSig, 'dummy_sig');
+
+        $peminjamUser->update(['signature_path' => $borrowerSig]);
+        $pengelolaUser->update(['signature_path' => $officerSig]);
+        $ketuaTimUser->update(['signature_path' => $approverSig]);
+
+        // 1. Buat pengajuan sampai status APPROVED
+        $loan = LoanRequest::create([
+            'borrower_id' => $peminjamUser->employee_id,
+            'loan_type' => 'SHORT_TERM',
+            'start_date' => Carbon::now()->addDays(1)->toDateString(),
+            'end_date' => Carbon::now()->addDays(3)->toDateString(),
+            'status' => 'DRAFT',
+            'snap_full_name' => $peminjamUser->name,
+            'snap_nip' => $peminjamUser->employee->nip,
+            'borrower_signature' => $borrowerSig,
+        ]);
+        $loan->items()->create([
+            'asset_id' => $asset->id,
+            'purpose' => 'Kegiatan kantor',
+            'snap_item_name' => $asset->item_name,
+            'snap_brand_model' => $asset->brand_model_combined,
+            'snap_value' => $asset->acquisition_value,
+        ]);
+
+        LoanStateMachine::transition($loan, 'SUBMITTED', $peminjamUser);
+        LoanStateMachine::transition($loan, 'UNDER_APPROVAL', $pengelolaUser);
+        LoanStateMachine::transition($loan, 'APPROVED', $ketuaTimUser);
+
+        $this->actingAs($pengelolaUser);
+
+        // Pasang tanda tangan pengelola pada pengajuan
+        $loan->update(['officer_signature' => $officerSig]);
+
+        // Tampilan show menampilkan petunjuk foto fisik & tombol BAST
+        $showRes = $this->get(route('loans.show', $loan->id));
+        $showRes->assertOk();
+        $showRes->assertSee('Foto Fisik BMN Bukti Dukung BAST (Wajib Dilampirkan)');
+        $showRes->assertSee('Buat Dokumen BAST Peminjaman Bernomor');
+
+        // Percobaan 1: Pengelola mencoba membuat BAST Peminjaman TANPA foto
+        $resNoPhoto = $this->post(route('kelola.issue-bast', $loan->id), [
+            'notes' => 'Catatan serah terima',
+        ]);
+        $resNoPhoto->assertSessionHas('error');
+        $this->assertStringContainsString('Dokumentasi foto fisik BMN wajib dilampirkan', session('error'));
+        $loan->refresh();
+        $this->assertEquals('APPROVED', $loan->status);
+
+        // Percobaan 2: Pengelola membuat BAST Peminjaman DENGAN 2 foto fisik
+        $photo1 = UploadedFile::fake()->image('bmn_depan.jpg', 600, 400);
+        $photo2 = UploadedFile::fake()->image('bmn_seri.jpg', 600, 400);
+
+        $resWithPhoto = $this->post(route('kelola.issue-bast', $loan->id), [
+            'notes' => 'Barang diserahkan dalam kondisi baik',
+            'photos' => [$photo1, $photo2],
+        ]);
+        $resWithPhoto->assertSessionHas('success');
+        $loan->refresh();
+        $this->assertEquals('BAST_ISSUED', $loan->status);
+
+        // Periksa foto tersimpan dengan stage BAST_PEMINJAMAN
+        $bastPhotos = LoanPhoto::where('loan_request_id', $loan->id)
+            ->where('stage', 'BAST_PEMINJAMAN')
+            ->get();
+        $this->assertCount(2, $bastPhotos);
+
+        // Periksa dokumen BAST Peminjaman terbentuk
+        $bastDoc = Document::where('loan_request_id', $loan->id)
+            ->where('doc_type', 'BAST_PEMINJAMAN')
+            ->first();
+        $this->assertNotNull($bastDoc);
+
+        // 2. Lanjutkan alur ke pengembalian (ACTIVE -> RETURN_REQUESTED)
+        LoanStateMachine::transition($loan, 'ACTIVE', $pengelolaUser);
+
+        $this->actingAs($peminjamUser);
+        $this->post(route('loans.request-return', $loan->id), [
+            'return_notes' => 'Pekerjaan telah selesai',
+        ]);
+        $loan->refresh();
+        $this->assertEquals('RETURN_REQUESTED', $loan->status);
+
+        // 3. Pengelola proses pemeriksaan pengembalian
+        $this->actingAs($pengelolaUser);
+
+        // Percobaan 3: Pengelola periksa kembali TANPA foto fisik barang kembali
+        $resReturnNoPhoto = $this->post(route('kelola.process-return-check', $loan->id), [
+            'notes' => 'Pemeriksaan fisik',
+        ]);
+        $resReturnNoPhoto->assertSessionHas('error');
+        $this->assertStringContainsString('Dokumentasi foto fisik pengembalian BMN wajib dilampirkan', session('error'));
+        $loan->refresh();
+        $this->assertEquals('RETURN_REQUESTED', $loan->status);
+
+        // Percobaan 4: Pengelola periksa kembali DENGAN 2 foto fisik saat kembali
+        $returnPhoto1 = UploadedFile::fake()->image('kembali_1.jpg', 600, 400);
+        $returnPhoto2 = UploadedFile::fake()->image('kembali_2.jpg', 600, 400);
+
+        $resReturnWithPhoto = $this->post(route('kelola.process-return-check', $loan->id), [
+            'notes' => 'Barang kembali lengkap dan mulus',
+            'photos' => [$returnPhoto1, $returnPhoto2],
+        ]);
+        $resReturnWithPhoto->assertSessionHas('success');
+        $loan->refresh();
+        $this->assertEquals('RETURN_CHECKED', $loan->status);
+
+        // Periksa foto tersimpan dengan stage BAST_PENGEMBALIAN
+        $returnPhotos = LoanPhoto::where('loan_request_id', $loan->id)
+            ->where('stage', 'BAST_PENGEMBALIAN')
+            ->get();
+        $this->assertCount(2, $returnPhotos);
+
+        // Periksa dokumen BAST Pengembalian terbentuk
+        $bastKembaliDoc = Document::where('loan_request_id', $loan->id)
+            ->where('doc_type', 'BAST_PENGEMBALIAN')
+            ->first();
+        $this->assertNotNull($bastKembaliDoc);
+    }
 }
 

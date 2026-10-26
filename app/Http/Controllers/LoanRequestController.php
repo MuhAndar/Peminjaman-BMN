@@ -666,21 +666,21 @@ class LoanRequestController extends Controller
             $loan->save();
         }
 
-        // Validasi ketersediaan foto fisik pendukung BAST Peminjaman
+        // Validasi ketersediaan foto fisik pendukung BAST Peminjaman (maksimal 5 foto)
         $existingPhotosCount = $loan->photos()->where('stage', 'BAST_PEMINJAMAN')->count();
-        $hasUploadedPhotos = $request->hasFile('photos') && count(array_filter((array)$request->file('photos'), fn($f) => $f && $f->isValid())) > 0;
+        $rawFiles = (array)$request->file('photos', []);
+        $validFiles = array_values(array_filter($rawFiles, fn($f) => $f instanceof \Illuminate\Http\UploadedFile && $f->isValid()));
 
-        if ($existingPhotosCount === 0 && !$hasUploadedPhotos) {
+        if ($existingPhotosCount === 0 && empty($validFiles)) {
             return back()->with('error', 'Dokumentasi foto fisik BMN wajib dilampirkan sebelum menerbitkan BAST Peminjaman agar dokumen memiliki bukti dukung fisik.');
         }
 
         try {
-            // Simpan foto dokumentasi fisik BMN jika dilampirkan langsung saat pembuatan draf BAST
-            if ($request->hasFile('photos')) {
-                foreach ($request->file('photos') as $photoFile) {
-                    if (!$photoFile || !$photoFile->isValid()) {
-                        continue;
-                    }
+            // Simpan foto dokumentasi fisik BMN (maksimal 5 foto terlampir)
+            if (!empty($validFiles)) {
+                $maxAllowed = max(1, 5 - $existingPhotosCount);
+                $filesToSave = array_slice($validFiles, 0, $maxAllowed);
+                foreach ($filesToSave as $photoFile) {
                     $fileName = 'loan_photos/' . $loan->id . '/' . time() . '_' . Str::random(6) . '.' . $photoFile->getClientOriginalExtension();
                     $path = $photoFile->storeAs('loan_photos/' . $loan->id, basename($fileName), 'public');
 
@@ -777,23 +777,23 @@ class LoanRequestController extends Controller
             $loan->save();
         }
 
-        // Validasi ketersediaan foto fisik pendukung BAST Pengembalian
+        // Validasi ketersediaan foto fisik pendukung BAST Pengembalian (maksimal 5 foto)
         $existingPhotosCount = $loan->photos()->where('stage', 'BAST_PENGEMBALIAN')->count();
-        $hasUploadedPhotos = $request->hasFile('photos') && count(array_filter((array)$request->file('photos'), fn($f) => $f && $f->isValid())) > 0;
+        $rawFiles = (array)$request->file('photos', []);
+        $validFiles = array_values(array_filter($rawFiles, fn($f) => $f instanceof \Illuminate\Http\UploadedFile && $f->isValid()));
 
-        if ($existingPhotosCount === 0 && !$hasUploadedPhotos) {
+        if ($existingPhotosCount === 0 && empty($validFiles)) {
             return back()->with('error', 'Dokumentasi foto fisik pengembalian BMN wajib dilampirkan sebelum menerbitkan BAST Pengembalian agar kondisi akhir tercatat valid.');
         }
 
         $itemsCondition = $request->input('items', []);
 
         try {
-            // Simpan foto dokumentasi jika dilampirkan
-            if ($request->hasFile('photos')) {
-                foreach ($request->file('photos') as $photoFile) {
-                    if (!$photoFile || !$photoFile->isValid()) {
-                        continue;
-                    }
+            // Simpan foto dokumentasi fisik BMN (maksimal 5 foto terlampir)
+            if (!empty($validFiles)) {
+                $maxAllowed = max(1, 5 - $existingPhotosCount);
+                $filesToSave = array_slice($validFiles, 0, $maxAllowed);
+                foreach ($filesToSave as $photoFile) {
                     $fileName = 'loan_photos/' . $loan->id . '/' . time() . '_' . Str::random(6) . '.' . $photoFile->getClientOriginalExtension();
                     $path = $photoFile->storeAs('loan_photos/' . $loan->id, basename($fileName), 'public');
 

@@ -1473,15 +1473,41 @@
                         </div>
                     </div>
 
-                    <form method="POST" action="{{ route('kelola.issue-bast', $loan->id) }}" enctype="multipart/form-data" class="space-y-4">
+                    @php
+                        $bastPjmPhotos = $loan->photos()->where('stage', 'BAST_PEMINJAMAN')->get();
+                        $hasOfficerSig = !empty($loan->officer_signature) && \Illuminate\Support\Facades\Storage::disk('public')->exists($loan->officer_signature);
+                        if (!$hasOfficerSig && !empty(auth()->user()->signature_path) && \Illuminate\Support\Facades\Storage::disk('public')->exists(auth()->user()->signature_path)) {
+                            $hasOfficerSig = true;
+                        }
+                    @endphp
+
+                    <form method="POST" action="{{ route('kelola.issue-bast', $loan->id) }}" enctype="multipart/form-data" class="space-y-4"
+                          x-data="{
+                              existingPhotos: {{ $bastPjmPhotos->count() }},
+                              selectedCount: 0,
+                              previewUrls: [],
+                              maxPhotos: 5,
+                              handleFiles(input) {
+                                  const files = Array.from(input.files || []);
+                                  if (files.length === 0) return;
+                                  if (this.existingPhotos + files.length > this.maxPhotos) {
+                                      alert('Maksimal total 5 foto fisik dokumentasi BAST. Sistem membatasi foto yang dipilih.');
+                                  }
+                                  const validFiles = files.slice(0, Math.max(1, this.maxPhotos - this.existingPhotos));
+                                  this.selectedCount = validFiles.length;
+                                  this.previewUrls = [];
+                                  validFiles.forEach(file => {
+                                      const reader = new FileReader();
+                                      reader.onload = (e) => { this.previewUrls.push(e.target.result); };
+                                      reader.readAsDataURL(file);
+                                  });
+                                  this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
+                              },
+                              get canSubmit() {
+                                  return (this.existingPhotos > 0 || this.selectedCount > 0);
+                              }
+                          }">
                         @csrf
-                        @php
-                            $bastPjmPhotos = $loan->photos()->where('stage', 'BAST_PEMINJAMAN')->get();
-                            $hasOfficerSig = !empty($loan->officer_signature) && \Illuminate\Support\Facades\Storage::disk('public')->exists($loan->officer_signature);
-                            if (!$hasOfficerSig && !empty(auth()->user()->signature_path) && \Illuminate\Support\Facades\Storage::disk('public')->exists(auth()->user()->signature_path)) {
-                                $hasOfficerSig = true;
-                            }
-                        @endphp
 
                         <!-- Status Tanda Tangan Petugas Pengelola BMN (Wajib) -->
                         <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border {{ $hasOfficerSig ? 'border-emerald-200 dark:border-emerald-800/60' : 'border-amber-200 dark:border-amber-800/60' }} shadow-2xs space-y-3">
@@ -1532,9 +1558,13 @@
                             @endif
                         </div>
 
-                        <div class="p-4 rounded-2xl bg-cyan-50/70 dark:bg-cyan-950/40 border border-cyan-200 dark:border-cyan-800/60 space-y-2">
+                        <!-- Foto Fisik BMN Bukti Dukung BAST (Wajib Dilampirkan) -->
+                        <div class="p-4 rounded-2xl bg-cyan-50/70 dark:bg-cyan-950/40 border border-cyan-200 dark:border-cyan-800/60 space-y-2.5">
                             <div class="flex items-center justify-between">
-                                <label class="block text-xs font-bold text-cyan-950 dark:text-cyan-200">Foto Fisik BMN Bukti Dukung BAST (Wajib Dilampirkan):</label>
+                                <label class="block text-xs font-bold text-cyan-950 dark:text-cyan-200 flex items-center gap-1.5">
+                                    <i data-lucide="camera" class="w-4 h-4 text-cyan-600 dark:text-cyan-400"></i>
+                                    <span>Foto Fisik BMN Bukti Dukung BAST (Wajib Dilampirkan):</span>
+                                </label>
                                 @if($bastPjmPhotos->isNotEmpty())
                                     <span class="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold border border-emerald-300 dark:border-emerald-800 flex items-center gap-1">
                                         <i data-lucide="check" class="w-3 h-3"></i>
@@ -1544,36 +1574,81 @@
                             </div>
                             <p class="text-[11px] text-cyan-800 dark:text-cyan-300">
                                 @if($bastPjmPhotos->isNotEmpty())
-                                    Sistem telah memiliki {{ $bastPjmPhotos->count() }} foto fisik untuk pengajuan ini. Anda dapat menambah foto baru di bawah ini.
+                                    Sistem telah memiliki {{ $bastPjmPhotos->count() }} foto fisik untuk pengajuan ini. Anda dapat menambah foto baru (Maksimal total 5 foto).
                                 @else
-                                    Sesuai tata kelola akuntabilitas BMN, wajib melampirkan minimal 1 foto fisik barang sebagai bukti sah kondisi awal sebelum BAST Peminjaman resmi diterbitkan.
+                                    Sesuai tata kelola akuntabilitas BMN, wajib melampirkan minimal 1 foto fisik barang sebagai bukti sah kondisi awal sebelum BAST Peminjaman resmi diterbitkan (Maks. 5 foto).
                                 @endif
                             </p>
+
+                            @if($bastPjmPhotos->isNotEmpty())
+                                <div class="space-y-1 pt-1 pb-2 border-b border-cyan-200/60 dark:border-cyan-800/60">
+                                    <span class="text-[10px] text-cyan-900 dark:text-cyan-200 font-bold block">Foto Yang Sudah Tersimpan:</span>
+                                    <div class="flex flex-wrap gap-2">
+                                        @foreach($bastPjmPhotos as $p)
+                                            <div class="relative w-16 h-16 rounded-xl overflow-hidden border border-emerald-300 dark:border-emerald-700 bg-white shadow-2xs">
+                                                <img src="{{ asset('storage/' . $p->file_path) }}" alt="Foto BAST" class="w-full h-full object-cover">
+                                                <span class="absolute bottom-0 right-0 bg-emerald-700 text-white text-[8px] px-1 font-bold">Tersimpan</span>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @endif
+
                             <div class="flex flex-wrap items-center gap-2 pt-1">
                                 <label class="cursor-pointer px-3.5 py-1.5 bg-white dark:bg-slate-900 border border-cyan-300 dark:border-cyan-700 hover:bg-cyan-50 dark:hover:bg-cyan-900/40 text-cyan-800 dark:text-cyan-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs">
                                     <i data-lucide="camera" class="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400"></i>
                                     <span>Jepret Kamera</span>
-                                    <input type="file" name="photos[]" accept="image/*" capture="environment" class="hidden" onchange="updateFileCount(this, 'issue_bast_photo_count')">
+                                    <input type="file" name="photos[]" accept="image/*" capture="environment" class="hidden" @change="handleFiles($event.target)">
                                 </label>
                                 <label class="cursor-pointer px-3.5 py-1.5 bg-white dark:bg-slate-900 border border-cyan-300 dark:border-cyan-700 hover:bg-cyan-50 dark:hover:bg-cyan-900/40 text-cyan-800 dark:text-cyan-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs">
                                     <i data-lucide="images" class="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400"></i>
                                     <span>Pilih dari Galeri</span>
-                                    <input type="file" name="photos[]" accept="image/*" multiple class="hidden" onchange="updateFileCount(this, 'issue_bast_photo_count')">
+                                    <input type="file" name="photos[]" accept="image/*" multiple class="hidden" @change="handleFiles($event.target)">
                                 </label>
-                                <span id="issue_bast_photo_count" class="text-xs text-slate-500 dark:text-slate-400 italic">Belum ada foto dipilih</span>
+                                <span class="text-xs font-medium"
+                                      :class="selectedCount > 0 ? 'text-emerald-700 dark:text-emerald-300 font-bold' : 'text-slate-500 dark:text-slate-400 italic'"
+                                      x-text="selectedCount > 0 ? selectedCount + ' foto baru dipilih (Maks. 5 foto)' : (existingPhotos > 0 ? existingPhotos + ' foto sudah tersimpan di sistem' : 'Belum ada foto dipilih')">
+                                </span>
                             </div>
+
+                            <!-- Preview Thumbnail Foto Baru Terpilih -->
+                            <template x-if="previewUrls.length > 0">
+                                <div class="space-y-1.5 pt-2 border-t border-cyan-200/50 dark:border-cyan-800/50">
+                                    <span class="text-[10px] text-cyan-900 dark:text-cyan-200 font-bold block">Preview Foto Terpilih:</span>
+                                    <div class="flex flex-wrap gap-2">
+                                        <template x-for="(url, idx) in previewUrls" :key="idx">
+                                            <div class="relative w-16 h-16 rounded-xl overflow-hidden border-2 border-cyan-500 dark:border-cyan-400 shadow-xs bg-slate-100">
+                                                <img :src="url" class="w-full h-full object-cover">
+                                                <span class="absolute bottom-0 right-0 bg-slate-900/70 text-white text-[9px] px-1 font-mono font-bold" x-text="'#' + (idx + 1)"></span>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                            </template>
                         </div>
 
                         @if($hasOfficerSig)
-                            <button type="submit"
-                                    data-confirm="Terbitkan dokumen Berita Acara Serah Terima (BAST) Peminjaman bernomor otomatis sekarang?"
-                                    data-confirm-title="Terbitkan BAST Peminjaman"
-                                    data-confirm-btn="Ya, Terbitkan BAST"
-                                    data-confirm-type="primary"
-                                    class="px-5 py-2.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-2 cursor-pointer">
-                                <i data-lucide="file-plus" class="w-4 h-4"></i>
-                                <span>Buat Dokumen BAST Peminjaman Bernomor</span>
-                            </button>
+                            <div class="space-y-2">
+                                <button type="submit"
+                                        :disabled="!canSubmit"
+                                        :class="canSubmit 
+                                            ? 'bg-cyan-600 hover:bg-cyan-700 text-white cursor-pointer shadow-sm hover:shadow-md active:scale-95' 
+                                            : 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed shadow-none border border-slate-300/80 dark:border-slate-700'"
+                                        data-confirm="Terbitkan dokumen Berita Acara Serah Terima (BAST) Peminjaman bernomor otomatis sekarang?"
+                                        data-confirm-title="Terbitkan BAST Peminjaman"
+                                        data-confirm-btn="Ya, Terbitkan BAST"
+                                        data-confirm-type="primary"
+                                        class="px-5 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2">
+                                    <i data-lucide="file-plus" class="w-4 h-4"></i>
+                                    <span>Buat Dokumen BAST Peminjaman Bernomor</span>
+                                </button>
+                                <template x-if="!canSubmit">
+                                    <p class="text-[11px] text-amber-600 dark:text-amber-400 font-semibold flex items-center gap-1.5 pt-0.5">
+                                        <i data-lucide="alert-triangle" class="w-3.5 h-3.5 shrink-0"></i>
+                                        <span>Tombol penerbitan BAST tidak dapat diklik sebelum foto fisik barang diunggah/dipilih.</span>
+                                    </p>
+                                </template>
+                            </div>
                         @else
                             <button type="button" @click="openSigModal('officer')"
                                     class="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-2 cursor-pointer">
@@ -1633,7 +1708,36 @@
                         Lakukan pengecekan kesesuaian jumlah, jenis, dan kondisi fisik BMN yang dikembalikan di kantor (Target SLA: 5 Menit).
                     </p>
 
-                    <form method="POST" action="{{ route('kelola.process-return-check', $loan->id) }}" enctype="multipart/form-data" class="space-y-4">
+                    @php
+                        $bastKblPhotos = $loan->photos()->where('stage', 'BAST_PENGEMBALIAN')->get();
+                    @endphp
+
+                    <form method="POST" action="{{ route('kelola.process-return-check', $loan->id) }}" enctype="multipart/form-data" class="space-y-4"
+                          x-data="{
+                              existingPhotos: {{ $bastKblPhotos->count() }},
+                              selectedCount: 0,
+                              previewUrls: [],
+                              maxPhotos: 5,
+                              handleFiles(input) {
+                                  const files = Array.from(input.files || []);
+                                  if (files.length === 0) return;
+                                  if (this.existingPhotos + files.length > this.maxPhotos) {
+                                      alert('Maksimal total 5 foto fisik pengembalian yang dapat dipilih.');
+                                  }
+                                  const validFiles = files.slice(0, Math.max(1, this.maxPhotos - this.existingPhotos));
+                                  this.selectedCount = validFiles.length;
+                                  this.previewUrls = [];
+                                  validFiles.forEach(file => {
+                                      const reader = new FileReader();
+                                      reader.onload = (e) => { this.previewUrls.push(e.target.result); };
+                                      reader.readAsDataURL(file);
+                                  });
+                                  this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
+                              },
+                              get canSubmit() {
+                                  return (this.existingPhotos > 0 || this.selectedCount > 0);
+                              }
+                          }">
                         @csrf
                         @foreach($loan->items as $item)
                             <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
@@ -1656,12 +1760,12 @@
                             </div>
                         @endforeach
 
-                        @php
-                            $bastKblPhotos = $loan->photos()->where('stage', 'BAST_PENGEMBALIAN')->get();
-                        @endphp
-                        <div class="p-4 rounded-2xl bg-amber-50/70 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 space-y-2">
+                        <div class="p-4 rounded-2xl bg-amber-50/70 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 space-y-2.5">
                             <div class="flex items-center justify-between">
-                                <label class="block text-xs font-bold text-amber-950 dark:text-amber-200">Foto Dokumentasi Kondisi Fisik Pengembalian (Wajib Dilampirkan):</label>
+                                <label class="block text-xs font-bold text-amber-950 dark:text-amber-200 flex items-center gap-1.5">
+                                    <i data-lucide="camera" class="w-4 h-4 text-amber-600 dark:text-amber-400"></i>
+                                    <span>Foto Dokumentasi Kondisi Fisik Pengembalian (Wajib Dilampirkan):</span>
+                                </label>
                                 @if($bastKblPhotos->isNotEmpty())
                                     <span class="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold border border-emerald-300 dark:border-emerald-800 flex items-center gap-1">
                                         <i data-lucide="check" class="w-3 h-3"></i>
@@ -1671,35 +1775,80 @@
                             </div>
                             <p class="text-[11px] text-amber-800 dark:text-amber-300">
                                 @if($bastKblPhotos->isNotEmpty())
-                                    Sistem telah memiliki {{ $bastKblPhotos->count() }} foto fisik saat pengembalian. Anda dapat menambah foto baru di bawah ini.
+                                    Sistem telah memiliki {{ $bastKblPhotos->count() }} foto fisik saat pengembalian. Anda dapat menambah foto baru (Maksimal total 5 foto).
                                 @else
-                                    Lampirkan foto fisik barang saat dikembalikan sebagai bukti sah kondisi akhir fisik BMN pada lembar lampiran BAST Pengembalian.
+                                    Lampirkan foto fisik barang saat dikembalikan sebagai bukti sah kondisi akhir fisik BMN pada lembar lampiran BAST Pengembalian (Maks. 5 foto).
                                 @endif
                             </p>
+
+                            @if($bastKblPhotos->isNotEmpty())
+                                <div class="space-y-1 pt-1 pb-2 border-b border-amber-200/60 dark:border-amber-800/60">
+                                    <span class="text-[10px] text-amber-900 dark:text-amber-200 font-bold block">Foto Yang Sudah Tersimpan:</span>
+                                    <div class="flex flex-wrap gap-2">
+                                        @foreach($bastKblPhotos as $p)
+                                            <div class="relative w-16 h-16 rounded-xl overflow-hidden border border-emerald-300 dark:border-emerald-700 bg-white shadow-2xs">
+                                                <img src="{{ asset('storage/' . $p->file_path) }}" alt="Foto BAST Kembali" class="w-full h-full object-cover">
+                                                <span class="absolute bottom-0 right-0 bg-emerald-700 text-white text-[8px] px-1 font-bold">Tersimpan</span>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @endif
+
                             <div class="flex flex-wrap items-center gap-2 pt-1">
                                 <label class="cursor-pointer px-3.5 py-1.5 bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/40 text-amber-800 dark:text-amber-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs">
                                     <i data-lucide="camera" class="w-3.5 h-3.5 text-amber-600 dark:text-amber-400"></i>
                                     <span>Jepret Kamera</span>
-                                    <input type="file" name="photos[]" accept="image/*" capture="environment" class="hidden" onchange="updateFileCount(this, 'return_photo_count')">
+                                    <input type="file" name="photos[]" accept="image/*" capture="environment" class="hidden" @change="handleFiles($event.target)">
                                 </label>
                                 <label class="cursor-pointer px-3.5 py-1.5 bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/40 text-amber-800 dark:text-amber-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs">
                                     <i data-lucide="images" class="w-3.5 h-3.5 text-amber-600 dark:text-amber-400"></i>
                                     <span>Pilih dari Galeri</span>
-                                    <input type="file" name="photos[]" accept="image/*" multiple class="hidden" onchange="updateFileCount(this, 'return_photo_count')">
+                                    <input type="file" name="photos[]" accept="image/*" multiple class="hidden" @change="handleFiles($event.target)">
                                 </label>
-                                <span id="return_photo_count" class="text-xs text-slate-500 dark:text-slate-400 italic">Belum ada foto dipilih</span>
+                                <span class="text-xs font-medium"
+                                      :class="selectedCount > 0 ? 'text-emerald-700 dark:text-emerald-300 font-bold' : 'text-slate-500 dark:text-slate-400 italic'"
+                                      x-text="selectedCount > 0 ? selectedCount + ' foto baru dipilih (Maks. 5 foto)' : (existingPhotos > 0 ? existingPhotos + ' foto sudah tersimpan di sistem' : 'Belum ada foto dipilih')">
+                                </span>
                             </div>
+
+                            <!-- Preview Thumbnail Foto Baru -->
+                            <template x-if="previewUrls.length > 0">
+                                <div class="space-y-1.5 pt-2 border-t border-amber-200/50 dark:border-amber-800/50">
+                                    <span class="text-[10px] text-amber-900 dark:text-amber-200 font-bold block">Preview Foto Terpilih:</span>
+                                    <div class="flex flex-wrap gap-2">
+                                        <template x-for="(url, idx) in previewUrls" :key="idx">
+                                            <div class="relative w-16 h-16 rounded-xl overflow-hidden border-2 border-amber-500 dark:border-amber-400 shadow-xs bg-slate-100">
+                                                <img :src="url" class="w-full h-full object-cover">
+                                                <span class="absolute bottom-0 right-0 bg-slate-900/70 text-white text-[9px] px-1 font-mono font-bold" x-text="'#' + (idx + 1)"></span>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                            </template>
                         </div>
 
-                        <button type="submit"
-                                data-confirm="Simpan hasil inspeksi fisik dan terbitkan dokumen BAST Pengembalian bernomor resmi?"
-                                data-confirm-title="Pemeriksaan Fisik BMN"
-                                data-confirm-btn="Ya, Terbitkan BAST Kembali"
-                                data-confirm-type="primary"
-                                class="px-5 py-2.5 bg-[#0B63B5] hover:bg-[#0B4F8A] text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-2 cursor-pointer">
-                            <i data-lucide="clipboard-check" class="w-4 h-4"></i>
-                            <span>Selesaikan Pemeriksaan & Terbitkan BAST Pengembalian</span>
-                        </button>
+                        <div class="space-y-2">
+                            <button type="submit"
+                                    :disabled="!canSubmit"
+                                    :class="canSubmit 
+                                        ? 'bg-[#0B63B5] hover:bg-[#0B4F8A] text-white cursor-pointer shadow-sm hover:shadow-md active:scale-95' 
+                                        : 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed shadow-none border border-slate-300/80 dark:border-slate-700'"
+                                    data-confirm="Simpan hasil inspeksi fisik dan terbitkan dokumen BAST Pengembalian bernomor resmi?"
+                                    data-confirm-title="Pemeriksaan Fisik BMN"
+                                    data-confirm-btn="Ya, Terbitkan BAST Kembali"
+                                    data-confirm-type="primary"
+                                    class="px-5 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2">
+                                <i data-lucide="clipboard-check" class="w-4 h-4"></i>
+                                <span>Selesaikan Pemeriksaan & Terbitkan BAST Pengembalian</span>
+                            </button>
+                            <template x-if="!canSubmit">
+                                <p class="text-[11px] text-amber-600 dark:text-amber-400 font-semibold flex items-center gap-1.5 pt-0.5">
+                                    <i data-lucide="alert-triangle" class="w-3.5 h-3.5 shrink-0"></i>
+                                    <span>Wajib melampirkan minimal 1 foto fisik kondisi pengembalian untuk mengaktifkan tombol penyelesaian & penerbitan BAST.</span>
+                                </p>
+                            </template>
+                        </div>
                     </form>
                 </div>
             @endif
