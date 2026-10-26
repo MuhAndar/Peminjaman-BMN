@@ -76,139 +76,90 @@
         <div class="text-xs space-y-1">
             <span class="font-extrabold text-slate-900 dark:text-white block text-sm">Panduan Fitur Impor & Ekspor Data Spreadsheet BMN:</span>
             <p class="text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
-                Modul ini memfasilitasi <strong>pembaruan massal inventaris</strong> dan <strong>pencocokan berkala data fisik aset</strong> dengan format standar SIMAN DJKN / SAKTI. Anda dapat mengunduh <strong>Format Acuan (.xlsx)</strong> sebagai standar pengisian berkas baru, atau memilih <strong>Ekspor Seluruh Inventaris (.xlsx)</strong> untuk mengunduh rekap master barang BMN terkini beserta status pinjam dan peminjam aktifnya.
+                Modul ini memfasilitasi <strong>pembaruan massal inventaris</strong> dan <strong>pencocokan berkala data fisik aset</strong> dengan format standar SIMAN DJKN / SAKTI. Anda dapat mengunduh <strong>Format Acuan (.xlsx)</strong> sebagai standar pengisian berkas baru, atau memilih <strong>Ekspor Seluruh Inventaris (.xlsx)</strong> untuk mengunduh rekap master barang BMN terkini.
             </p>
         </div>
     </div>
 
-    <!-- MAIN GRID: UPLOAD FORM & INFO -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-
-        <!-- LEFT: UPLOAD BOX (7 COLS) -->
-        <div class="lg:col-span-7 space-y-6">
-            <div class="bg-white dark:bg-[#151D2F] rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm p-6 space-y-5">
-                <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
-                    <h2 class="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
-                        <i data-lucide="upload-cloud" class="w-5 h-5 text-[#0B63B5] dark:text-blue-400"></i>
-                        <span>Unggah Berkas Lembar Kerja</span>
-                    </h2>
-                    <span class="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Maksimal 10 MB</span>
-                </div>
-
-                <form method="POST" action="{{ route('kelola.import.upload') }}" enctype="multipart/form-data" class="space-y-4">
-                    @csrf
-
-                    <!-- Target Kategori Data -->
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
-                            Kategori Data Target
-                        </label>
-                        <select name="data_type" x-model="dataType"
-                                class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#0B63B5]/20 focus:border-[#0B63B5]">
-                            <option value="ASSETS">Master Data Barang Inventaris (BMN)</option>
-                            <option value="EMPLOYEES">Master Data Pegawai & Pengguna</option>
-                            <option value="LOAN_HISTORY">Riwayat / Log Peminjaman BMN</option>
-                        </select>
-                    </div>
-
-                    <!-- Drag & Drop Area -->
-                    <div @dragover.prevent="isDragging = true"
-                         @dragleave.prevent="isDragging = false"
-                         @drop.prevent="handleFileDrop($event)"
-                         :class="isDragging ? 'border-[#0B63B5] dark:border-blue-400 bg-blue-50/50 dark:bg-blue-950/20' : 'border-slate-300 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-900/40 hover:bg-slate-50 dark:hover:bg-slate-900/60'"
-                         class="border-2 border-dashed rounded-2xl p-8 text-center transition flex flex-col items-center justify-center space-y-3 cursor-pointer relative">
-
-                        <input type="file" name="file" accept=".xlsx,.xls,.csv"
-                               @change="handleFileInput($event)"
-                               class="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10" required>
-
-                        <template x-if="!selectedFile">
-                            <div class="space-y-2">
-                                <div class="w-14 h-14 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto shadow-2xs">
-                                    <i data-lucide="file-up" class="w-7 h-7"></i>
-                                </div>
-                                <div class="text-xs font-bold text-slate-800 dark:text-slate-200">
-                                    Tarik & letakkan berkas Excel ke sini, atau <span class="text-[#0B63B5] dark:text-blue-400 underline">Pilih Berkas</span>
-                                </div>
-                                <div class="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-                                    Mendukung format Microsoft Excel <code>.xlsx</code>, <code>.xls</code>, atau <code>.csv</code>
-                                </div>
-                            </div>
-                        </template>
-
-                        <template x-if="selectedFile">
-                            <div class="space-y-2 w-full">
-                                <div class="w-12 h-12 rounded-2xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 flex items-center justify-center mx-auto shadow-2xs">
-                                    <i data-lucide="check" class="w-6 h-6"></i>
-                                </div>
-                                <div class="font-extrabold text-sm text-slate-900 dark:text-white" x-text="selectedFile.name"></div>
-                                <div class="text-xs text-slate-500 dark:text-slate-400 font-semibold" x-text="fileSizeStr"></div>
-                                <span class="inline-block px-3 py-1 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                                    Berkas siap diurai & dipratinjau
-                                </span>
-                            </div>
-                        </template>
-                    </div>
-
-                    <!-- Submit Button -->
-                    <div class="flex items-center justify-between pt-2">
-                        <span class="text-[11px] text-slate-400 dark:text-slate-500 italic">
-                            * Berkas akan diurai untuk pratinjau data sebelum disimpan permanen.
-                        </span>
-                        <button type="submit"
-                                class="px-6 py-2.5 bg-[#0B63B5] hover:bg-[#0B4F8A] text-white rounded-xl text-xs font-extrabold shadow-sm transition flex items-center gap-2 cursor-pointer">
-                            <i data-lucide="scan-line" class="w-4 h-4"></i>
-                            <span>Urai & Pratinjau Lembar Kerja</span>
-                        </button>
-                    </div>
-                </form>
+    <!-- MAIN UPLOAD FORM -->
+    <div class="w-full space-y-6">
+        <div class="bg-white dark:bg-[#151D2F] rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm p-6 sm:p-8 space-y-6">
+            <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+                <h2 class="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
+                    <i data-lucide="upload-cloud" class="w-5 h-5 text-[#0B63B5] dark:text-blue-400"></i>
+                    <span>Unggah Berkas Lembar Kerja</span>
+                </h2>
+                <span class="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Maksimal 10 MB</span>
             </div>
-        </div>
 
-        <!-- RIGHT: PANDUAN & ATURAN (5 COLS) -->
-        <div class="lg:col-span-5 space-y-6">
-            <div class="bg-white dark:bg-[#151D2F] rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm p-6 space-y-4">
-                <h3 class="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
-                    <i data-lucide="book-open" class="w-4 h-4 text-[#0B63B5] dark:text-blue-400"></i>
-                    <span>Panduan Format & Ketentuan</span>
-                </h3>
+            <form method="POST" action="{{ route('kelola.import.upload') }}" enctype="multipart/form-data" class="space-y-5">
+                @csrf
 
-                <div class="space-y-3 text-xs text-slate-600 dark:text-slate-300">
-                    <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200/80 dark:border-slate-800 space-y-1">
-                        <span class="font-bold text-slate-800 dark:text-slate-200 block">1. Baris Pertama Adalah Judul Kolom</span>
-                        <p class="text-[11px] text-slate-500 dark:text-slate-400">
-                            Pastikan baris nomor 1 memuat label kepala kolom (Header) tanpa baris kosong atau sel gabungan (merged cells).
-                        </p>
-                    </div>
-
-                    <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200/80 dark:border-slate-800 space-y-1">
-                        <span class="font-bold text-slate-800 dark:text-slate-200 block">2. Tipe Data Kode & Nomor</span>
-                        <p class="text-[11px] text-slate-500 dark:text-slate-400">
-                            Kode BMN, NUP, dan NIP diformat sebagai teks (General/Text) agar angka 0 di depan tidak terpotong.
-                        </p>
-                    </div>
-
-                    <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200/80 dark:border-slate-800 space-y-1">
-                        <span class="font-bold text-slate-800 dark:text-slate-200 block">3. Nilai Perolehan (Rupiah)</span>
-                        <p class="text-[11px] text-slate-500 dark:text-slate-400">
-                            Isikan angka murni tanpa simbol Rp, titik, atau koma pemisah ribuan (contoh: <code>15000000</code>).
-                        </p>
-                    </div>
+                <!-- Target Kategori Data -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                        Kategori Data Target
+                    </label>
+                    <select name="data_type" x-model="dataType"
+                            class="w-full max-w-md px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#0B63B5]/20 focus:border-[#0B63B5]">
+                        <option value="ASSETS">Master Data Barang Inventaris (BMN)</option>
+                        <option value="EMPLOYEES">Master Data Pegawai & Pengguna</option>
+                        <option value="LOAN_HISTORY">Riwayat / Log Peminjaman BMN</option>
+                    </select>
                 </div>
 
-                <div class="pt-2 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-2">
-                    <a href="{{ route('kelola.import.export') }}" hx-boost="false" download="Katalog_Inventaris_BMN_Makassar.xlsx" class="w-full py-2.5 px-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-bold transition flex items-center justify-center gap-2">
-                        <i data-lucide="table" class="w-4 h-4 text-emerald-600 dark:text-emerald-400"></i>
-                        <span>Ekspor Master Barang Terkini (.xlsx)</span>
-                    </a>
-                    <a href="{{ route('kelola.import.template') }}" hx-boost="false" download="Contoh_Entry_Form_Peminjaman_BMN.xlsx" class="w-full py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold transition flex items-center justify-center gap-2">
-                        <i data-lucide="file-down" class="w-4 h-4 text-slate-600 dark:text-slate-400"></i>
-                        <span>Unduh Contoh Berkas Template BMN</span>
-                    </a>
-                </div>
-            </div>
-        </div>
+                <!-- Drag & Drop Area -->
+                <div @dragover.prevent="isDragging = true"
+                     @dragleave.prevent="isDragging = false"
+                     @drop.prevent="handleFileDrop($event)"
+                     :class="isDragging ? 'border-[#0B63B5] dark:border-blue-400 bg-blue-50/50 dark:bg-blue-950/20' : 'border-slate-300 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-900/40 hover:bg-slate-50 dark:hover:bg-slate-900/60'"
+                     class="border-2 border-dashed rounded-2xl p-10 text-center transition flex flex-col items-center justify-center space-y-3 cursor-pointer relative">
 
+                    <input type="file" name="file" accept=".xlsx,.xls,.csv"
+                           @change="handleFileInput($event)"
+                           class="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10" required>
+
+                    <template x-if="!selectedFile">
+                        <div class="space-y-2">
+                            <div class="w-14 h-14 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto shadow-2xs">
+                                <i data-lucide="file-up" class="w-7 h-7"></i>
+                            </div>
+                            <div class="text-xs font-bold text-slate-800 dark:text-slate-200">
+                                Tarik & letakkan berkas Excel ke sini, atau <span class="text-[#0B63B5] dark:text-blue-400 underline">Pilih Berkas</span>
+                            </div>
+                            <div class="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                                Mendukung format Microsoft Excel <code>.xlsx</code>, <code>.xls</code>, atau <code>.csv</code>
+                            </div>
+                        </div>
+                    </template>
+
+                    <template x-if="selectedFile">
+                        <div class="space-y-2 w-full">
+                            <div class="w-12 h-12 rounded-2xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 flex items-center justify-center mx-auto shadow-2xs">
+                                <i data-lucide="check" class="w-6 h-6"></i>
+                            </div>
+                            <div class="font-extrabold text-sm text-slate-900 dark:text-white" x-text="selectedFile.name"></div>
+                            <div class="text-xs text-slate-500 dark:text-slate-400 font-semibold" x-text="fileSizeStr"></div>
+                            <span class="inline-block px-3 py-1 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                                Berkas siap diurai & dipratinjau
+                            </span>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
+                    <span class="text-[11px] text-slate-400 dark:text-slate-500 italic">
+                        * Berkas akan diurai untuk pratinjau data sebelum disimpan permanen.
+                    </span>
+                    <button type="submit"
+                            class="px-6 py-2.5 bg-[#0B63B5] hover:bg-[#0B4F8A] text-white rounded-xl text-xs font-extrabold shadow-sm transition flex items-center justify-center gap-2 cursor-pointer">
+                        <i data-lucide="scan-line" class="w-4 h-4"></i>
+                        <span>Urai & Pratinjau Lembar Kerja</span>
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <!-- PREVIEW HASIL PARSER EXCEL (Jika baru saja diupload) -->
