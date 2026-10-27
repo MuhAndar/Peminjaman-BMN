@@ -16,6 +16,12 @@
     $isPengelola = $user->isPengelola();
     $isKetuaTim = $user->isKetuaTim();
     $isOwner = ($user->employee_id === $loan->borrower_id);
+    $bastPjmPhotos = $loan->relationLoaded('photos')
+        ? $loan->photos->where('stage', 'BAST_PEMINJAMAN')
+        : $loan->photos()->where('stage', 'BAST_PEMINJAMAN')->get();
+    $bastKblPhotos = $loan->relationLoaded('photos')
+        ? $loan->photos->where('stage', 'BAST_PENGEMBALIAN')
+        : $loan->photos()->where('stage', 'BAST_PENGEMBALIAN')->get();
 @endphp
 
 <div class="space-y-6"
@@ -1855,7 +1861,6 @@
                     </div>
 
                     @php
-                        $bastPjmPhotos = $loan->photos()->where('stage', 'BAST_PEMINJAMAN')->get();
                         $hasOfficerSig = !empty($loan->officer_signature) && \Illuminate\Support\Facades\Storage::disk('public')->exists($loan->officer_signature);
                         if (!$hasOfficerSig && !empty(auth()->user()->signature_path) && \Illuminate\Support\Facades\Storage::disk('public')->exists(auth()->user()->signature_path)) {
                             $hasOfficerSig = true;
@@ -2109,9 +2114,7 @@
                         Lakukan pengecekan kesesuaian jumlah, jenis, dan kondisi fisik BMN yang dikembalikan di kantor (Target SLA: 5 Menit).
                     </p>
 
-                    @php
-                        $bastKblPhotos = $loan->photos()->where('stage', 'BAST_PENGEMBALIAN')->get();
-                    @endphp
+
 
                     <form method="POST" action="{{ route('kelola.process-return-check', $loan->id) }}" enctype="multipart/form-data" class="space-y-4"
                           x-data="bastPhotoUploader({{ $bastKblPhotos->count() }}, 5)">

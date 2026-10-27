@@ -2067,6 +2067,81 @@ class NewFeaturesTest extends TestCase
         $resApproveNoSession = $this->get(route('persetujuan.detail'));
         $resApproveNoSession->assertRedirect(route('persetujuan.index'));
     }
+
+    /**
+     * Memastikan view show.blade.php dapat dirender dengan mulus pada status BAST_ISSUED tanpa error Undefined variable $bastPjmPhotos.
+     */
+    public function test_loan_show_renders_bast_issued_without_undefined_variable(): void
+    {
+        $peminjam = User::where('role', 'PEMINJAM')->first();
+        $pengelola = User::where('role', 'PENGELOLA_BMN')->first();
+        $ketua = User::where('role', 'KETUA_TIM_ASET')->first();
+
+        $asset = Asset::where('status', 'AVAILABLE')->first();
+
+        $loan = LoanRequest::create([
+            'borrower_id' => $peminjam->employee->id,
+            'loan_type' => 'SHORT_TERM',
+            'start_date' => Carbon::now()->toDateString(),
+            'end_date' => Carbon::now()->addDays(2)->toDateString(),
+            'status' => 'DRAFT',
+            'snap_full_name' => $peminjam->employee->full_name,
+            'snap_nip' => $peminjam->employee->nip,
+            'snap_rank_grade' => $peminjam->employee->rank_grade,
+            'snap_position' => $peminjam->employee->position,
+            'snap_home_address' => $peminjam->employee->home_address,
+        ]);
+
+        LoanItem::create([
+            'loan_request_id' => $loan->id,
+            'asset_id' => $asset->id,
+            'purpose' => 'Uji Dokumentasi BAST',
+            'condition_out' => 'Baik',
+            'snap_item_name' => $asset->item_name,
+            'snap_brand_model' => $asset->brand_model_combined,
+            'snap_nup' => $asset->nup,
+            'snap_year' => $asset->acquisition_year,
+            'snap_value' => $asset->acquisition_value,
+            'is_blocking' => false,
+        ]);
+
+        LoanStateMachine::transition($loan, 'SUBMITTED', $peminjam);
+        LoanStateMachine::transition($loan, 'UNDER_APPROVAL', $pengelola);
+        LoanStateMachine::transition($loan, 'APPROVED', $ketua);
+        LoanStateMachine::transition($loan, 'BAST_ISSUED', $pengelola);
+
+        $loan->refresh();
+        $this->assertEquals('BAST_ISSUED', $loan->status);
+
+        // Kunjungi halaman detail sebagai Pengelola BMN
+        $this->actingAs($pengelola);
+        $res = $this->get(route('loans.show', $loan->id));
+        $res->assertOk();
+        $res->assertSee('Serah Terima BMN');
+        $res->assertSee('bastPhotoUploader');
+
+        // Kunjungi via URL bersih /pengajuan/detail
+        $resDetail = $this->get(route('loans.detail'));
+        $resDetail->assertOk();
+        $resDetail->assertSee('Serah Terima BMN');
+
+        // Uji upload foto serah terima BAST pada kelola.confirm-active
+        $fakePhoto = UploadedFile::fake()->image('serah_terima.jpg');
+        $resConfirm = $this->post(route('kelola.confirm-active', $loan->id), [
+            'photos' => [$fakePhoto],
+        ]);
+        $resConfirm->assertSessionHas('success');
+
+        $loan->refresh();
+        $this->assertEquals('ACTIVE', $loan->status);
+        $this->assertEquals(1, $loan->photos()->where('stage', 'BAST_PEMINJAMAN')->count());
+
+        // Pastikan halaman detail tetap render dengan aman setelah ada foto
+        $resAfter = $this->get(route('loans.detail'));
+        $resAfter->assertOk();
+        $resAfter->assertSee('Lampiran Foto Fisik Dokumen BAST');
+        $resAfter->assertSee('1 Foto Terlampir');
+    }
 }
 
 
