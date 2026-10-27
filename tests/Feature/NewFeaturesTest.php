@@ -2006,6 +2006,67 @@ class NewFeaturesTest extends TestCase
         $resYearFilter = $this->get(route('admin.statistics', ['year' => 2026]));
         $resYearFilter->assertOk();
     }
+
+    /**
+     * Test clean masked URL routes (/pengajuan/detail and /persetujuan/detail) hide UUIDs from URL.
+     */
+    public function test_masked_loan_and_approval_detail_routes_hide_uuid_in_url(): void
+    {
+        $borrower = User::where('role', 'PEMINJAM')->first();
+        $ketua = User::where('role', 'KETUA_TIM_ASET')->first();
+        $asset = Asset::where('status', 'AVAILABLE')->first();
+
+        $loan = LoanRequest::create([
+            'borrower_id' => $borrower->employee_id,
+            'loan_type' => 'SHORT_TERM',
+            'start_date' => Carbon::now()->toDateString(),
+            'end_date' => Carbon::now()->addDays(3)->toDateString(),
+            'status' => 'UNDER_APPROVAL',
+            'snap_full_name' => $borrower->name,
+            'snap_nip' => '199005152019031005',
+        ]);
+
+        LoanItem::create([
+            'loan_request_id' => $loan->id,
+            'asset_id' => $asset->id,
+            'purpose' => 'Uji coba detail bersih',
+            'condition_out' => 'Baik',
+            'snap_item_name' => $asset->item_name,
+        ]);
+
+        // 1. Kunjungi rute loans.show dengan UUID
+        $this->actingAs($borrower);
+        $resShow = $this->get(route('loans.show', $loan->id));
+        $resShow->assertOk();
+        $resShow->assertSessionHas('current_loan_id', $loan->id);
+        $resShow->assertSee(route('loans.detail'));
+
+        // 2. Kunjungi rute bersih loans.detail dari sesi
+        $resDetail = $this->get(route('loans.detail'));
+        $resDetail->assertOk();
+        $resDetail->assertSee('Detail Pengajuan');
+
+        // 3. Kunjungi rute bersih loans.detail tanpa sesi -> redirect ke index
+        session()->forget('current_loan_id');
+        $resNoSession = $this->get(route('loans.detail'));
+        $resNoSession->assertRedirect(route('loans.index'));
+
+        // 4. Kunjungi rute persetujuan.show
+        $this->actingAs($ketua);
+        $resApproveShow = $this->get(route('persetujuan.show', $loan->id));
+        $resApproveShow->assertOk();
+        $resApproveShow->assertSessionHas('current_approval_loan_id', $loan->id);
+        $resApproveShow->assertSee(route('persetujuan.detail'));
+
+        // 5. Kunjungi rute bersih persetujuan.detail dari sesi
+        $resApproveDetail = $this->get(route('persetujuan.detail'));
+        $resApproveDetail->assertOk();
+
+        // 6. Kunjungi rute persetujuan.detail tanpa sesi -> redirect ke persetujuan.index
+        session()->forget('current_approval_loan_id');
+        $resApproveNoSession = $this->get(route('persetujuan.detail'));
+        $resApproveNoSession->assertRedirect(route('persetujuan.index'));
+    }
 }
 
 

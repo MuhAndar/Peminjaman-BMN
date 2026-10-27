@@ -3,6 +3,11 @@
 @section('title', 'Keputusan Persetujuan Peminjaman BMN')
 
 @section('content')
+<script>
+    if (window.history && window.history.replaceState) {
+        window.history.replaceState({ loan_id: '{{ $loan->id }}' }, '', '{{ route('persetujuan.detail') }}');
+    }
+</script>
 <div class="space-y-6">
     <!-- Top Bar Navigation -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">

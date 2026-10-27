@@ -1,9 +1,11 @@
 import './bootstrap';
 import Alpine from 'alpinejs';
 import htmx from 'htmx.org';
+import Chart from 'chart.js/auto';
 
 window.htmx = htmx;
 window.Alpine = Alpine;
+window.Chart = Chart;
 
 // Konfigurasi HTMX
 htmx.config.historyEnabled = true;

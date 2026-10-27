@@ -1,8 +1,15 @@
 @extends('layouts.app')
 
-@section('title', 'Detail Pengajuan BMN #' . substr($loan->id, 0, 8))
+@section('title', 'Detail Pengajuan BMN' . ($loan->snap_full_name ? ' — ' . $loan->snap_full_name : ''))
 
 @section('content')
+<script>
+    // Sembunyikan ID internal (UUID) dari address bar browser dan tampilkan URL bersih /pengajuan/detail
+    if (window.history && window.history.replaceState) {
+        window.history.replaceState({ loan_id: '{{ $loan->id }}' }, '', '{{ route('loans.detail') }}');
+    }
+</script>
+
 @php
     $meta = $loan->status_meta;
     $user = auth()->user();
@@ -11,7 +18,9 @@
     $isOwner = ($user->employee_id === $loan->borrower_id);
 @endphp
 
-<div class="space-y-6" x-data="{
+<div class="space-y-6"
+     @open-bmn-camera.window="openCamera($event.detail.callback)"
+     x-data="{
     bastTab: '{{ in_array($loan->status, ['RETURN_REQUESTED', 'RETURN_CHECKED', 'RETURNED']) ? 'return' : 'loan' }}',
     sigModalOpen: false,
     sigAs: '{{ $isOwner ? "borrower" : "officer" }}',
@@ -368,6 +377,204 @@
     clearAllPreviewPhotos() {
         this.previewPhotos = [];
         this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
+    },
+
+    // --- LIVE WEBCAM & SMARTPHONE CAMERA VIEWFINDER ---
+    webcamModalOpen: false,
+    webcamStream: null,
+    webcamFacingMode: 'environment',
+    webcamDevices: [],
+    webcamCapturedSnapshot: null,
+    webcamTargetCallback: null,
+    webcamError: null,
+    isCapturingFlash: false,
+    cameraLoading: false,
+
+    async openCamera(callback) {
+        this.webcamTargetCallback = callback;
+        this.webcamCapturedSnapshot = null;
+        this.webcamError = null;
+        this.webcamModalOpen = true;
+        this.cameraLoading = true;
+        await this.$nextTick();
+        await this.startWebcam();
+    },
+
+    async startWebcam() {
+        this.stopWebcam();
+        this.webcamError = null;
+        this.webcamCapturedSnapshot = null;
+        this.cameraLoading = true;
+
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            this.webcamError = 'Browser ini tidak mendukung akses kamera langsung (getUserMedia). Silakan gunakan tombol file picker kamera.';
+            this.cameraLoading = false;
+            return;
+        }
+
+        try {
+            try {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                this.webcamDevices = devices.filter(d => d.kind === 'videoinput');
+            } catch (e) {}
+
+            const constraints = {
+                video: {
+                    facingMode: this.webcamFacingMode,
+                    width: { ideal: 1920 },
+                    height: { ideal: 1080 }
+                },
+                audio: false
+            };
+
+            let stream;
+            try {
+                stream = await navigator.mediaDevices.getUserMedia(constraints);
+            } catch (err1) {
+                // Fallback jika facingMode tidak didukung pada webcam laptop
+                stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+            }
+
+            this.webcamStream = stream;
+            const videoEl = document.getElementById('bmn-webcam-video');
+            if (videoEl) {
+                videoEl.srcObject = stream;
+                await videoEl.play();
+            }
+            this.cameraLoading = false;
+            this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
+        } catch (err) {
+            console.error('Kamera gagal dibuka:', err);
+            this.cameraLoading = false;
+            if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+                this.webcamError = 'Izin kamera diblokir. Harap izinkan akses kamera pada ikon pengaturan browser.';
+            } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+                this.webcamError = 'Kamera / Webcam tidak terdeteksi pada perangkat ini.';
+            } else {
+                this.webcamError = 'Gagal membuka kamera: ' + (err.message || err.name);
+            }
+            this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
+        }
+    },
+
+    async switchCamera() {
+        this.webcamFacingMode = this.webcamFacingMode === 'environment' ? 'user' : 'environment';
+        await this.startWebcam();
+    },
+
+    stopWebcam() {
+        if (this.webcamStream) {
+            this.webcamStream.getTracks().forEach(track => track.stop());
+            this.webcamStream = null;
+        }
+        const videoEl = document.getElementById('bmn-webcam-video');
+        if (videoEl) {
+            videoEl.srcObject = null;
+        }
+    },
+
+    closeCameraModal() {
+        this.stopWebcam();
+        this.webcamModalOpen = false;
+        this.webcamCapturedSnapshot = null;
+        this.webcamTargetCallback = null;
+    },
+
+    takeSnapshot() {
+        const videoEl = document.getElementById('bmn-webcam-video');
+        if (!videoEl || !videoEl.videoWidth) return;
+
+        this.isCapturingFlash = true;
+        setTimeout(() => { this.isCapturingFlash = false; }, 250);
+
+        try {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (AudioContext) {
+                const audioCtx = new AudioContext();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.08);
+                gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.08);
+            }
+        } catch (e) {}
+
+        let w = videoEl.videoWidth;
+        let h = videoEl.videoHeight;
+        const maxDim = 1280;
+        if (w > maxDim || h > maxDim) {
+            if (w > h) {
+                h = Math.round((h * maxDim) / w);
+                w = maxDim;
+            } else {
+                w = Math.round((w * maxDim) / h);
+                h = maxDim;
+            }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(videoEl, 0, 0, w, h);
+
+        this.webcamCapturedSnapshot = canvas.toDataURL('image/jpeg', 0.88);
+        this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
+    },
+
+    retakeSnapshot() {
+        this.webcamCapturedSnapshot = null;
+        const videoEl = document.getElementById('bmn-webcam-video');
+        if (videoEl && this.webcamStream) {
+            videoEl.play();
+        }
+        this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
+    },
+
+    confirmSnapshot() {
+        if (!this.webcamCapturedSnapshot) return;
+        const b64 = this.webcamCapturedSnapshot;
+        const photoData = {
+            id: Date.now() + Math.random(),
+            name: 'kamera_bast_' + new Date().toISOString().slice(0, 10) + '_' + Math.floor(Math.random() * 1000) + '.jpg',
+            size: (b64.length * 0.75 / 1024).toFixed(0) + ' KB',
+            base64: b64,
+            url: b64
+        };
+
+        if (typeof this.webcamTargetCallback === 'function') {
+            this.webcamTargetCallback(photoData);
+        }
+
+        this.closeCameraModal();
+    },
+
+    async handleFallbackPhoto(e) {
+        const input = e.target;
+        const file = input.files && input.files[0];
+        if (!file) return;
+        try {
+            const b64 = await this.compressClientImage(file, 1280, 0.85);
+            const photoData = {
+                id: Date.now() + Math.random(),
+                name: file.name || 'foto_bmn.jpg',
+                size: (b64.length * 0.75 / 1024).toFixed(0) + ' KB',
+                base64: b64,
+                url: b64
+            };
+            if (typeof this.webcamTargetCallback === 'function') {
+                this.webcamTargetCallback(photoData);
+            }
+            this.closeCameraModal();
+        } catch (err) {
+            console.error('Fallback kompresi foto gagal:', err);
+        }
     }
 }">
     <!-- Breadcrumb & Top Bar -->
@@ -384,7 +591,7 @@
                 <span>/</span>
                 <a href="{{ route('loans.index') }}" class="hover:text-slate-900">Pengajuan Saya</a>
                 <span>/</span>
-                <span class="text-slate-800 font-bold">Detail #{{ substr($loan->id, 0, 8) }}</span>
+                <span class="text-slate-800 dark:text-slate-200 font-bold">Detail Pengajuan</span>
             </div>
         </div>
 
@@ -1752,11 +1959,10 @@
                             @endif
 
                             <div class="flex flex-wrap items-center gap-2 pt-1">
-                                <label class="cursor-pointer px-3.5 py-1.5 bg-white dark:bg-slate-900 border border-cyan-300 dark:border-cyan-700 hover:bg-cyan-50 dark:hover:bg-cyan-900/40 text-cyan-800 dark:text-cyan-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs">
+                                <button type="button" @click="openLiveCamera()" class="px-3.5 py-1.5 bg-white dark:bg-slate-900 border border-cyan-300 dark:border-cyan-700 hover:bg-cyan-50 dark:hover:bg-cyan-900/40 text-cyan-800 dark:text-cyan-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs cursor-pointer">
                                     <i data-lucide="camera" class="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400"></i>
                                     <span>Jepret Kamera</span>
-                                    <input type="file" accept="image/*" capture="environment" class="hidden" @change="handleFiles($event.target)">
-                                </label>
+                                </button>
                                 <label class="cursor-pointer px-3.5 py-1.5 bg-white dark:bg-slate-900 border border-cyan-300 dark:border-cyan-700 hover:bg-cyan-50 dark:hover:bg-cyan-900/40 text-cyan-800 dark:text-cyan-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs">
                                     <i data-lucide="images" class="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400"></i>
                                     <span>Pilih dari Galeri</span>
@@ -1832,24 +2038,54 @@
                     <p class="text-xs text-slate-600">
                         Cetak draf BAST di atas, mintakan tanda tangan basah Peminjam, serahkan fisik BMN, lalu konfirmasi pengaktifan.
                     </p>
-                    <form method="POST" action="{{ route('kelola.confirm-active', $loan->id) }}" enctype="multipart/form-data" class="space-y-4">
+                    <form method="POST" action="{{ route('kelola.confirm-active', $loan->id) }}" enctype="multipart/form-data" class="space-y-4"
+                          x-data="bastPhotoUploader({{ $bastPjmPhotos->count() }}, 5)">
                         @csrf
-                        <div class="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200 space-y-2">
-                            <label class="block text-xs font-bold text-emerald-950">Foto Dokumentasi Serah Terima BAST (Opsional):</label>
-                            <p class="text-[11px] text-emerald-800">Lampirkan foto penyerahan fisik barang atau bukti BAST yang telah ditandatangani.</p>
-                            <div class="flex flex-wrap items-center gap-2 pt-1">
-                                <label class="cursor-pointer px-3.5 py-1.5 bg-white border border-emerald-300 hover:bg-emerald-50 text-emerald-800 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs">
-                                    <i data-lucide="camera" class="w-3.5 h-3.5 text-emerald-600"></i>
-                                    <span>Jepret Kamera</span>
-                                    <input type="file" name="photos[]" accept="image/*" capture="environment" class="hidden" onchange="updateFileCount(this, 'active_photo_count')">
-                                </label>
-                                <label class="cursor-pointer px-3.5 py-1.5 bg-white border border-emerald-300 hover:bg-emerald-50 text-emerald-800 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs">
-                                    <i data-lucide="images" class="w-3.5 h-3.5 text-emerald-600"></i>
-                                    <span>Pilih dari Galeri</span>
-                                    <input type="file" name="photos[]" accept="image/*" multiple class="hidden" onchange="updateFileCount(this, 'active_photo_count')">
-                                </label>
-                                <span id="active_photo_count" class="text-xs text-slate-500 italic">Belum ada foto dipilih</span>
+                        <template x-for="(item, idx) in filesList" :key="item.id">
+                            <div>
+                                <input type="hidden" name="photos_base64[]" :value="item.base64">
+                                <input type="hidden" name="photos_names[]" :value="item.name">
                             </div>
+                        </template>
+                        <div class="p-4 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 space-y-2">
+                            <label class="block text-xs font-bold text-emerald-950 dark:text-emerald-200">Foto Dokumentasi Serah Terima BAST (Opsional):</label>
+                            <p class="text-[11px] text-emerald-800 dark:text-emerald-300">Lampirkan foto penyerahan fisik barang atau bukti BAST yang telah ditandatangani.</p>
+                            <div class="flex flex-wrap items-center gap-2 pt-1">
+                                <button type="button" @click="openLiveCamera()" class="px-3.5 py-1.5 bg-white dark:bg-slate-900 border border-emerald-300 dark:border-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-900/40 text-emerald-800 dark:text-emerald-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs cursor-pointer">
+                                    <i data-lucide="camera" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400"></i>
+                                    <span>Jepret Kamera</span>
+                                </button>
+                                <label class="cursor-pointer px-3.5 py-1.5 bg-white dark:bg-slate-900 border border-emerald-300 dark:border-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-900/40 text-emerald-800 dark:text-emerald-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs">
+                                    <i data-lucide="images" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400"></i>
+                                    <span>Pilih dari Galeri</span>
+                                    <input type="file" accept="image/*" multiple class="hidden" @change="handleFiles($event.target)">
+                                </label>
+                                <span class="text-xs font-medium"
+                                      :class="filesList.length > 0 ? 'text-emerald-700 dark:text-emerald-300 font-bold' : 'text-slate-500 dark:text-slate-400 italic'"
+                                      x-text="filesList.length > 0 ? filesList.length + ' foto baru dipilih (Maks. 5 foto)' : (existingPhotos > 0 ? existingPhotos + ' foto sudah tersimpan di sistem' : 'Belum ada foto dipilih')">
+                                </span>
+                            </div>
+
+                            <!-- Preview Thumbnail Foto Baru Terpilih -->
+                            <template x-if="filesList.length > 0">
+                                <div class="space-y-1.5 pt-2 border-t border-emerald-200/50 dark:border-emerald-800/50">
+                                    <div class="flex items-center justify-between text-[11px]">
+                                        <span class="text-emerald-900 dark:text-emerald-200 font-bold" x-text="filesList.length + ' foto baru siap dilampirkan:'"></span>
+                                        <button type="button" @click="clearAll()" class="text-red-600 dark:text-red-400 font-bold hover:underline cursor-pointer">Hapus Semua</button>
+                                    </div>
+                                    <div class="flex flex-wrap gap-2">
+                                        <template x-for="(item, idx) in filesList" :key="idx">
+                                            <div class="relative w-16 h-16 rounded-xl overflow-hidden border-2 border-emerald-500 shadow-xs bg-slate-100 group">
+                                                <img :src="item.url" class="w-full h-full object-cover">
+                                                <button type="button" @click.stop="removeFile(idx)"
+                                                        class="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-red-600 text-white flex items-center justify-center text-[10px] font-bold shadow-xs cursor-pointer">
+                                                    &times;
+                                                </button>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                            </template>
                         </div>
 
                         <button type="submit"
@@ -1944,11 +2180,10 @@
                             @endif
 
                             <div class="flex flex-wrap items-center gap-2 pt-1">
-                                <label class="cursor-pointer px-3.5 py-1.5 bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/40 text-amber-800 dark:text-amber-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs">
+                                <button type="button" @click="openLiveCamera()" class="px-3.5 py-1.5 bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/40 text-amber-800 dark:text-amber-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs cursor-pointer">
                                     <i data-lucide="camera" class="w-3.5 h-3.5 text-amber-600 dark:text-amber-400"></i>
                                     <span>Jepret Kamera</span>
-                                    <input type="file" accept="image/*" capture="environment" class="hidden" @change="handleFiles($event.target)">
-                                </label>
+                                </button>
                                 <label class="cursor-pointer px-3.5 py-1.5 bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/40 text-amber-800 dark:text-amber-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs">
                                     <i data-lucide="images" class="w-3.5 h-3.5 text-amber-600 dark:text-amber-400"></i>
                                     <span>Pilih dari Galeri</span>
@@ -2496,14 +2731,14 @@
                         </div>
                         <div class="grid grid-cols-2 gap-2.5">
                             <!-- Button 1: Kamera HP / Webcam -->
-                            <label class="flex flex-col items-center justify-center p-4 rounded-2xl border-2 border-dashed border-[#0B63B5]/40 dark:border-blue-700/60 bg-blue-50/30 dark:bg-blue-950/30 hover:bg-blue-50 dark:hover:bg-blue-900/30 cursor-pointer transition text-center group">
+                            <button type="button" @click="openCamera((photo) => { if (previewPhotos.length < 5) previewPhotos.push(photo); })"
+                                    class="flex flex-col items-center justify-center p-4 rounded-2xl border-2 border-dashed border-[#0B63B5]/40 dark:border-blue-700/60 bg-blue-50/30 dark:bg-blue-950/30 hover:bg-blue-50 dark:hover:bg-blue-900/30 cursor-pointer transition text-center group">
                                 <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/60 text-[#0B63B5] dark:text-blue-300 flex items-center justify-center mb-2 group-hover:scale-110 transition">
                                     <i data-lucide="camera" class="w-5 h-5"></i>
                                 </div>
                                 <span class="text-xs font-bold text-slate-800 dark:text-slate-200">Jepret Kamera</span>
-                                <span class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Tambah jepretan kamera</span>
-                                <input type="file" accept="image/*" capture="environment" class="hidden" @change="handlePhotoSelect($event)">
-                            </label>
+                                <span class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Buka Kamera Laptop / HP</span>
+                            </button>
 
                             <!-- Button 2: Galeri / File (Bisa Multiple & Akumulatif) -->
                             <label class="flex flex-col items-center justify-center p-4 rounded-2xl border-2 border-dashed border-purple-300 dark:border-purple-700/60 bg-purple-50/30 dark:bg-purple-950/30 hover:bg-purple-50 dark:hover:bg-purple-900/30 cursor-pointer transition text-center group">
@@ -2586,6 +2821,168 @@
             </div>
         </div>
     </div>
+
+    <!-- 4. MODAL KAMERA INTERAKTIF (LIVE WEBCAM & SMARTPHONE CAMERA VIEWFINDER) -->
+    <div x-show="webcamModalOpen" x-cloak
+         class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/85 backdrop-blur-md"
+         @keydown.escape.window="closeCameraModal()"
+         @click="closeCameraModal()">
+        
+        <div class="relative bg-slate-900 border border-slate-700/80 rounded-3xl max-w-xl w-full p-4 sm:p-6 shadow-2xl flex flex-col gap-4 text-white overflow-hidden"
+             @click.stop>
+            
+            <!-- Shutter Flash Overlay Animation -->
+            <div x-show="isCapturingFlash"
+                 x-transition:enter="transition-opacity duration-75"
+                 x-transition:enter-start="opacity-0"
+                 x-transition:enter-end="opacity-100"
+                 x-transition:leave="transition-opacity duration-150"
+                 x-transition:leave-start="opacity-100"
+                 x-transition:leave-end="opacity-0"
+                 class="absolute inset-0 bg-white z-30 pointer-events-none"></div>
+
+            <!-- Header Modal Kamera -->
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center">
+                        <i data-lucide="camera" class="w-4 h-4"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-sm sm:text-base font-extrabold text-white">Ambil Foto BAST (Kamera Langsung)</h3>
+                        <p class="text-[11px] text-slate-400">Arahkan kamera ke barang BMN atau dokumen BAST fisik</p>
+                    </div>
+                </div>
+                <button type="button" @click="closeCameraModal()" class="text-slate-400 hover:text-white p-1 rounded-xl bg-slate-800/60 hover:bg-slate-800 transition cursor-pointer">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Error Banner jika izin kamera ditolak / tidak ditemukan -->
+            <template x-if="webcamError">
+                <div class="p-4 rounded-2xl bg-red-950/80 border border-red-800 text-xs text-red-200 space-y-3">
+                    <div class="flex items-start gap-2.5">
+                        <i data-lucide="alert-triangle" class="w-5 h-5 text-red-400 shrink-0 mt-0.5"></i>
+                        <div>
+                            <span class="font-bold block text-red-100">Kamera Tidak Dapat Dibuka</span>
+                            <span x-text="webcamError" class="text-[11px] leading-relaxed"></span>
+                        </div>
+                    </div>
+                    <div class="pt-2 border-t border-red-800/60 flex items-center justify-between">
+                        <span class="text-[11px] text-red-300">Gunakan opsi pemilih kamera bawaan:</span>
+                        <label class="px-3 py-1.5 rounded-xl bg-red-700 hover:bg-red-600 text-white font-bold text-xs cursor-pointer shadow-xs transition">
+                            <span>Buka Kamera HP / File</span>
+                            <input type="file" accept="image/*" capture="environment" class="hidden" @change="handleFallbackPhoto($event)">
+                        </label>
+                    </div>
+                </div>
+            </template>
+
+            <!-- Video Viewfinder / Snapshot Container -->
+            <div class="relative w-full aspect-4/3 sm:aspect-16/10 rounded-2xl overflow-hidden bg-black flex items-center justify-center border border-slate-800 group">
+                
+                <!-- Loading indicator -->
+                <div x-show="cameraLoading && !webcamError" class="absolute inset-0 flex flex-col items-center justify-center bg-black/80 z-10 gap-2">
+                    <div class="w-8 h-8 border-3 border-cyan-400 border-t-transparent rounded-full animate-spin"></div>
+                    <span class="text-xs font-semibold text-slate-300">Menghubungkan ke kamera perangkat...</span>
+                </div>
+
+                <!-- 1. Live Video Feed -->
+                <video id="bmn-webcam-video" autoplay playsinline muted
+                       x-show="!webcamCapturedSnapshot"
+                       class="w-full h-full object-cover"></video>
+
+                <!-- 2. Snapshot Image Preview (Setelah dijepret) -->
+                <template x-if="webcamCapturedSnapshot">
+                    <img :src="webcamCapturedSnapshot" class="w-full h-full object-contain bg-black">
+                </template>
+
+                <!-- Viewfinder Guide Lines (Overlay saat mode live) -->
+                <div x-show="!webcamCapturedSnapshot && !webcamError" class="absolute inset-4 pointer-events-none border border-white/20 rounded-xl flex flex-col justify-between p-2">
+                    <div class="flex justify-between">
+                        <div class="w-6 h-6 border-t-2 border-l-2 border-cyan-400 rounded-tl-lg"></div>
+                        <div class="w-6 h-6 border-t-2 border-r-2 border-cyan-400 rounded-tr-lg"></div>
+                    </div>
+                    <div class="text-center">
+                        <span class="px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-xs text-[10px] text-white/80 font-medium">
+                            Posisikan BMN / Dokumen di dalam kotak
+                        </span>
+                    </div>
+                    <div class="flex justify-between">
+                        <div class="w-6 h-6 border-b-2 border-l-2 border-cyan-400 rounded-bl-lg"></div>
+                        <div class="w-6 h-6 border-b-2 border-r-2 border-cyan-400 rounded-br-lg"></div>
+                    </div>
+                </div>
+
+                <!-- Badge Kamera Aktif -->
+                <div x-show="!webcamCapturedSnapshot && !webcamError && !cameraLoading" class="absolute top-2.5 left-2.5 z-10">
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-900/80 backdrop-blur-xs text-[10px] font-bold text-emerald-400 border border-emerald-500/30">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                        <span x-text="webcamFacingMode === 'environment' ? 'Kamera Belakang / Utama' : 'Kamera Depan / User'"></span>
+                    </span>
+                </div>
+
+                <!-- Tombol Ganti Kamera (Switch Camera) -->
+                <div x-show="!webcamCapturedSnapshot && !webcamError && !cameraLoading" class="absolute top-2.5 right-2.5 z-10">
+                    <button type="button" @click="switchCamera()"
+                            class="px-2.5 py-1 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-slate-200 text-[11px] font-bold border border-slate-700/80 transition flex items-center gap-1 cursor-pointer"
+                            title="Ganti Kamera Depan / Belakang">
+                        <i data-lucide="refresh-cw" class="w-3.5 h-3.5 text-cyan-400"></i>
+                        <span>Ganti Kamera</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Action Controls Bar -->
+            <div class="flex items-center justify-between pt-1">
+                <!-- Mode 1: Sedang Live View (Belum Menjepret) -->
+                <template x-if="!webcamCapturedSnapshot">
+                    <div class="w-full flex items-center justify-between gap-3">
+                        <!-- Fallback ke native file picker -->
+                        <label class="text-xs text-slate-400 hover:text-white flex items-center gap-1.5 cursor-pointer underline decoration-dotted transition">
+                            <i data-lucide="folder-image" class="w-4 h-4"></i>
+                            <span class="text-[11px]">Buka Kamera Bawaan HP</span>
+                            <input type="file" accept="image/*" capture="environment" class="hidden" @change="handleFallbackPhoto($event)">
+                        </label>
+
+                        <!-- Big Circular Shutter Button -->
+                        <div class="flex items-center gap-3">
+                            <button type="button"
+                                    @click="takeSnapshot()"
+                                    :disabled="cameraLoading || !!webcamError"
+                                    class="w-14 h-14 rounded-full bg-white hover:bg-cyan-100 text-slate-900 border-4 border-cyan-500 shadow-lg shadow-cyan-500/30 flex items-center justify-center transition active:scale-90 hover:scale-105 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed group"
+                                    title="Klik untuk mengambil foto">
+                                <div class="w-6 h-6 rounded-full bg-cyan-600 group-hover:scale-110 transition flex items-center justify-center text-white">
+                                    <i data-lucide="camera" class="w-3.5 h-3.5"></i>
+                                </div>
+                            </button>
+                        </div>
+
+                        <button type="button" @click="closeCameraModal()" class="px-3 py-1.5 rounded-xl border border-slate-700 hover:bg-slate-800 text-xs text-slate-300 font-bold transition cursor-pointer">
+                            Batal
+                        </button>
+                    </div>
+                </template>
+
+                <!-- Mode 2: Foto Selesai Dijepret (Review & Konfirmasi) -->
+                <template x-if="webcamCapturedSnapshot">
+                    <div class="w-full flex items-center justify-between gap-3">
+                        <button type="button" @click="retakeSnapshot()"
+                                class="px-4 py-2 rounded-xl border border-slate-700 hover:bg-slate-800 text-slate-200 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer">
+                            <i data-lucide="rotate-ccw" class="w-4 h-4 text-slate-400"></i>
+                            <span>Jepret Ulang</span>
+                        </button>
+
+                        <button type="button" @click="confirmSnapshot()"
+                                class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-black shadow-lg shadow-cyan-500/25 transition flex items-center gap-2 cursor-pointer active:scale-95">
+                            <i data-lucide="check" class="w-4 h-4"></i>
+                            <span>Gunakan Foto Ini</span>
+                        </button>
+                    </div>
+                </template>
+            </div>
+
+        </div>
+    </div>
 </div>
 
 <script>
@@ -2595,6 +2992,20 @@
             maxPhotos: maxCount,
             filesList: [],
             isCompressing: false,
+            openLiveCamera() {
+                window.dispatchEvent(new CustomEvent('open-bmn-camera', {
+                    detail: {
+                        callback: (photo) => {
+                            if (this.existingPhotos + this.filesList.length >= this.maxPhotos) {
+                                alert('Maksimal total ' + this.maxPhotos + ' foto dokumentasi fisik BAST.');
+                                return;
+                            }
+                            this.filesList.push(photo);
+                            this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
+                        }
+                    }
+                }));
+            },
             async handleFiles(input) {
                 const files = Array.from(input.files || []);
                 if (files.length === 0) return;

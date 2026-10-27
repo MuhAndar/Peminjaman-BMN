@@ -66,10 +66,27 @@ class ApprovalController extends Controller
         $loan = LoanRequest::with(['borrower', 'items.asset', 'history.actor', 'documents'])
             ->findOrFail($id);
 
+        session(['current_approval_loan_id' => $loan->id]);
+
         $user = Auth::user();
         $isSelf = ($user->employee_id && $user->employee_id === $loan->borrower_id);
 
         return view('approval.show', compact('loan', 'isSelf'));
+    }
+
+    /**
+     * Tampilkan detail persetujuan aktif dari sesi (URL bersih /persetujuan/detail).
+     */
+    public function showCurrent()
+    {
+        $this->authorizeApproval();
+
+        $currentId = session('current_approval_loan_id');
+        if (!$currentId) {
+            return redirect()->route('persetujuan.index')->with('info', 'Silakan pilih permohonan peminjaman yang ingin ditelaah persetujuannya.');
+        }
+
+        return $this->show($currentId);
     }
 
     /**

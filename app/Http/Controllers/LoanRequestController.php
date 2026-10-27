@@ -504,7 +504,23 @@ class LoanRequestController extends Controller
             abort(403, 'Anda tidak berhak melihat pengajuan ini.');
         }
 
+        // Simpan ke sesi untuk mendukung URL bersih tanpa mengekspos ID (/pengajuan/detail)
+        session(['current_loan_id' => $loan->id]);
+
         return view('loans.show', compact('loan'));
+    }
+
+    /**
+     * Tampilkan detail pengajuan aktif dari sesi (URL bersih tanpa menampilkan UUID).
+     */
+    public function showCurrent()
+    {
+        $currentId = session('current_loan_id');
+        if (!$currentId) {
+            return redirect()->route('loans.index')->with('info', 'Silakan pilih pengajuan BMN yang ingin dilihat.');
+        }
+
+        return $this->show($currentId);
     }
 
     /**

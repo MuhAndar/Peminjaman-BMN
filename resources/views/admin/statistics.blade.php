@@ -343,215 +343,260 @@
 
 </div>
 
-<!-- Chart.js via Fast CDN -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    // Shared palette tokens
-    const isDark = document.documentElement.classList.contains('dark');
-    const textColor = isDark ? '#94A3B8' : '#64748B';
-    const gridColor = isDark ? 'rgba(51, 65, 85, 0.4)' : 'rgba(226, 232, 240, 0.7)';
+(function() {
+    let trendChartInstance = null;
+    let statusChartInstance = null;
+    let categoryChartInstance = null;
+    let typeChartInstance = null;
 
-    // 1. MONTHLY TREND CHART (LINE & BAR)
-    const trendCtx = document.getElementById('monthlyTrendChart');
-    if (trendCtx) {
-        new Chart(trendCtx, {
-            type: 'bar',
-            data: {
-                labels: @json($monthLabels),
-                datasets: [
-                    {
-                        type: 'line',
-                        label: 'Pengajuan Masuk',
-                        data: @json($monthlySubmissions),
-                        borderColor: '#0B63B5',
-                        backgroundColor: 'rgba(11, 99, 181, 0.1)',
-                        borderWidth: 3,
-                        tension: 0.35,
-                        pointBackgroundColor: '#0B63B5',
-                        pointBorderColor: '#fff',
-                        pointRadius: 4,
-                        fill: true,
-                        yAxisID: 'y'
-                    },
-                    {
-                        type: 'bar',
-                        label: 'Pengembalian Selesai',
-                        data: @json($monthlyCompletions),
-                        backgroundColor: 'rgba(16, 185, 129, 0.75)',
-                        hoverBackgroundColor: '#10B981',
-                        borderRadius: 6,
-                        yAxisID: 'y'
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: {
-                    mode: 'index',
-                    intersect: false
+    function initStatisticsCharts() {
+        if (typeof Chart === 'undefined') {
+            setTimeout(initStatisticsCharts, 80);
+            return;
+        }
+
+        const trendCtx = document.getElementById('monthlyTrendChart');
+        if (!trendCtx) return;
+
+        // Cleanup previous instances before re-rendering
+        if (trendChartInstance) { try { trendChartInstance.destroy(); } catch (e) {} trendChartInstance = null; }
+        if (statusChartInstance) { try { statusChartInstance.destroy(); } catch (e) {} statusChartInstance = null; }
+        if (categoryChartInstance) { try { categoryChartInstance.destroy(); } catch (e) {} categoryChartInstance = null; }
+        if (typeChartInstance) { try { typeChartInstance.destroy(); } catch (e) {} typeChartInstance = null; }
+
+        const isDark = document.documentElement.classList.contains('dark');
+        const textColor = isDark ? '#94A3B8' : '#64748B';
+        const gridColor = isDark ? 'rgba(51, 65, 85, 0.4)' : 'rgba(226, 232, 240, 0.7)';
+
+        // 1. MONTHLY TREND CHART (LINE & BAR)
+        try {
+            trendChartInstance = new Chart(trendCtx, {
+                type: 'bar',
+                data: {
+                    labels: @json($monthLabels),
+                    datasets: [
+                        {
+                            type: 'line',
+                            label: 'Pengajuan Masuk',
+                            data: @json($monthlySubmissions),
+                            borderColor: '#0B63B5',
+                            backgroundColor: 'rgba(11, 99, 181, 0.1)',
+                            borderWidth: 3,
+                            tension: 0.35,
+                            pointBackgroundColor: '#0B63B5',
+                            pointBorderColor: '#fff',
+                            pointRadius: 4,
+                            fill: true,
+                            yAxisID: 'y'
+                        },
+                        {
+                            type: 'bar',
+                            label: 'Pengembalian Selesai',
+                            data: @json($monthlyCompletions),
+                            backgroundColor: 'rgba(16, 185, 129, 0.75)',
+                            hoverBackgroundColor: '#10B981',
+                            borderRadius: 6,
+                            yAxisID: 'y'
+                        }
+                    ]
                 },
-                plugins: {
-                    legend: {
-                        display: false
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
                     },
-                    tooltip: {
-                        backgroundColor: isDark ? '#0F172A' : '#1E293B',
-                        titleColor: '#fff',
-                        bodyColor: '#E2E8F0',
-                        padding: 10,
-                        cornerRadius: 10
-                    }
-                },
-                scales: {
-                    x: {
-                        grid: { display: false },
-                        ticks: { color: textColor, font: { weight: '600', size: 11 } }
-                    },
-                    y: {
-                        beginAtZero: true,
-                        ticks: { color: textColor, precision: 0, font: { weight: '600', size: 11 } },
-                        grid: { color: gridColor }
-                    }
-                }
-            }
-        });
-    }
-
-    // 2. STATUS DOUGHNUT CHART
-    const statusCtx = document.getElementById('statusDoughnutChart');
-    if (statusCtx) {
-        new Chart(statusCtx, {
-            type: 'doughnut',
-            data: {
-                labels: ['Selesai Kembali', 'Sedang Aktif', 'Dalam Proses SOP', 'Ditolak'],
-                datasets: [{
-                    data: [
-                        {{ $statusDistribution['RETURNED'] }},
-                        {{ $statusDistribution['ACTIVE'] }},
-                        {{ $statusDistribution['IN_PROCESS'] }},
-                        {{ $statusDistribution['REJECTED'] }}
-                    ],
-                    backgroundColor: [
-                        '#10B981', // emerald
-                        '#0B63B5', // brand blue
-                        '#F59E0B', // amber
-                        '#EF4444'  // red
-                    ],
-                    borderWidth: 0,
-                    hoverOffset: 6
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                cutout: '70%',
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        backgroundColor: isDark ? '#0F172A' : '#1E293B',
-                        padding: 10,
-                        cornerRadius: 10
-                    }
-                }
-            }
-        });
-    }
-
-    // 3. TOP CATEGORIES HORIZONTAL BAR CHART
-    const categoryCtx = document.getElementById('categoryBarChart');
-    if (categoryCtx) {
-        const catLabels = @json(array_keys($topCategories));
-        const catValues = @json(array_values($topCategories));
-
-        new Chart(categoryCtx, {
-            type: 'bar',
-            data: {
-                labels: catLabels.length ? catLabels : ['Peralatan TIK & Multimedia', 'Laptop / Komputer Jinjing', 'Mobil Dinas'],
-                datasets: [{
-                    label: 'Unit Dipinjam',
-                    data: catValues.length ? catValues : [0, 0, 0],
-                    backgroundColor: [
-                        '#0B63B5',
-                        '#12A8E0',
-                        '#3B82F6',
-                        '#6366F1',
-                        '#8B5CF6',
-                        '#EC4899'
-                    ],
-                    borderRadius: 8
-                }]
-            },
-            options: {
-                indexAxis: 'y',
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        backgroundColor: isDark ? '#0F172A' : '#1E293B',
-                        padding: 10,
-                        cornerRadius: 10
-                    }
-                },
-                scales: {
-                    x: {
-                        beginAtZero: true,
-                        ticks: { color: textColor, precision: 0, font: { weight: '600', size: 11 } },
-                        grid: { color: gridColor }
-                    },
-                    y: {
-                        grid: { display: false },
-                        ticks: { color: textColor, font: { weight: '600', size: 11 } }
-                    }
-                }
-            }
-        });
-    }
-
-    // 4. LOAN TYPE PIE CHART
-    const typeCtx = document.getElementById('typePieChart');
-    if (typeCtx) {
-        new Chart(typeCtx, {
-            type: 'pie',
-            data: {
-                labels: ['Peminjaman Sementara (SHORT_TERM)', 'Penugasan Tahunan (ANNUAL)'],
-                datasets: [{
-                    data: [
-                        {{ $loanTypeBreakdown['SHORT_TERM'] }},
-                        {{ $loanTypeBreakdown['ANNUAL'] }}
-                    ],
-                    backgroundColor: [
-                        '#0B63B5',
-                        '#8B5CF6'
-                    ],
-                    borderWidth: 0,
-                    hoverOffset: 5
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: {
-                            color: textColor,
-                            font: { weight: '600', size: 11 },
-                            padding: 12
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: isDark ? '#0F172A' : '#1E293B',
+                            titleColor: '#fff',
+                            bodyColor: '#E2E8F0',
+                            padding: 10,
+                            cornerRadius: 10
                         }
                     },
-                    tooltip: {
-                        backgroundColor: isDark ? '#0F172A' : '#1E293B',
-                        padding: 10,
-                        cornerRadius: 10
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: textColor, font: { weight: '600', size: 11 } }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            ticks: { color: textColor, precision: 0, font: { weight: '600', size: 11 } },
+                            grid: { color: gridColor }
+                        }
                     }
                 }
+            });
+        } catch (err) {
+            console.error('Gagal render monthlyTrendChart:', err);
+        }
+
+        // 2. STATUS DOUGHNUT CHART
+        const statusCtx = document.getElementById('statusDoughnutChart');
+        if (statusCtx) {
+            try {
+                statusChartInstance = new Chart(statusCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Selesai Kembali', 'Sedang Aktif', 'Dalam Proses SOP', 'Ditolak'],
+                        datasets: [{
+                            data: [
+                                {{ $statusDistribution['RETURNED'] }},
+                                {{ $statusDistribution['ACTIVE'] }},
+                                {{ $statusDistribution['IN_PROCESS'] }},
+                                {{ $statusDistribution['REJECTED'] }}
+                            ],
+                            backgroundColor: [
+                                '#10B981',
+                                '#0B63B5',
+                                '#F59E0B',
+                                '#EF4444'
+                            ],
+                            borderWidth: 0,
+                            hoverOffset: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '70%',
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                backgroundColor: isDark ? '#0F172A' : '#1E293B',
+                                padding: 10,
+                                cornerRadius: 10
+                            }
+                        }
+                    }
+                });
+            } catch (err) {
+                console.error('Gagal render statusDoughnutChart:', err);
             }
-        });
+        }
+
+        // 3. TOP CATEGORIES HORIZONTAL BAR CHART
+        const categoryCtx = document.getElementById('categoryBarChart');
+        if (categoryCtx) {
+            try {
+                const catLabels = @json(array_keys($topCategories));
+                const catValues = @json(array_values($topCategories));
+
+                categoryChartInstance = new Chart(categoryCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: catLabels.length ? catLabels : ['Peralatan TIK & Multimedia', 'Laptop / Komputer Jinjing', 'Mobil Dinas'],
+                        datasets: [{
+                            label: 'Unit Dipinjam',
+                            data: catValues.length ? catValues : [0, 0, 0],
+                            backgroundColor: [
+                                '#0B63B5',
+                                '#12A8E0',
+                                '#3B82F6',
+                                '#6366F1',
+                                '#8B5CF6',
+                                '#EC4899'
+                            ],
+                            borderRadius: 8
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                backgroundColor: isDark ? '#0F172A' : '#1E293B',
+                                padding: 10,
+                                cornerRadius: 10
+                            }
+                        },
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                ticks: { color: textColor, precision: 0, font: { weight: '600', size: 11 } },
+                                grid: { color: gridColor }
+                            },
+                            y: {
+                                grid: { display: false },
+                                ticks: { color: textColor, font: { weight: '600', size: 11 } }
+                            }
+                        }
+                    }
+                });
+            } catch (err) {
+                console.error('Gagal render categoryBarChart:', err);
+            }
+        }
+
+        // 4. LOAN TYPE PIE CHART
+        const typeCtx = document.getElementById('typePieChart');
+        if (typeCtx) {
+            try {
+                typeChartInstance = new Chart(typeCtx, {
+                    type: 'pie',
+                    data: {
+                        labels: ['Peminjaman Sementara (SHORT_TERM)', 'Penugasan Tahunan (ANNUAL)'],
+                        datasets: [{
+                            data: [
+                                {{ $loanTypeBreakdown['SHORT_TERM'] }},
+                                {{ $loanTypeBreakdown['ANNUAL'] }}
+                            ],
+                            backgroundColor: [
+                                '#0B63B5',
+                                '#8B5CF6'
+                            ],
+                            borderWidth: 0,
+                            hoverOffset: 5
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    color: textColor,
+                                    font: { weight: '600', size: 11 },
+                                    padding: 12
+                                }
+                            },
+                            tooltip: {
+                                backgroundColor: isDark ? '#0F172A' : '#1E293B',
+                                padding: 10,
+                                cornerRadius: 10
+                            }
+                        }
+                    }
+                });
+            } catch (err) {
+                console.error('Gagal render typePieChart:', err);
+            }
+        }
     }
-});
+
+    // Eksekusi segera, pada DOMContentLoaded, dan setiap kali HTMX selesai swap/settle
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        requestAnimationFrame(initStatisticsCharts);
+    } else {
+        document.addEventListener('DOMContentLoaded', initStatisticsCharts);
+    }
+    document.addEventListener('htmx:afterSwap', function(e) {
+        if (document.getElementById('monthlyTrendChart')) {
+            requestAnimationFrame(initStatisticsCharts);
+        }
+    });
+    document.addEventListener('htmx:afterSettle', function(e) {
+        if (document.getElementById('monthlyTrendChart')) {
+            requestAnimationFrame(initStatisticsCharts);
+        }
+    });
+})();
 </script>
 @endsection

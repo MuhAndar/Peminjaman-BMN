@@ -36,6 +36,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/pengajuan', [LoanRequestController::class, 'index'])->name('loans.index');
     Route::get('/pengajuan/baru', [LoanRequestController::class, 'create'])->name('loans.create');
     Route::post('/pengajuan', [LoanRequestController::class, 'store'])->name('loans.store');
+    Route::get('/pengajuan/detail', [LoanRequestController::class, 'showCurrent'])->name('loans.detail');
     Route::get('/pengajuan/{id}', [LoanRequestController::class, 'show'])->name('loans.show');
     Route::get('/pengajuan/{id}/edit', [LoanRequestController::class, 'edit'])->name('loans.edit');
     Route::put('/pengajuan/{id}', [LoanRequestController::class, 'update'])->name('loans.update');
@@ -66,6 +67,7 @@ Route::middleware('auth')->group(function () {
     // Alur Ketua Tim Keuangan & Aset
     Route::prefix('persetujuan')->name('persetujuan.')->group(function () {
         Route::get('/', [ApprovalController::class, 'index'])->name('index');
+        Route::get('/detail', [ApprovalController::class, 'showCurrent'])->name('detail');
         Route::get('/{id}', [ApprovalController::class, 'show'])->name('show');
         Route::post('/{id}/draft-signature', [ApprovalController::class, 'saveDraftSignature'])->name('draft-signature');
         Route::post('/{id}/setujui', [ApprovalController::class, 'approve'])->name('approve');
